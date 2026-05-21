@@ -106,7 +106,7 @@ dbt deps --project-dir ./dbt
 
 This project supports robust, secure, and environment-agnostic CI/CD for dbt/Snowflake deployments using both GitHub Actions and Azure DevOps. All pipeline logic is implemented in reusable PowerShell scripts under `tools/`.
 
-- **Linting**: Runs pre-commit checks (black, flake8, isort) on all branches.
+- **Linting**: Runs pre-commit checks (ruff check + ruff format) on all branches.
 - **Testing**: Runs the full pytest suite (unit and integration) on all branches.
 - **Deployment**: Runs `dbt run` and `dbt test` against Snowflake on the `main` branch only.
 
@@ -125,5 +125,6 @@ See [docs/CI-CD.md](docs/CI-CD.md) for full details, including:
 ## Quality Gates
 
 Recommended checks before commit:
+- `python -m pre_commit run --all-files`
 - `python -m pytest -q`
 - `RUN_WEB_E2E=true python -m pytest -q tests/test_web_to_duckdb_e2e.py`

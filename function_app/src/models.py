@@ -67,7 +67,7 @@ class DiscoveredFile:
     series_id: str
     sub_dataset_id: str
     source_url: str
-    publication_date_value: str
+    publication_date_value: Optional[str]
     link_text: str
 
 

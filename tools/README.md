@@ -8,7 +8,7 @@ This folder contains developer utility scripts.
 - `init_dev_environment.ps1`: Creates/updates local virtual environment and installs dependencies.
 - `run_local_e2e.py`: Local e2e orchestrator using local storage mode.
 - `run_local_e2e.ps1`: PowerShell wrapper for local e2e run.
-- `ci_lint.ps1`: Runs pre-commit lint checks (used in CI/CD).
+- `ci_lint.ps1`: Runs pre-commit lint checks using Ruff (used in CI/CD).
 - `ci_test.ps1`: Runs pytest suite (unit and integration; used in CI/CD).
 - `ci_dbt_deploy.ps1`: Installs dbt dependencies, renders `profiles.yml`, runs `dbt run` and `dbt test`, and cleans up credentials (used in CI/CD).
 - `ci_render_profiles_yml.ps1`: Renders a secure `profiles.yml` for dbt, supporting both key-pair and password auth (used in CI/CD).

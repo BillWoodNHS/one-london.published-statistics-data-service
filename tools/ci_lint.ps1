@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Run pre-commit linting checks (black, flake8, isort).
+    Run pre-commit checks using Ruff lint + format hooks.
     Called by both GitHub Actions and Azure DevOps pipelines.
 #>
 param()

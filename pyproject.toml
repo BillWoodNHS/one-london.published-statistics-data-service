@@ -2,9 +2,20 @@
 testpaths = ["tests"]
 pythonpath = ["."]
 
-[tool.black]
+[tool.ruff]
 line-length = 88
+target-version = "py311"
+exclude = [
+	".venv",
+	".git",
+	"__pycache__",
+	".mypy_cache",
+	".pytest_cache",
+	"dbt/target",
+	"dbt/dbt_packages",
+	"dbt/logs",
+]
 
-[tool.isort]
-profile = "black"
-line_length = 88
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E203"]

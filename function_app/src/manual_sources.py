@@ -4,6 +4,7 @@ import re
 from typing import List
 
 from .adls_writer import list_blob_paths
+from .datetime_utils import normalize_datetime_value
 from .models import DatasetSeriesConfig, DiscoveredFile, TargetConfig
 
 
@@ -37,8 +38,9 @@ def discover_manual_files(
             publication_date = "_".join(
                 group for group in match.groups() if group
             ) or match.group(0)
+            publication_date = normalize_datetime_value(publication_date)
         else:
-            publication_date = "manual"
+            publication_date = None
 
         discovered.append(
             DiscoveredFile(

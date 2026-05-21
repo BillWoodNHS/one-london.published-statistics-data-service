@@ -3,7 +3,7 @@
 # CI/CD pipeline for one-london.published-statistics-data-service
 #
 # Jobs:
-#   lint   - pre-commit checks (black, flake8, isort)       [all branches]
+#   lint   - pre-commit checks (ruff check + ruff format)   [all branches]
 #   test   - pytest unit tests                               [all branches]
 #   deploy - dbt run + dbt test against Snowflake            [main only]
 #
@@ -41,7 +41,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt && pip install pre-commit
+        run: pip install -r requirements-dev.txt
 
       - name: Run lint checks
         shell: pwsh

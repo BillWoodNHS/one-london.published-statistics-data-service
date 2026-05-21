@@ -4,7 +4,7 @@ This project supports robust, secure, and environment-agnostic CI/CD for dbt/Sno
 
 ## Pipeline Overview
 
-- **Linting**: Runs pre-commit checks (black, flake8, isort) on all branches.
+- **Linting**: Runs pre-commit checks (ruff check + ruff format) on all branches.
 - **Testing**: Runs the full pytest suite (unit and integration) on all branches.
 - **Deployment**: Runs `dbt run` and `dbt test` against Snowflake on the `main` branch only.
 

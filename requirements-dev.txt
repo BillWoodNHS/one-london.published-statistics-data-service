@@ -1,6 +1,5 @@
 pytest
 duckdb
 dbt-duckdb
-flake8
-black
-isort
+ruff
+pre-commit

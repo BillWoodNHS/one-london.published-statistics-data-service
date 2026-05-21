@@ -7,6 +7,10 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from .datetime_utils import (
+    extract_datetime_from_pattern,
+    extract_page_publication_datetime,
+)
 from .models import DatasetSeriesConfig, DiscoveredFile, ScrapeStep, TargetConfig
 
 
@@ -22,8 +26,12 @@ def _matches_extensions(url: str, extensions: Sequence[str]) -> bool:
     return any(lowered.endswith(f".{ext.lower()}") for ext in extensions)
 
 
-def _extract_links(page_url: str, html: str, step: ScrapeStep) -> List[Tuple[str, str]]:
+def _extract_links(
+    page_url: str, html: str, step: ScrapeStep
+) -> List[Tuple[str, str, str | None]]:
     soup = BeautifulSoup(html, "html.parser")
+    page_text = " ".join(soup.get_text(separator=" ", strip=True).split())
+    page_publication_datetime = extract_page_publication_datetime(page_text)
     links = []
 
     pattern = (
@@ -44,20 +52,13 @@ def _extract_links(page_url: str, html: str, step: ScrapeStep) -> List[Tuple[str
         if not _matches_extensions(full_url, step.file_extensions):
             continue
 
-        links.append((full_url, text))
+        links.append((full_url, text, page_publication_datetime))
 
     return links
 
 
-def _publication_date_from(rule_pattern: str, source_value: str) -> str:
-    match = re.search(rule_pattern, source_value, flags=re.IGNORECASE)
-    if not match:
-        raise ScraperError(
-            f"Publication date rule did not match source: {source_value}"
-        )
-
-    extracted = "_".join(group for group in match.groups() if group)
-    return extracted or match.group(0)
+def _publication_date_from(rule_pattern: str, source_value: str) -> str | None:
+    return extract_datetime_from_pattern(rule_pattern, source_value)
 
 
 def _publication_source_value(source_type: str, link_text: str, file_url: str) -> str:
@@ -75,22 +76,22 @@ def _discover_for_target(
     target: TargetConfig,
     session: requests.Session,
 ) -> List[DiscoveredFile]:
-    candidates: List[Tuple[str, str]] = [(config.entry_url, "")]
+    candidates: List[Tuple[str, str, str | None]] = [(config.entry_url, "", None)]
 
     for step in target.scrape_steps:
-        next_candidates: List[Tuple[str, str]] = []
-        for page_url, _ in candidates:
+        next_candidates: List[Tuple[str, str, str | None]] = []
+        for page_url, _, _ in candidates:
             response = session.get(page_url, timeout=60)
             response.raise_for_status()
             next_candidates.extend(_extract_links(page_url, response.text, step))
         candidates = next_candidates
 
     discovered: List[DiscoveredFile] = []
-    for file_url, link_text in candidates:
+    for file_url, link_text, page_publication_datetime in candidates:
         source_for_publication = _publication_source_value(
             config.publication_date.source, link_text, file_url
         )
-        publication_date_value = _publication_date_from(
+        publication_date_value = page_publication_datetime or _publication_date_from(
             config.publication_date.pattern, source_for_publication
         )
         discovered.append(
