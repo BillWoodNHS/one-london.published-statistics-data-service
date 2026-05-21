@@ -25,7 +25,6 @@ on:
 
 env:
   PYTHON_VERSION: "3.11"
-  ENABLE_GITHUB_DEPLOY: "false"
 
 jobs:
   lint:
@@ -72,8 +71,8 @@ jobs:
     name: Deploy dbt to Snowflake
     needs: [lint, test]
     # Disabled by default until target environment/secrets are ready.
-    # Enable by setting ENABLE_GITHUB_DEPLOY=true.
-    if: github.ref == 'refs/heads/main' && env.ENABLE_GITHUB_DEPLOY == 'true'
+    # Enable by creating repository variable ENABLE_GITHUB_DEPLOY=true.
+    if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_GITHUB_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     # For VPN environments, use:
     # runs-on: [self-hosted, linux]
