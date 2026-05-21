@@ -101,6 +101,27 @@ Before using dbt operations, ensure dependencies are installed:
 dbt deps --project-dir ./dbt
 ```
 
+
+## CI/CD Pipeline & Secure Deployment
+
+This project supports robust, secure, and environment-agnostic CI/CD for dbt/Snowflake deployments using both GitHub Actions and Azure DevOps. All pipeline logic is implemented in reusable PowerShell scripts under `tools/`.
+
+- **Linting**: Runs pre-commit checks (black, flake8, isort) on all branches.
+- **Testing**: Runs the full pytest suite (unit and integration) on all branches.
+- **Deployment**: Runs `dbt run` and `dbt test` against Snowflake on the `main` branch only.
+
+See [docs/CI-CD.md](docs/CI-CD.md) for full details, including:
+- Required secrets/variables for both platforms
+- How to use key-pair authentication for Snowflake (recommended)
+- How credentials are handled securely
+- How to test deployment scripts locally
+
+### Quick Reference: Secure Snowflake Auth
+
+- Set `SNOWFLAKE_PRIVATE_KEY` (and optional `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`) for key-pair auth
+- If not set, falls back to `SNOWFLAKE_PASSWORD`
+- The script `tools/ci_render_profiles_yml.ps1` generates a secure `profiles.yml` for dbt at runtime
+
 ## Quality Gates
 
 Recommended checks before commit:

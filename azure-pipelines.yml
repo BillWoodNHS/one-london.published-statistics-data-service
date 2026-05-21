@@ -1,0 +1,124 @@
+# azure-pipelines.yml
+#
+# CI/CD pipeline for one-london.published-statistics-data-service
+#
+# Jobs:
+#   lint   - pre-commit checks (black, flake8, isort)       [all branches]
+#   test   - pytest unit tests                               [all branches]
+#   deploy - dbt run + dbt test against Snowflake            [main only]
+#
+# Requires a self-hosted agent pool with network access to Snowflake.
+# Configure the agent pool name below and set the following pipeline
+# variable group (Library > Variable Groups) named "psds-snowflake":
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD,
+#   SNOWFLAKE_ROLE, SNOWFLAKE_DATABASE, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_SCHEMA
+
+trigger:
+  branches:
+    include:
+      - main
+      - "feature/*"
+      - "fix/*"
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  pythonVersion: "3.11"
+  # Change to your self-hosted pool name if behind a corporate VPN
+  agentPool: "self-hosted"
+
+stages:
+  - stage: CI
+    displayName: "Lint & Test"
+    jobs:
+      - job: lint
+        displayName: "Lint (pre-commit)"
+        pool:
+          name: $(agentPool)
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+            displayName: "Use Python $(pythonVersion)"
+
+          - script: python -m pip install --upgrade pip
+            displayName: "Upgrade pip"
+
+          - script: python -m pip install -r requirements-dev.txt
+            displayName: "Install dev dependencies"
+
+          - script: python -m pip install pre-commit
+            displayName: "Install pre-commit"
+
+          - pwsh: tools/ci_lint.ps1
+            displayName: "Run lint checks"
+
+      - job: test
+        displayName: "Unit Tests (pytest)"
+        pool:
+          name: $(agentPool)
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+            displayName: "Use Python $(pythonVersion)"
+
+          - script: python -m pip install --upgrade pip
+            displayName: "Upgrade pip"
+
+          - script: python -m pip install -r requirements-dev.txt
+            displayName: "Install dev dependencies"
+
+          - pwsh: tools/ci_test.ps1
+            displayName: "Run unit tests"
+
+          - task: PublishTestResults@2
+            condition: always()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: "tests/results/*.xml"
+              failTaskOnFailedTests: true
+            displayName: "Publish test results"
+
+  - stage: Deploy
+    displayName: "Deploy dbt to Snowflake"
+    dependsOn: CI
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: dbt_deploy
+        displayName: "dbt run + dbt test"
+        pool:
+          name: $(agentPool)
+        environment: "production"
+        variables:
+          - group: psds-snowflake
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: UsePythonVersion@0
+                  inputs:
+                    versionSpec: $(pythonVersion)
+                  displayName: "Use Python $(pythonVersion)"
+
+                - script: python -m pip install --upgrade pip
+                  displayName: "Upgrade pip"
+
+                - script: python -m pip install dbt-snowflake
+                  displayName: "Install dbt-snowflake"
+
+                - pwsh: tools/ci_dbt_deploy.ps1
+                  displayName: "Deploy dbt models to Snowflake"
+                  env:
+                    SNOWFLAKE_ACCOUNT: $(SNOWFLAKE_ACCOUNT)
+                    SNOWFLAKE_USER: $(SNOWFLAKE_USER)
+                    SNOWFLAKE_PASSWORD: $(SNOWFLAKE_PASSWORD)
+                    SNOWFLAKE_ROLE: $(SNOWFLAKE_ROLE)
+                    SNOWFLAKE_DATABASE: $(SNOWFLAKE_DATABASE)
+                    SNOWFLAKE_WAREHOUSE: $(SNOWFLAKE_WAREHOUSE)
+                    SNOWFLAKE_SCHEMA: $(SNOWFLAKE_SCHEMA)

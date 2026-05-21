@@ -1,0 +1,99 @@
+# .github/workflows/ci.yml
+#
+# CI/CD pipeline for one-london.published-statistics-data-service
+#
+# Jobs:
+#   lint   - pre-commit checks (black, flake8, isort)       [all branches]
+#   test   - pytest unit tests                               [all branches]
+#   deploy - dbt run + dbt test against Snowflake            [main only]
+#
+# For corporate VPN environments, replace `runs-on: ubuntu-latest` with a
+# self-hosted runner that has network access to Snowflake:
+#   runs-on: [self-hosted, linux]
+#
+# Set the following repository secrets (Settings > Secrets > Actions):
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD,
+#   SNOWFLAKE_ROLE, SNOWFLAKE_DATABASE, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_SCHEMA
+
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**", "fix/**"]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint (pre-commit)
+    runs-on: ubuntu-latest
+    # For VPN environments, use:
+    # runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt && pip install pre-commit
+
+      - name: Run lint checks
+        shell: pwsh
+        run: tools/ci_lint.ps1
+
+  test:
+    name: Unit Tests (pytest)
+    runs-on: ubuntu-latest
+    # For VPN environments, use:
+    # runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        shell: pwsh
+        run: tools/ci_test.ps1
+
+  deploy:
+    name: Deploy dbt to Snowflake
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # For VPN environments, use:
+    # runs-on: [self-hosted, linux]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dbt-snowflake
+        run: pip install dbt-snowflake
+
+      - name: Deploy dbt models to Snowflake
+        shell: pwsh
+        run: tools/ci_dbt_deploy.ps1
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
