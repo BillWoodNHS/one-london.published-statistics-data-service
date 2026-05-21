@@ -7,9 +7,19 @@ from .adls_writer import list_blob_paths
 from .models import DatasetSeriesConfig, DiscoveredFile, TargetConfig
 
 
-def discover_manual_files(config: DatasetSeriesConfig, target: TargetConfig, manual_prefix: str) -> List[DiscoveredFile]:
+def discover_manual_files(
+    config: DatasetSeriesConfig, target: TargetConfig, manual_prefix: str
+) -> List[DiscoveredFile]:
+    """Discover manually dropped files for a dataset/target.
+
+    Matches expected file types and extracts publication dates from filenames.
+    """
     prefix = manual_prefix.strip("/")
-    search_prefix = f"{prefix}/{config.series_id}/{target.sub_dataset_id}/" if prefix else f"{config.series_id}/{target.sub_dataset_id}/"
+    search_prefix = (
+        f"{prefix}/{config.series_id}/{target.sub_dataset_id}/"
+        if prefix
+        else f"{config.series_id}/{target.sub_dataset_id}/"
+    )
     blob_paths = list_blob_paths(search_prefix)
 
     discovered: List[DiscoveredFile] = []
@@ -20,9 +30,13 @@ def discover_manual_files(config: DatasetSeriesConfig, target: TargetConfig, man
 
         candidate_name = blob_path.split("/")[-1]
         source_value = candidate_name
-        match = re.search(config.publication_date.pattern, source_value, flags=re.IGNORECASE)
+        match = re.search(
+            config.publication_date.pattern, source_value, flags=re.IGNORECASE
+        )
         if match:
-            publication_date = "_".join(group for group in match.groups() if group) or match.group(0)
+            publication_date = "_".join(
+                group for group in match.groups() if group
+            ) or match.group(0)
         else:
             publication_date = "manual"
 

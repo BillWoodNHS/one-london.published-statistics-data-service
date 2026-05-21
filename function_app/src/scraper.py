@@ -26,7 +26,9 @@ def _extract_links(page_url: str, html: str, step: ScrapeStep) -> List[Tuple[str
     soup = BeautifulSoup(html, "html.parser")
     links = []
 
-    pattern = re.compile(step.text_filter, flags=re.IGNORECASE) if step.text_filter else None
+    pattern = (
+        re.compile(step.text_filter, flags=re.IGNORECASE) if step.text_filter else None
+    )
 
     for node in soup.select(step.link_selector):
         href = node.get("href")
@@ -50,7 +52,9 @@ def _extract_links(page_url: str, html: str, step: ScrapeStep) -> List[Tuple[str
 def _publication_date_from(rule_pattern: str, source_value: str) -> str:
     match = re.search(rule_pattern, source_value, flags=re.IGNORECASE)
     if not match:
-        raise ScraperError(f"Publication date rule did not match source: {source_value}")
+        raise ScraperError(
+            f"Publication date rule did not match source: {source_value}"
+        )
 
     extracted = "_".join(group for group in match.groups() if group)
     return extracted or match.group(0)
@@ -83,8 +87,12 @@ def _discover_for_target(
 
     discovered: List[DiscoveredFile] = []
     for file_url, link_text in candidates:
-        source_for_publication = _publication_source_value(config.publication_date.source, link_text, file_url)
-        publication_date_value = _publication_date_from(config.publication_date.pattern, source_for_publication)
+        source_for_publication = _publication_source_value(
+            config.publication_date.source, link_text, file_url
+        )
+        publication_date_value = _publication_date_from(
+            config.publication_date.pattern, source_for_publication
+        )
         discovered.append(
             DiscoveredFile(
                 dataset_id=config.dataset_id,

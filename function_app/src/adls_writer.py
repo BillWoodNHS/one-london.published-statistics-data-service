@@ -6,26 +6,33 @@ from typing import List
 
 
 def _local_mode() -> bool:
+    """Return True if running in local storage mode, based on environment variable."""
     return os.environ.get("LOCAL_STORAGE_MODE", "false").lower() in {"1", "true", "yes"}
 
 
 def _local_root() -> Path:
+    """Return the root path for local storage, resolved from environment or default."""
     configured = os.environ.get("LOCAL_STORAGE_ROOT", ".local_adls")
     return Path(configured).resolve()
 
+
 def _account_url() -> str:
+    """Return the ADLS account URL from environment variable."""
     return os.environ["ADLS_ACCOUNT_URL"]
 
 
 def _container_name() -> str:
+    """Return the ADLS container name from environment variable."""
     return os.environ["ADLS_CONTAINER"]
 
 
 def _default_prefix() -> str:
+    """Return the ADLS prefix from environment variable, with slashes stripped."""
     return os.environ.get("ADLS_PREFIX", "").strip("/")
 
 
 def _container_client():
+    """Return an Azure ContainerClient for the configured ADLS account and container."""
     from azure.identity import DefaultAzureCredential
     from azure.storage.blob import ContainerClient
 
@@ -37,6 +44,7 @@ def _container_client():
 
 
 def _join_prefix(prefix: str, path_in_container: str) -> str:
+    """Join a prefix and path for blob storage, ensuring proper formatting."""
     cleaned = path_in_container.strip("/")
     if not prefix:
         return cleaned
@@ -46,6 +54,10 @@ def _join_prefix(prefix: str, path_in_container: str) -> str:
 
 
 def upload_bytes(path_in_container: str, payload: bytes) -> None:
+    """Upload bytes to the given path in ADLS or local storage.
+
+    Creates parent directories as needed in local mode.
+    """
     if _local_mode():
         local_path = _local_root() / path_in_container.strip("/")
         local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +83,7 @@ def upload_bytes(path_in_container: str, payload: bytes) -> None:
 
 
 def list_blob_paths(prefix: str) -> List[str]:
+    """List all blob paths under the given prefix in ADLS or local storage."""
     if _local_mode():
         root = _local_root()
         wanted_prefix = prefix.strip("/")
@@ -91,6 +104,7 @@ def list_blob_paths(prefix: str) -> List[str]:
 
 
 def download_blob_bytes(blob_path: str) -> bytes:
+    """Download bytes from the given blob path in ADLS or local storage."""
     if _local_mode():
         local_path = _local_root() / blob_path.strip("/")
         return local_path.read_bytes()

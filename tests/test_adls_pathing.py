@@ -13,6 +13,8 @@ def test_sub_dataset_isolation_path():
     )
 
     artifact = build_artifact(discovered, "data.csv", "abc123")
-    assert artifact.adls_path.startswith(
-        "mental-health-services-monthly-statistics/restrictive-interventions/publication_date=20260519T103600/"
+    expected_prefix = (
+        "mental-health-services-monthly-statistics/restrictive-interventions/"
+        "publication_date=20260519T103600/"
     )
+    assert artifact.adls_path.startswith(expected_prefix)

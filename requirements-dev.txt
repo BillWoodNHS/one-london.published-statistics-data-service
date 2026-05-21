@@ -1,3 +1,6 @@
 pytest
 duckdb
 dbt-duckdb
+flake8
+black
+isort

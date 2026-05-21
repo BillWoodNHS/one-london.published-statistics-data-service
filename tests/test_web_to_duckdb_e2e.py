@@ -10,7 +10,6 @@ import pytest
 
 from tests.dbt_macro_harness import render_alias_select_sql, require_dbt
 
-
 duckdb = pytest.importorskip("duckdb")
 
 
@@ -26,7 +25,9 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     fixture_root = Path(__file__).resolve().parent / "fixtures" / "manifests"
     manifest_root = tmp_path / "manifests"
     local_root = tmp_path / "local_adls"
-    query_duckdb_path = Path(os.environ.get("DUCKDB_FILE", tmp_path / "integration.duckdb"))
+    query_duckdb_path = Path(
+        os.environ.get("DUCKDB_FILE", tmp_path / "integration.duckdb")
+    )
     macro_duckdb_path = tmp_path / "macro_render.duckdb"
     query_duckdb_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_root.mkdir(parents=True, exist_ok=True)
@@ -40,7 +41,11 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     result = execute_ingestion()
     assert result["uploaded"]
 
-    csv_files = [path for path in local_root.rglob("*.csv") if "publication_date=" in path.as_posix()]
+    csv_files = [
+        path
+        for path in local_root.rglob("*.csv")
+        if "publication_date=" in path.as_posix()
+    ]
     assert csv_files, "Expected at least one landed CSV file"
 
     csv_path = csv_files[0]
@@ -54,22 +59,36 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     con.execute("drop view if exists presentation_view")
     con.execute("drop view if exists max_publication_view")
     con.execute("drop view if exists current_revision_view")
-    con.execute("create table raw_data as select * from read_csv_auto(?, header=true, all_varchar=true)", [str(csv_path)])
+    con.execute(
+        "create table raw_data as select * from "
+        "read_csv_auto(?, header=true, all_varchar=true)",
+        [str(csv_path)],
+    )
     con.execute("alter table raw_data add column _PUBLICATION_DATE varchar")
     con.execute("alter table raw_data add column _SOURCE_FILE_PATH varchar")
-    con.execute("update raw_data set _PUBLICATION_DATE = ?, _SOURCE_FILE_PATH = ?", [metadata["_PUBLICATION_DATE"], metadata["_SOURCE_FILE_PATH"]])
+    con.execute(
+        "update raw_data set _PUBLICATION_DATE = ?, _SOURCE_FILE_PATH = ?",
+        [metadata["_PUBLICATION_DATE"], metadata["_SOURCE_FILE_PATH"]],
+    )
 
-    raw_columns = [row[1] for row in con.execute("PRAGMA table_info('raw_data')").fetchall()]
+    raw_columns = [
+        row[1] for row in con.execute("PRAGMA table_info('raw_data')").fetchall()
+    ]
     assert [column for column in raw_columns if not column.startswith("_")]
 
     select_sql = render_alias_select_sql(raw_columns, macro_duckdb_path)
     con.execute(f"create view presentation_view as select {select_sql} from raw_data")
 
-    presentation_columns = [row[1] for row in con.execute("PRAGMA table_info('presentation_view')").fetchall()]
+    presentation_columns = [
+        row[1]
+        for row in con.execute("PRAGMA table_info('presentation_view')").fetchall()
+    ]
     expected_aliases = _expected_aliases_from_sql(select_sql)
     assert presentation_columns == expected_aliases
 
-    reporting_column = next(alias for alias in expected_aliases if not alias.startswith("_"))
+    reporting_column = next(
+        alias for alias in expected_aliases if not alias.startswith("_")
+    )
     con.execute(
         f"""
         create view max_publication_view as
@@ -106,7 +125,9 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     reason="Set RUN_WEB_E2E=true to run web-backed integration test.",
 )
 def test_web_download_to_duckdb_e2e(tmp_path, monkeypatch):
-    result = _run_web_manifest_to_duckdb(tmp_path, monkeypatch, "web_restrictive_interventions_test.yaml")
+    result = _run_web_manifest_to_duckdb(
+        tmp_path, monkeypatch, "web_restrictive_interventions_test.yaml"
+    )
     assert result["csv_path"].suffix.lower() == ".csv"
     assert any(not column.startswith("_") for column in result["presentation_columns"])
 
@@ -116,7 +137,13 @@ def test_web_download_to_duckdb_e2e(tmp_path, monkeypatch):
     reason="Set RUN_WEB_E2E=true to run web-backed integration test.",
 )
 def test_web_xlsx_download_to_duckdb_e2e(tmp_path, monkeypatch):
-    result = _run_web_manifest_to_duckdb(tmp_path, monkeypatch, "web_chs_waiting_lists_xlsx_test.yaml")
+    result = _run_web_manifest_to_duckdb(
+        tmp_path, monkeypatch, "web_chs_waiting_lists_xlsx_test.yaml"
+    )
     assert result["csv_path"].suffix.lower() == ".csv"
     assert result["metadata"]["_SOURCE_FILE_PATH"].lower().endswith(".xlsx")
-    assert any("_" in column for column in result["presentation_columns"] if not column.startswith("_"))
+    assert any(
+        "_" in column
+        for column in result["presentation_columns"]
+        if not column.startswith("_")
+    )

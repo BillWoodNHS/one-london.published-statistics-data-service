@@ -6,12 +6,16 @@ from typing import List, Optional
 
 @dataclass
 class PublicationDateRule:
+    """Represents a rule for extracting publication date from a source."""
+
     source: str
     pattern: str
 
 
 @dataclass
 class ScrapeStep:
+    """Represents a single scraping step for a dataset target."""
+
     link_selector: str
     text_filter: Optional[str] = None
     file_extensions: List[str] = field(default_factory=list)
@@ -19,6 +23,11 @@ class ScrapeStep:
 
 @dataclass
 class TargetConfig:
+    """Configuration for a sub-dataset target.
+
+    Includes scraping steps and file handling options.
+    """
+
     sub_dataset_id: str
     scrape_steps: List[ScrapeStep]
     compression: Optional[str] = None
@@ -30,6 +39,8 @@ class TargetConfig:
 
 @dataclass
 class FallbackConfig:
+    """Configuration for fallback/manual acquisition of datasets."""
+
     allow_manual_acquisition: bool = True
     manual_drop_path: str = "manual"
     max_auto_retries: int = 3
@@ -38,6 +49,8 @@ class FallbackConfig:
 
 @dataclass
 class DatasetSeriesConfig:
+    """Configuration for a dataset series, including targets and fallback options."""
+
     dataset_id: str
     series_id: str
     entry_url: str
@@ -48,6 +61,8 @@ class DatasetSeriesConfig:
 
 @dataclass
 class DiscoveredFile:
+    """Represents a discovered file, either from scraping or manual drop."""
+
     dataset_id: str
     series_id: str
     sub_dataset_id: str
@@ -58,6 +73,8 @@ class DiscoveredFile:
 
 @dataclass
 class LoadArtifact:
+    """Represents a file ready to be loaded, with all required metadata."""
+
     adls_path: str
     source_url: str
     series_id: str

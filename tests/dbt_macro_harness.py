@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DBT_PROFILES_DIR = Path(__file__).resolve().parent / "fixtures" / "dbt"
 DBT_PROJECT_DIR = REPO_ROOT / "dbt"
@@ -128,4 +127,7 @@ def render_alias_select_sql(column_names: list[str], duckdb_file: Path) -> str:
         if prefix in message:
             return message.split(prefix, 1)[1]
 
-    raise AssertionError(f"Could not find emitted alias SQL in dbt output.\n{result.stdout}\n{result.stderr}")
+    raise AssertionError(
+        "Could not find emitted alias SQL in dbt output.\n"
+        f"{result.stdout}\n{result.stderr}"
+    )

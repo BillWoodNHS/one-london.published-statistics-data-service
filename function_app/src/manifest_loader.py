@@ -15,16 +15,23 @@ from .models import (
 
 
 class ManifestError(Exception):
+    """Custom exception for manifest loading errors."""
+
     pass
 
 
 def _require(value, key: str):
+    """Raise ManifestError if value is None or empty, otherwise return value."""
     if value is None or value == "":
         raise ManifestError(f"Missing required key: {key}")
     return value
 
 
 def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
+    """Load all dataset series manifests from the given root directory.
+
+    Returns a list of DatasetSeriesConfig objects.
+    """
     manifests: List[DatasetSeriesConfig] = []
 
     for file_path in sorted(manifest_root.glob("*.y*ml")):
@@ -48,7 +55,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
 
         targets: List[TargetConfig] = []
         for idx, target in enumerate(target_entries, start=1):
-            target_id = _require(target.get("sub_dataset_id"), f"targets[{idx}].sub_dataset_id")
+            target_id = _require(
+                target.get("sub_dataset_id"), f"targets[{idx}].sub_dataset_id"
+            )
             steps: List[ScrapeStep] = []
             for s_idx, step in enumerate(target.get("scrape_steps", []), start=1):
                 steps.append(
@@ -63,7 +72,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                 )
 
             if not steps:
-                raise ManifestError(f"{file_path.name}: target {target_id} has no scrape_steps")
+                raise ManifestError(
+                    f"{file_path.name}: target {target_id} has no scrape_steps"
+                )
 
             targets.append(
                 TargetConfig(
@@ -82,7 +93,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
             allow_manual_acquisition=fallback_raw.get("allow_manual_acquisition", True),
             manual_drop_path=fallback_raw.get("manual_drop_path", "manual"),
             max_auto_retries=int(fallback_raw.get("max_auto_retries", 3)),
-            timeout_threshold_minutes=int(fallback_raw.get("timeout_threshold_minutes", 5)),
+            timeout_threshold_minutes=int(
+                fallback_raw.get("timeout_threshold_minutes", 5)
+            ),
         )
 
         manifests.append(

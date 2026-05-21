@@ -1,6 +1,5 @@
 import pytest
 
-
 duckdb = pytest.importorskip("duckdb")
 
 
