@@ -49,6 +49,18 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
             pattern=_require(pub_raw.get("pattern"), "publication_date.pattern"),
         )
 
+        subject_period_raw = raw.get("subject_period")
+        subject_period = None
+        if subject_period_raw:
+            subject_period = PublicationDateRule(
+                source=_require(
+                    subject_period_raw.get("source"), "subject_period.source"
+                ),
+                pattern=_require(
+                    subject_period_raw.get("pattern"), "subject_period.pattern"
+                ),
+            )
+
         target_entries = raw.get("targets", [])
         if not target_entries:
             raise ManifestError(f"{file_path.name}: targets must not be empty")
@@ -85,6 +97,7 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                     delimiter=target.get("delimiter", ","),
                     encoding=target.get("encoding", "utf-8"),
                     reporting_period_columns=target.get("reporting_period_columns", []),
+                    page_date_selectors=target.get("page_date_selectors", []),
                 )
             )
 
@@ -105,6 +118,7 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                 entry_url=entry_url,
                 publication_date=publication_date,
                 targets=targets,
+                subject_period=subject_period,
                 fallback=fallback,
             )
         )

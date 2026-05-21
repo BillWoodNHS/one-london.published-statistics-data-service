@@ -65,6 +65,14 @@ def normalize_datetime_value(value: str) -> Optional[str]:
     return None
 
 
+def normalize_subject_period_value(value: str) -> Optional[str]:
+    """Normalize a subject period into YYYYMM for stable partitioning."""
+    normalized = normalize_datetime_value(value)
+    if not normalized:
+        return None
+    return normalized[:6]
+
+
 def extract_datetime_from_pattern(pattern: str, source_value: str) -> Optional[str]:
     """Apply a regex pattern and normalize the extracted match to datetime format."""
     match = re.search(pattern, source_value, flags=re.IGNORECASE)
@@ -96,4 +104,15 @@ def extract_page_publication_datetime(page_text: str) -> Optional[str]:
         if normalized:
             return normalized
 
+    return None
+
+
+def extract_datetime_from_selectors(
+    page_text: str, selectors: list[str]
+) -> Optional[str]:
+    """Extract publication datetime from selector-like regex patterns."""
+    for selector in selectors:
+        extracted = extract_datetime_from_pattern(selector, page_text)
+        if extracted:
+            return extracted
     return None

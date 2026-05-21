@@ -106,6 +106,7 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
 
     metadata_path = (
         "mental-health-services-monthly-statistics/restrictive-interventions/"
+        "subject_period=202605/"
         "publication_date=20260521T101900/_INGEST_METADATA.json"
     )
     assert metadata_path in storage

@@ -22,14 +22,32 @@ def _to_iso_partition_value(raw_value: str) -> str:
 
 
 def _adls_path(
-    series_id: str, sub_dataset_id: str, publication_date: str, filename: str
+    series_id: str,
+    sub_dataset_id: str,
+    subject_period: str,
+    publication_date: str,
+    filename: str,
 ) -> str:
     """Build an ADLS path for a file.
 
-    Uses series, sub-dataset, publication date, and filename.
+    Uses series, sub-dataset, subject period, publication date, and filename.
     """
+    safe_subject_period = _to_iso_partition_value(subject_period)
     safe_pub = _to_iso_partition_value(publication_date)
-    return f"{series_id}/{sub_dataset_id}/publication_date={safe_pub}/{filename}"
+    return (
+        f"{series_id}/{sub_dataset_id}/subject_period={safe_subject_period}/"
+        f"publication_date={safe_pub}/{filename}"
+    )
+
+
+def _resolve_subject_period(file: DiscoveredFile) -> str:
+    if file.subject_period_value:
+        return file.subject_period_value
+
+    if file.publication_date_value and len(file.publication_date_value) >= 6:
+        return file.publication_date_value[:6]
+
+    return "unknown"
 
 
 def _download(url: str) -> bytes:
@@ -130,13 +148,19 @@ def build_artifact(
 
     Includes ADLS path and metadata.
     """
+    subject_period = _resolve_subject_period(file)
     return LoadArtifact(
         adls_path=_adls_path(
-            file.series_id, file.sub_dataset_id, file.publication_date_value, filename
+            file.series_id,
+            file.sub_dataset_id,
+            subject_period,
+            file.publication_date_value,
+            filename,
         ),
         source_url=file.source_url,
         series_id=file.series_id,
         sub_dataset_id=file.sub_dataset_id,
+        subject_period=subject_period,
         publication_date=file.publication_date_value,
         source_content_hash=content_hash,
         acquisition_method=acquisition_method,

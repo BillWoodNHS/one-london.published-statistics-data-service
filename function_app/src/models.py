@@ -35,6 +35,7 @@ class TargetConfig:
     delimiter: str = ","
     encoding: str = "utf-8"
     reporting_period_columns: List[str] = field(default_factory=list)
+    page_date_selectors: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -56,6 +57,7 @@ class DatasetSeriesConfig:
     entry_url: str
     publication_date: PublicationDateRule
     targets: List[TargetConfig]
+    subject_period: Optional[PublicationDateRule] = None
     fallback: FallbackConfig = field(default_factory=FallbackConfig)
 
 
@@ -69,6 +71,7 @@ class DiscoveredFile:
     source_url: str
     publication_date_value: Optional[str]
     link_text: str
+    subject_period_value: Optional[str] = None
 
 
 @dataclass
@@ -79,6 +82,7 @@ class LoadArtifact:
     source_url: str
     series_id: str
     sub_dataset_id: str
+    subject_period: str
     publication_date: str
     source_content_hash: str
     acquisition_method: str

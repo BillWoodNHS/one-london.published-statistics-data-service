@@ -4,7 +4,7 @@ import re
 from typing import List
 
 from .adls_writer import list_blob_paths
-from .datetime_utils import normalize_datetime_value
+from .datetime_utils import normalize_datetime_value, normalize_subject_period_value
 from .models import DatasetSeriesConfig, DiscoveredFile, TargetConfig
 
 
@@ -42,6 +42,17 @@ def discover_manual_files(
         else:
             publication_date = None
 
+        subject_period = None
+        if config.subject_period:
+            subject_match = re.search(
+                config.subject_period.pattern, source_value, flags=re.IGNORECASE
+            )
+            if subject_match:
+                subject_raw = "_".join(
+                    group for group in subject_match.groups() if group
+                ) or subject_match.group(0)
+                subject_period = normalize_subject_period_value(subject_raw)
+
         discovered.append(
             DiscoveredFile(
                 dataset_id=config.dataset_id,
@@ -50,6 +61,7 @@ def discover_manual_files(
                 source_url=blob_path,
                 publication_date_value=publication_date,
                 link_text=candidate_name,
+                subject_period_value=subject_period,
             )
         )
 

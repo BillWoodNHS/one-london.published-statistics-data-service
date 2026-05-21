@@ -15,3 +15,5 @@ def test_manifest_loads_targets():
     )
     assert len(mh.targets) == 3
     assert mh.targets[0].sub_dataset_id == "performance-data-file"
+    assert mh.subject_period is not None
+    assert mh.targets[0].page_date_selectors

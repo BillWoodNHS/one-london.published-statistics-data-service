@@ -15,10 +15,15 @@ Required top-level keys:
 - `source`: currently expected to be values like `link_text` or `url_segment`
 - `pattern`: regex used to extract publication date token
 
+Optional `subject_period`:
+- `source`: values like `link_text` or `url_segment`
+- `pattern`: regex used to extract the period the data describes (for example `March 2026`)
+
 Each entry in `targets`:
 - `sub_dataset_id`: defines path isolation and downstream raw-table isolation
 - `scrape_steps`: ordered chain of link extraction steps
 - optional: `reporting_period_columns`
+- optional: `page_date_selectors` (regex patterns to extract page-level publication/revision date per sub-publication)
 
 ## Authoring Rules
 

@@ -31,3 +31,7 @@ function_app/.funcignore
 dbt/target/
 dbt/dbt_packages/
 dbt/logs/
+
+# Local logs and diagnostics
+logs/
+diag_output.txt

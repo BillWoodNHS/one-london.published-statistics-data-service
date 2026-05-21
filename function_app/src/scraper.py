@@ -9,7 +9,9 @@ from bs4 import BeautifulSoup
 
 from .datetime_utils import (
     extract_datetime_from_pattern,
+    extract_datetime_from_selectors,
     extract_page_publication_datetime,
+    normalize_subject_period_value,
 )
 from .models import DatasetSeriesConfig, DiscoveredFile, ScrapeStep, TargetConfig
 
@@ -27,11 +29,16 @@ def _matches_extensions(url: str, extensions: Sequence[str]) -> bool:
 
 
 def _extract_links(
-    page_url: str, html: str, step: ScrapeStep
+    page_url: str,
+    html: str,
+    step: ScrapeStep,
+    page_date_selectors: Sequence[str] | None = None,
 ) -> List[Tuple[str, str, str | None]]:
     soup = BeautifulSoup(html, "html.parser")
     page_text = " ".join(soup.get_text(separator=" ", strip=True).split())
-    page_publication_datetime = extract_page_publication_datetime(page_text)
+    page_publication_datetime = extract_datetime_from_selectors(
+        page_text, list(page_date_selectors or [])
+    ) or extract_page_publication_datetime(page_text)
     links = []
 
     pattern = (
@@ -83,7 +90,14 @@ def _discover_for_target(
         for page_url, _, _ in candidates:
             response = session.get(page_url, timeout=60)
             response.raise_for_status()
-            next_candidates.extend(_extract_links(page_url, response.text, step))
+            next_candidates.extend(
+                _extract_links(
+                    page_url,
+                    response.text,
+                    step,
+                    page_date_selectors=target.page_date_selectors,
+                )
+            )
         candidates = next_candidates
 
     discovered: List[DiscoveredFile] = []
@@ -94,6 +108,18 @@ def _discover_for_target(
         publication_date_value = page_publication_datetime or _publication_date_from(
             config.publication_date.pattern, source_for_publication
         )
+
+        subject_period_value = None
+        if config.subject_period:
+            source_for_subject_period = _publication_source_value(
+                config.subject_period.source, link_text, file_url
+            )
+            extracted = _publication_date_from(
+                config.subject_period.pattern, source_for_subject_period
+            )
+            if extracted:
+                subject_period_value = normalize_subject_period_value(extracted)
+
         discovered.append(
             DiscoveredFile(
                 dataset_id=config.dataset_id,
@@ -102,6 +128,7 @@ def _discover_for_target(
                 source_url=file_url,
                 publication_date_value=publication_date_value,
                 link_text=link_text,
+                subject_period_value=subject_period_value,
             )
         )
 

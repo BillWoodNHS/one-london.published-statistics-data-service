@@ -45,6 +45,7 @@ def _audit_payload(
         "_SOURCE_FILE_PATH": artifact.source_url,
         "_SOURCE_FILE_NAME": artifact.adls_path.split("/")[-1],
         "_FILE_CONTENT_KEY": artifact.source_content_hash,
+        "_SUBJECT_PERIOD": artifact.subject_period,
         "_PUBLICATION_DATE": artifact.publication_date,
         "_ACQUISITION_METHOD": artifact.acquisition_method,
         "_FALLBACK_REASON": artifact.fallback_reason,

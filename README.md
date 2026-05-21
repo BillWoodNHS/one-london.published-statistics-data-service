@@ -78,9 +78,11 @@ Sample local settings are provided at `function_app/local.settings.sample.json`.
    - `entry_url`
    - `publication_date` with `source` and `pattern`
    - `targets` (one or more)
+   - optional `subject_period` with `source` and `pattern`
 3. For each target, define:
    - `sub_dataset_id`
    - `scrape_steps` with `link_selector` and optional `text_filter`, `file_extensions`
+   - optional `page_date_selectors` for page-level publication/revision extraction
    - optional `reporting_period_columns`
 4. Optionally define `fallback` settings for manual acquisition.
 5. Add tests or extend fixture coverage under `tests/`.
