@@ -15,7 +15,7 @@ from function_app.src.models import (
     ScrapeStep,
     TargetConfig,
 )
-from function_app.src.run_ingestion import execute_ingestion
+from function_app.src.run_ingestion import CONTRACT_VERSION, execute_ingestion
 
 
 def test_pattern_datetime_normalization_uses_midnight_when_time_missing():
@@ -111,6 +111,7 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     )
     assert metadata_path in storage
     metadata = json.loads(storage[metadata_path].decode("utf-8"))
+    assert metadata["_CONTRACT_VERSION"] == CONTRACT_VERSION
     assert metadata["_SOURCE_ETAG"] == "etag-1"
 
     second_result = execute_ingestion()

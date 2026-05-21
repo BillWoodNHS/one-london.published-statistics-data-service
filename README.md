@@ -149,6 +149,12 @@ Formalization pattern:
 3. Enforce backward compatibility policy for one previous contract version before removing support.
 4. Fail CI on contract-breaking changes unless version is incremented and migration notes are included.
 
+Version bump rules for CONTRACT_VERSION:
+- Bump MAJOR (X.0.0) for breaking contract changes (for example path shape changes, renamed/removed required sidecar fields, or incompatible manifest key semantics).
+- Bump MINOR (x.Y.0) for backward-compatible additions (for example new optional sidecar fields, new optional manifest keys, or additional supported selector behavior).
+- Bump PATCH (x.y.Z) for non-contract fixes only (for example bug fixes, documentation clarifications, and implementation changes that preserve all existing contract inputs/outputs).
+- Any MAJOR or MINOR bump must include a short migration note in PR description and README change summary.
+
 
 ## CI/CD Pipeline & Secure Deployment
 

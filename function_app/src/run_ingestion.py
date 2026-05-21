@@ -21,6 +21,8 @@ from .manual_sources import discover_manual_files
 from .models import LoadArtifact
 from .scraper import discover_files
 
+CONTRACT_VERSION = "1.0.0"
+
 
 def _manifest_root() -> Path:
     configured = Path(os.environ.get("MANIFEST_ROOT", "../config/datasets"))
@@ -41,6 +43,7 @@ def _audit_payload(
 ) -> Dict[str, str]:
     ingested_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     payload: Dict[str, str] = {
+        "_CONTRACT_VERSION": CONTRACT_VERSION,
         "_INGESTED_AT": ingested_at,
         "_SOURCE_FILE_PATH": artifact.source_url,
         "_SOURCE_FILE_NAME": artifact.adls_path.split("/")[-1],
