@@ -6,7 +6,7 @@ This project supports robust, secure, and environment-agnostic CI/CD for dbt/Sno
 
 - **Linting**: Runs pre-commit checks (ruff check + ruff format) on all branches.
 - **Testing**: Runs the full pytest suite (unit and integration) on all branches.
-- **Deployment**: Runs `dbt run` and `dbt test` against Snowflake on the `main` branch only.
+- **Deployment**: Deployment code is present but GitHub Actions deployment is disabled by default. It runs only when on `main` and `ENABLE_GITHUB_DEPLOY=true` is configured in workflow env.
 
 ### Supported Environments
 - **GitHub Actions**: See `.github/workflows/ci.yml` for configuration and required secrets.

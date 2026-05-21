@@ -103,6 +103,52 @@ Before using dbt operations, ensure dependencies are installed:
 dbt deps --project-dir ./dbt
 ```
 
+## Architecture Notes
+
+### Terraform and Snowflake Code Ownership
+
+Recommended ownership split:
+- Terraform repository owns cloud and platform infrastructure lifecycle.
+- This repository owns ingestion, manifest logic, dbt transformations, and data-plane onboarding logic.
+
+Terraform repository scope (infrastructure plane):
+- Azure Function App resource, storage account/container, identity, network, RBAC, secrets wiring.
+- Snowflake account-level/platform primitives where managed centrally (for example account integrations and baseline warehouses/roles).
+
+This repository scope (application and data plane):
+- Function app ingestion behavior and manifests.
+- dbt project, macros, staging/presentation/revision models.
+- Dataset onboarding logic including raw table, stage, pipe, and schema-level conventions.
+
+This keeps platform provisioning centralized while allowing dataset onboarding and model evolution to remain close to code and tests.
+
+### Formal Contract Between Function App and dbt Loader
+
+Treat the handoff as a versioned data contract with explicit compatibility rules.
+
+Contract components:
+- Path contract:
+   - series_id/sub_dataset_id/subject_period=YYYYMM/publication_date=YYYYMMDDTHHMMSS/file.csv
+- Sidecar metadata contract (_INGEST_METADATA.json):
+   - _SOURCE_FILE_PATH
+   - _FILE_CONTENT_KEY
+   - _SUBJECT_PERIOD
+   - _PUBLICATION_DATE
+   - _ACQUISITION_METHOD
+   - _FALLBACK_REASON
+   - _SERIES_ID
+   - _SUB_DATASET_ID
+- Manifest contract:
+   - required keys plus optional subject_period and target.page_date_selectors
+- Schema contract:
+   - loader treats ingestion metadata columns as reserved (_PUBLICATION_DATE, etc.)
+
+Formalization pattern:
+1. Introduce CONTRACT_VERSION in sidecar payload and document version history.
+2. Add contract tests that validate path format, mandatory metadata fields, and manifest parsing.
+3. Enforce backward compatibility policy for one previous contract version before removing support.
+4. Fail CI on contract-breaking changes unless version is incremented and migration notes are included.
+
 
 ## CI/CD Pipeline & Secure Deployment
 

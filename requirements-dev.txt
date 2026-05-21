@@ -1,5 +1,6 @@
 pytest
 duckdb
 dbt-duckdb
+pandas
 ruff
 pre-commit
