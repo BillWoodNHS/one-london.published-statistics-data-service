@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Local ADLS test artifacts
+.local_adls_test/
+.local_adls_test_full/
+
+# Editor/IDE folders
+.idea/
+.vscode/
+
+# Swap/backup files
+*.swp
+*.swo
+*~
+
+# Azure Functions local artifacts
+function_app/.python_packages/
+function_app/local.settings.json
+function_app/.funcignore
+
+# dbt artifacts
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/

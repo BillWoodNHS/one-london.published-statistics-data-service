@@ -1,0 +1,9 @@
+azure-functions
+azure-identity
+azure-storage-blob
+beautifulsoup4
+openpyxl
+pandas
+pyyaml
+requests
+xlrd

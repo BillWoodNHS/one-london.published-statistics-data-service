@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "MANIFEST_ROOT": "../config/datasets",
+    "MANUAL_INPUT_PREFIX": "manual",
+    "LOCAL_STORAGE_MODE": "false",
+    "LOCAL_STORAGE_ROOT": "../.local_adls",
+    "ADLS_ACCOUNT_URL": "https://<storage-account>.blob.core.windows.net",
+    "ADLS_CONTAINER": "published-statistics",
+    "ADLS_PREFIX": ""
+  }
+}

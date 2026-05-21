@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+import re
+from typing import List, Sequence, Tuple
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
+
+from .models import DatasetSeriesConfig, DiscoveredFile, ScrapeStep, TargetConfig
+
+
+class ScraperError(Exception):
+    pass
+
+
+def _matches_extensions(url: str, extensions: Sequence[str]) -> bool:
+    if not extensions:
+        return True
+
+    lowered = url.lower()
+    return any(lowered.endswith(f".{ext.lower()}") for ext in extensions)
+
+
+def _extract_links(page_url: str, html: str, step: ScrapeStep) -> List[Tuple[str, str]]:
+    soup = BeautifulSoup(html, "html.parser")
+    links = []
+
+    pattern = re.compile(step.text_filter, flags=re.IGNORECASE) if step.text_filter else None
+
+    for node in soup.select(step.link_selector):
+        href = node.get("href")
+        if not href:
+            continue
+
+        full_url = urljoin(page_url, href)
+        text = " ".join(node.get_text(separator=" ", strip=True).split())
+
+        if pattern and not pattern.search(text):
+            continue
+
+        if not _matches_extensions(full_url, step.file_extensions):
+            continue
+
+        links.append((full_url, text))
+
+    return links
+
+
+def _publication_date_from(rule_pattern: str, source_value: str) -> str:
+    match = re.search(rule_pattern, source_value, flags=re.IGNORECASE)
+    if not match:
+        raise ScraperError(f"Publication date rule did not match source: {source_value}")
+
+    extracted = "_".join(group for group in match.groups() if group)
+    return extracted or match.group(0)
+
+
+def _publication_source_value(source_type: str, link_text: str, file_url: str) -> str:
+    if source_type == "link_text":
+        return link_text
+    if source_type == "url_segment":
+        return file_url
+    if source_type == "manual":
+        return link_text or file_url
+    return link_text or file_url
+
+
+def _discover_for_target(
+    config: DatasetSeriesConfig,
+    target: TargetConfig,
+    session: requests.Session,
+) -> List[DiscoveredFile]:
+    candidates: List[Tuple[str, str]] = [(config.entry_url, "")]
+
+    for step in target.scrape_steps:
+        next_candidates: List[Tuple[str, str]] = []
+        for page_url, _ in candidates:
+            response = session.get(page_url, timeout=60)
+            response.raise_for_status()
+            next_candidates.extend(_extract_links(page_url, response.text, step))
+        candidates = next_candidates
+
+    discovered: List[DiscoveredFile] = []
+    for file_url, link_text in candidates:
+        source_for_publication = _publication_source_value(config.publication_date.source, link_text, file_url)
+        publication_date_value = _publication_date_from(config.publication_date.pattern, source_for_publication)
+        discovered.append(
+            DiscoveredFile(
+                dataset_id=config.dataset_id,
+                series_id=config.series_id,
+                sub_dataset_id=target.sub_dataset_id,
+                source_url=file_url,
+                publication_date_value=publication_date_value,
+                link_text=link_text,
+            )
+        )
+
+    return discovered
+
+
+def discover_files(config: DatasetSeriesConfig) -> List[DiscoveredFile]:
+    session = requests.Session()
+    all_files: List[DiscoveredFile] = []
+
+    for target in config.targets:
+        all_files.extend(_discover_for_target(config, target, session))
+
+    return all_files

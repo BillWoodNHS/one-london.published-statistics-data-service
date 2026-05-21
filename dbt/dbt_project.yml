@@ -1,0 +1,37 @@
+name: one_london_psds
+version: 1.0.0
+config-version: 2
+
+profile: one_london_psds
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  one_london_psds:
+    +materialized: view
+    generated:
+      +schema: PRESENTATION
+
+vars:
+  raw_schema: RAW
+  presentation_schema: PRESENTATION
+  infra_schema: INFRA
+  adls_url_root: ""
+  storage_integration_name: PSDS_ADLS_INT
+  file_format_name: PSDS_CSV_FORMAT
+  managed_identity_tenant_id: ""
+  local_duckdb_validate: false
+  metadata_columns:
+    - _INGESTED_AT
+    - _SOURCE_FILE_PATH
+    - _SOURCE_FILE_NAME
+    - _FILE_ROW_NUMBER
+    - _FILE_CONTENT_KEY
+    - _PUBLICATION_DATE
+    - _ACQUISITION_METHOD
+    - _FALLBACK_REASON
+    - _LOAD_ID

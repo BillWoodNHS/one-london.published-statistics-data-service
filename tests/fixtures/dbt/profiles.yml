@@ -1,0 +1,8 @@
+one_london_psds:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_FILE', './.local_adls/local_validation.duckdb') }}"
+      threads: 1
+      schema: main

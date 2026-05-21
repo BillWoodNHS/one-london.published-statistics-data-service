@@ -1,0 +1,15 @@
+dataset_id: web_chs_waiting_lists_xlsx_test
+series_id: test-community-health-services-waiting-lists
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/community-health-services-waiting-lists/
+publication_date:
+  source: link_text
+  pattern: '(March)'
+fallback:
+  allow_manual_acquisition: false
+targets:
+  - sub_dataset_id: monthly-publication
+    scrape_steps:
+      - link_selector: a[href]
+        text_filter: 'Community-health-services-waiting-lists-2025-26-March'
+        file_extensions: [xlsx]
+    reporting_period_columns: []

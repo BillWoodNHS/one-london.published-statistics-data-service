@@ -1,0 +1,39 @@
+dataset_id: mental_health_services_monthly_statistics
+authority: digital_nhs
+series_id: mental-health-services-monthly-statistics
+entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics
+publication_date:
+  source: link_text
+  pattern: '(\w+ \d{4})'
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/mental-health-services-monthly-statistics
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+  - sub_dataset_id: performance-data-file
+    scrape_steps:
+      - link_selector: a[href*="performance-"]
+        text_filter: 'Performance \w+ \d{4}'
+      - link_selector: a[href]
+        text_filter: 'MHSDS Monthly: Performance .* Data File'
+        file_extensions: [zip]
+    reporting_period_columns: [REPORTING_PERIOD_START, REPORTING_PERIOD_END]
+
+  - sub_dataset_id: restrictive-interventions
+    scrape_steps:
+      - link_selector: a[href*="performance-"]
+        text_filter: 'Performance \w+ \d{4}'
+      - link_selector: a[href]
+        text_filter: 'Restrictive Interventions'
+        file_extensions: [zip]
+    reporting_period_columns: [REPORTING_PERIOD_START, REPORTING_PERIOD_END]
+
+  - sub_dataset_id: out-of-area-placements
+    scrape_steps:
+      - link_selector: a[href*="performance-"]
+        text_filter: 'Performance \w+ \d{4}'
+      - link_selector: a[href]
+        text_filter: 'Out of Area Placements'
+        file_extensions: [zip]
+    reporting_period_columns: [REPORTING_PERIOD_START, REPORTING_PERIOD_END]
