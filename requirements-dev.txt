@@ -2,5 +2,6 @@ pytest
 duckdb
 dbt-duckdb
 pandas
+beautifulsoup4
 ruff
 pre-commit
