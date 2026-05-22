@@ -9,7 +9,10 @@ This folder contains the dbt project used for:
 
 - `dbt_project.yml`: Project config and variables.
 - `packages.yml`: dbt package declarations.
-- `macros/`: Reusable SQL/Jinja macros.
+- `macros/`: Reusable SQL/Jinja macros, organized by pack:
+  - `ingestion/`: Raw table provisioning, storage integration, stage/pipe setup.
+  - `telemetry/`: Function app event ingestion, quality profiling.
+  - `presentation/`: View creation, column aliasing.
 - `models/`: Project models.
 
 ## Setup
