@@ -39,6 +39,15 @@ The deployment supports both **password** and **key-pair** authentication for Sn
 - `tools/ci_dbt_deploy.ps1`: Installs dbt dependencies, renders `profiles.yml`, runs `dbt run` and `dbt test`, and cleans up credentials.
 - `tools/ci_render_profiles_yml.ps1`: Renders a secure `profiles.yml` for dbt, supporting both key-pair and password auth.
 
+## Deployment Settings (Non-Secret)
+
+- Default file: `config/dbt/deployment.settings.json`
+- Optional override path: `DBT_DEPLOYMENT_SETTINGS_PATH`
+
+This settings file controls non-secret deployment values (for example schemas,
+integration names, telemetry prefix, and dbt vars). Sensitive credentials remain
+in CI secret stores.
+
 ## Usage in Pipelines
 
 - **GitHub Actions**: Secrets are set in repository settings. See `.github/workflows/ci.yml` for job steps.

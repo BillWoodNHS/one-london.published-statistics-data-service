@@ -1,0 +1,19 @@
+{
+  "snowflake": {
+    "role": "PSDS_DEPLOY_ROLE",
+    "database": "ONE_LONDON_PSDS",
+    "warehouse": "PSDS_WH",
+    "schema": "PRESENTATION"
+  },
+  "dbt_vars": {
+    "raw_schema": "RAW",
+    "presentation_schema": "PRESENTATION",
+    "infra_schema": "INFRA",
+    "adls_url_root": "",
+    "storage_integration_name": "PSDS_ADLS_INT",
+    "file_format_name": "PSDS_CSV_FORMAT",
+    "telemetry_file_format_name": "PSDS_JSON_FORMAT",
+    "telemetry_prefix": "_telemetry/function_app_events",
+    "managed_identity_tenant_id": ""
+  }
+}

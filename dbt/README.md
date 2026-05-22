@@ -30,6 +30,17 @@ Defined in `dbt_project.yml` under `vars`, including:
 - `storage_integration_name`
 - `file_format_name`
 - `managed_identity_tenant_id`
+- `telemetry_prefix`
+- `telemetry_file_format_name`
+
+## Deployment Settings File
+
+Non-secret dbt/Snowflake deployment settings can be supplied via:
+- `config/dbt/deployment.settings.json`
+
+The CI deployment script (`tools/ci_dbt_deploy.ps1`) loads this file by default,
+or from `DBT_DEPLOYMENT_SETTINGS_PATH` when provided. Secrets (account/user/password
+or private key) still come from environment variables/secrets.
 
 ## Adding New Macro Behavior Safely
 

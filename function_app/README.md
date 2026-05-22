@@ -15,7 +15,16 @@ This folder contains the Azure Functions ingestion runtime.
 2. Discover links via scrape-step chains.
 3. Download and normalize payload to CSV.
 4. Write CSV and metadata sidecar to storage path.
-5. Attempt manual fallback where configured and needed.
+5. Emit telemetry events as JSONL to the telemetry prefix.
+6. Attempt manual fallback where configured and needed.
+
+## Telemetry
+
+Ingestion telemetry is written to ADLS as JSONL under the prefix configured by
+`TELEMETRY_PREFIX` (default `_telemetry/function_app_events`).
+
+Each event contains operational fields including stage, status, attempt_number,
+source metadata, and row-count metrics where available.
 
 ## Adding Support for New File Patterns
 

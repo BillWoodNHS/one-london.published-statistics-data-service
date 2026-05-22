@@ -4,8 +4,10 @@ import datetime
 import json
 import logging
 import os
+import time
+import uuid
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
@@ -34,6 +36,39 @@ def _manifest_root() -> Path:
 
 def _manual_prefix() -> str:
     return os.environ.get("MANUAL_INPUT_PREFIX", "manual").strip("/")
+
+
+def _telemetry_prefix() -> str:
+    return os.environ.get("TELEMETRY_PREFIX", "_telemetry/function_app_events").strip(
+        "/"
+    )
+
+
+def _new_run_id() -> str:
+    return uuid.uuid4().hex
+
+
+def _event_timestamp() -> str:
+    return datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z"
+
+
+def _emit_event(events: List[Dict[str, Any]], **fields: Any) -> None:
+    event: Dict[str, Any] = {
+        "event_timestamp_utc": _event_timestamp(),
+        "contract_version": CONTRACT_VERSION,
+    }
+    event.update(fields)
+    events.append(event)
+
+
+def _write_telemetry_events(run_id: str, events: List[Dict[str, Any]]) -> str:
+    day_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+    path = f"{_telemetry_prefix()}/event_date={day_partition}/run_id={run_id}.jsonl"
+    payload = b"\n".join(
+        json.dumps(event, separators=(",", ":")).encode("utf-8") for event in events
+    )
+    upload_bytes(path, payload + b"\n")
+    return path
 
 
 def _audit_payload(
@@ -150,9 +185,11 @@ def _resolve_publication_datetime(value: Optional[str]) -> str:
     return value or now_utc_compact()
 
 
-def execute_ingestion() -> Dict[str, List[str]]:
+def execute_ingestion() -> Dict[str, Any]:
     manifest_root = _manifest_root()
     manual_prefix = _manual_prefix()
+    run_id = _new_run_id()
+    telemetry_events: List[Dict[str, Any]] = []
     configs = load_manifests(manifest_root)
     uploaded_paths: List[str] = []
 
@@ -170,7 +207,30 @@ def execute_ingestion() -> Dict[str, List[str]]:
             if config.fallback.manual_drop_path
             else manual_prefix
         )
+        _emit_event(
+            telemetry_events,
+            run_id=run_id,
+            stage="SCAN",
+            status="STARTED",
+            attempt_number=1,
+            series_id=config.series_id,
+            sub_dataset_id=None,
+            source_url=config.entry_url,
+        )
+        scan_started = time.perf_counter()
         discovered = discover_files(config)
+        _emit_event(
+            telemetry_events,
+            run_id=run_id,
+            stage="SCAN",
+            status="SUCCEEDED",
+            attempt_number=1,
+            series_id=config.series_id,
+            sub_dataset_id=None,
+            source_url=config.entry_url,
+            discovered_file_count=len(discovered),
+            duration_ms=int((time.perf_counter() - scan_started) * 1000),
+        )
         discovered_targets = {item.sub_dataset_id for item in discovered}
 
         for item in discovered:
@@ -178,11 +238,105 @@ def execute_ingestion() -> Dict[str, List[str]]:
             latest = _latest_record_for_source(records, item.source_url)
             source_etag, source_last_modified = _get_source_headers(item.source_url)
             if _skip_download_from_headers(latest, source_etag, source_last_modified):
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="DOWNLOAD",
+                    status="SKIPPED",
+                    attempt_number=1,
+                    series_id=item.series_id,
+                    sub_dataset_id=item.sub_dataset_id,
+                    source_url=item.source_url,
+                    skip_reason="source_unchanged",
+                )
                 logging.info("Skipped download (source unchanged): %s", item.source_url)
                 continue
 
-            filename, csv_payload, content_hash = normalize_to_csv(item.source_url)
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="DOWNLOAD",
+                status="STARTED",
+                attempt_number=1,
+                series_id=item.series_id,
+                sub_dataset_id=item.sub_dataset_id,
+                source_url=item.source_url,
+            )
+            download_started = time.perf_counter()
+            try:
+                filename, csv_payload, content_hash, normalize_metrics = (
+                    normalize_to_csv(item.source_url)
+                )
+            except Exception as ex:
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="DOWNLOAD",
+                    status="FAILED",
+                    attempt_number=1,
+                    series_id=item.series_id,
+                    sub_dataset_id=item.sub_dataset_id,
+                    source_url=item.source_url,
+                    error_type=type(ex).__name__,
+                    error_message=str(ex),
+                    duration_ms=int((time.perf_counter() - download_started) * 1000),
+                )
+                raise
+
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="DOWNLOAD",
+                status="SUCCEEDED",
+                attempt_number=1,
+                series_id=item.series_id,
+                sub_dataset_id=item.sub_dataset_id,
+                source_url=item.source_url,
+                source_bytes=normalize_metrics.get("source_bytes"),
+                duration_ms=int((time.perf_counter() - download_started) * 1000),
+            )
+
+            if normalize_metrics.get("extracted_from_archive"):
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="EXTRACT",
+                    status="SUCCEEDED",
+                    attempt_number=1,
+                    series_id=item.series_id,
+                    sub_dataset_id=item.sub_dataset_id,
+                    source_url=item.source_url,
+                    file_name=normalize_metrics.get("archive_member_name"),
+                )
+
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="NORMALIZE",
+                status="SUCCEEDED",
+                attempt_number=1,
+                series_id=item.series_id,
+                sub_dataset_id=item.sub_dataset_id,
+                source_url=item.source_url,
+                file_name=filename,
+                raw_row_count=normalize_metrics.get("raw_row_count"),
+                normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                normalized_bytes=normalize_metrics.get("normalized_bytes"),
+            )
+
             if latest and latest.get("_FILE_CONTENT_KEY") == content_hash:
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="UPLOAD",
+                    status="SKIPPED",
+                    attempt_number=1,
+                    series_id=item.series_id,
+                    sub_dataset_id=item.sub_dataset_id,
+                    source_url=item.source_url,
+                    source_content_hash=content_hash,
+                    skip_reason="content_unchanged",
+                )
                 logging.info("Skipped upload (content unchanged): %s", item.source_url)
                 continue
 
@@ -194,6 +348,22 @@ def execute_ingestion() -> Dict[str, List[str]]:
             )
             upload_bytes(artifact.adls_path, csv_payload)
             record = _write_audit_record(artifact, source_etag, source_last_modified)
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="UPLOAD",
+                status="SUCCEEDED",
+                attempt_number=1,
+                series_id=item.series_id,
+                sub_dataset_id=item.sub_dataset_id,
+                source_url=item.source_url,
+                file_name=filename,
+                source_content_hash=content_hash,
+                load_id=artifact.source_content_hash[:16],
+                raw_row_count=normalize_metrics.get("raw_row_count"),
+                normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                uploaded_path=artifact.adls_path,
+            )
             uploaded_paths.append(artifact.adls_path)
             records.append(record)
             logging.info("Uploaded %s", artifact.adls_path)
@@ -212,10 +382,40 @@ def execute_ingestion() -> Dict[str, List[str]]:
                 records = _records_for(candidate.series_id, candidate.sub_dataset_id)
                 latest = _latest_record_for_source(records, candidate.source_url)
                 payload = download_blob_bytes(candidate.source_url)
-                filename, csv_payload, content_hash = normalize_payload_to_csv(
-                    candidate.link_text, payload
+                filename, csv_payload, content_hash, normalize_metrics = (
+                    normalize_payload_to_csv(candidate.link_text, payload)
+                )
+                normalize_metrics["source_bytes"] = len(payload)
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="NORMALIZE",
+                    status="SUCCEEDED",
+                    attempt_number=1,
+                    series_id=candidate.series_id,
+                    sub_dataset_id=candidate.sub_dataset_id,
+                    source_url=candidate.source_url,
+                    file_name=filename,
+                    raw_row_count=normalize_metrics.get("raw_row_count"),
+                    normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                    normalized_bytes=normalize_metrics.get("normalized_bytes"),
+                    source_bytes=normalize_metrics.get("source_bytes"),
+                    acquisition_method="manual",
                 )
                 if latest and latest.get("_FILE_CONTENT_KEY") == content_hash:
+                    _emit_event(
+                        telemetry_events,
+                        run_id=run_id,
+                        stage="UPLOAD",
+                        status="SKIPPED",
+                        attempt_number=1,
+                        series_id=candidate.series_id,
+                        sub_dataset_id=candidate.sub_dataset_id,
+                        source_url=candidate.source_url,
+                        source_content_hash=content_hash,
+                        skip_reason="content_unchanged",
+                        acquisition_method="manual",
+                    )
                     logging.info(
                         "Skipped manual upload (content unchanged): %s",
                         candidate.source_url,
@@ -234,8 +434,30 @@ def execute_ingestion() -> Dict[str, List[str]]:
                 )
                 upload_bytes(artifact.adls_path, csv_payload)
                 record = _write_audit_record(artifact)
+                _emit_event(
+                    telemetry_events,
+                    run_id=run_id,
+                    stage="UPLOAD",
+                    status="SUCCEEDED",
+                    attempt_number=1,
+                    series_id=candidate.series_id,
+                    sub_dataset_id=candidate.sub_dataset_id,
+                    source_url=candidate.source_url,
+                    file_name=filename,
+                    source_content_hash=content_hash,
+                    load_id=artifact.source_content_hash[:16],
+                    raw_row_count=normalize_metrics.get("raw_row_count"),
+                    normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                    uploaded_path=artifact.adls_path,
+                    acquisition_method="manual",
+                )
                 uploaded_paths.append(artifact.adls_path)
                 records.append(record)
                 logging.info("Uploaded manual file %s", artifact.adls_path)
 
-    return {"uploaded": uploaded_paths}
+    telemetry_path = _write_telemetry_events(run_id, telemetry_events)
+    return {
+        "uploaded": uploaded_paths,
+        "run_id": run_id,
+        "telemetry_path": telemetry_path,
+    }

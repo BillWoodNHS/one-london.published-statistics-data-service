@@ -65,6 +65,7 @@ Primary environment variables:
 - `LOCAL_STORAGE_MODE`: `true` to use local filesystem instead of Azure Blob.
 - `LOCAL_STORAGE_ROOT`: local root path when `LOCAL_STORAGE_MODE=true`.
 - `MANUAL_INPUT_PREFIX`: ADLS/manual prefix for fallback files.
+- `TELEMETRY_PREFIX`: ADLS prefix for ingestion telemetry JSONL events.
 - `ADLS_ACCOUNT_URL`, `ADLS_CONTAINER`, `ADLS_PREFIX`: production storage settings.
 
 Sample local settings are provided at `function_app/local.settings.sample.json`.
@@ -102,6 +103,9 @@ Before using dbt operations, ensure dependencies are installed:
 ```powershell
 dbt deps --project-dir ./dbt
 ```
+
+Deployment defaults for non-secret Snowflake/dbt artifact settings are stored in
+`config/dbt/deployment.settings.json` and consumed by `tools/ci_dbt_deploy.ps1`.
 
 ## Architecture Notes
 

@@ -7,12 +7,31 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 import requests
 
 from .models import DiscoveredFile, LoadArtifact
+
+
+def _count_csv_rows(payload: bytes) -> int | None:
+    """Count data rows in a CSV payload (excluding the header row)."""
+    encodings = ("utf-8", "utf-8-sig", "latin-1")
+    for encoding in encodings:
+        try:
+            text = payload.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        return None
+
+    reader = csv.reader(io.StringIO(text))
+    rows = list(reader)
+    if not rows:
+        return 0
+    return max(0, len(rows) - 1)
 
 
 def _to_iso_partition_value(raw_value: str) -> str:
@@ -62,7 +81,7 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _first_csv_from_zip(payload: bytes) -> Tuple[str, bytes]:
+def _first_csv_from_zip(payload: bytes) -> Tuple[str, bytes, Dict[str, Any]]:
     """Extract the first CSV or Excel file from a ZIP payload.
 
     Converts Excel to CSV if no CSV is found.
@@ -70,20 +89,35 @@ def _first_csv_from_zip(payload: bytes) -> Tuple[str, bytes]:
     with zipfile.ZipFile(io.BytesIO(payload)) as zf:
         for name in zf.namelist():
             if name.lower().endswith(".csv"):
-                return Path(name).name, zf.read(name)
+                csv_payload = zf.read(name)
+                metrics: Dict[str, Any] = {
+                    "source_file_type": "zip",
+                    "extracted_from_archive": True,
+                    "converted_to_csv": False,
+                    "archive_member_name": Path(name).name,
+                    "raw_row_count": _count_csv_rows(csv_payload),
+                    "normalized_row_count": _count_csv_rows(csv_payload),
+                }
+                return Path(name).name, csv_payload, metrics
 
         for name in zf.namelist():
             if name.lower().endswith((".xlsx", ".xls")):
                 data = zf.read(name)
                 ext = Path(name).suffix.lower() or ".xlsx"
-                return _excel_to_csv(Path(name).stem, data, ext)
+                csv_name, csv_payload, metrics = _excel_to_csv(
+                    Path(name).stem, data, ext
+                )
+                metrics["source_file_type"] = "zip"
+                metrics["extracted_from_archive"] = True
+                metrics["archive_member_name"] = Path(name).name
+                return csv_name, csv_payload, metrics
 
     raise ValueError("ZIP did not contain CSV or Excel files")
 
 
 def _excel_to_csv(
     base_name: str, payload: bytes, extension: str = ".xlsx"
-) -> Tuple[str, bytes]:
+) -> Tuple[str, bytes, Dict[str, Any]]:
     """Convert an Excel file payload to CSV bytes.
 
     Returns the new filename and content.
@@ -98,41 +132,70 @@ def _excel_to_csv(
         writer = csv.writer(buffer)
         writer.writerow(df.columns.tolist())
         writer.writerows(df.values.tolist())
-        return f"{base_name}.csv", buffer.getvalue().encode("utf-8")
+        csv_payload = buffer.getvalue().encode("utf-8")
+        row_count = int(len(df.index))
+        metrics: Dict[str, Any] = {
+            "source_file_type": "excel",
+            "extracted_from_archive": False,
+            "converted_to_csv": True,
+            "archive_member_name": None,
+            "raw_row_count": row_count,
+            "normalized_row_count": row_count,
+        }
+        return f"{base_name}.csv", csv_payload, metrics
     finally:
         os.unlink(tmp_path)
 
 
-def normalize_to_csv(file_url: str) -> Tuple[str, bytes, str]:
+def normalize_to_csv(file_url: str) -> Tuple[str, bytes, str, Dict[str, Any]]:
     """Download and normalize a file from a URL to CSV.
 
-    Returns filename, content bytes, and SHA-256 hash.
+    Returns filename, content bytes, SHA-256 hash, and telemetry metrics.
     """
     payload = _download(file_url)
-    return normalize_payload_to_csv(Path(file_url).name, payload)
+    filename, csv_payload, content_hash, metrics = normalize_payload_to_csv(
+        Path(file_url).name, payload
+    )
+    metrics["source_bytes"] = len(payload)
+    metrics["normalized_bytes"] = len(csv_payload)
+    return filename, csv_payload, content_hash, metrics
 
 
 def normalize_payload_to_csv(
     source_name: str, payload: bytes
-) -> Tuple[str, bytes, str]:
+) -> Tuple[str, bytes, str, Dict[str, Any]]:
     """Normalize a file payload (CSV, ZIP, or Excel) to CSV.
 
-    Returns filename, content bytes, and SHA-256 hash.
+    Returns filename, content bytes, SHA-256 hash, and telemetry metrics.
     """
     content_hash = _sha256(payload)
     lowered = source_name.lower()
 
     if lowered.endswith(".csv"):
-        return Path(source_name).name, payload, content_hash
+        metrics: Dict[str, Any] = {
+            "source_file_type": "csv",
+            "extracted_from_archive": False,
+            "converted_to_csv": False,
+            "archive_member_name": None,
+            "raw_row_count": _count_csv_rows(payload),
+            "normalized_row_count": _count_csv_rows(payload),
+            "source_bytes": len(payload),
+            "normalized_bytes": len(payload),
+        }
+        return Path(source_name).name, payload, content_hash, metrics
 
     if lowered.endswith(".zip"):
-        name, csv_payload = _first_csv_from_zip(payload)
-        return name, csv_payload, content_hash
+        name, csv_payload, metrics = _first_csv_from_zip(payload)
+        metrics["source_bytes"] = len(payload)
+        metrics["normalized_bytes"] = len(csv_payload)
+        return name, csv_payload, content_hash, metrics
 
     if lowered.endswith(".xlsx") or lowered.endswith(".xls"):
         ext = Path(source_name).suffix.lower() or ".xlsx"
-        name, csv_payload = _excel_to_csv(Path(source_name).stem, payload, ext)
-        return name, csv_payload, content_hash
+        name, csv_payload, metrics = _excel_to_csv(Path(source_name).stem, payload, ext)
+        metrics["source_bytes"] = len(payload)
+        metrics["normalized_bytes"] = len(csv_payload)
+        return name, csv_payload, content_hash, metrics
 
     raise ValueError(f"Unsupported file type for source: {source_name}")
 
@@ -168,7 +231,9 @@ def build_artifact(
     )
 
 
-def normalize_local_file_to_csv(local_file: Path) -> Tuple[str, bytes, str]:
-    """Normalize a local file to CSV, returning filename, content, and hash."""
+def normalize_local_file_to_csv(
+    local_file: Path,
+) -> Tuple[str, bytes, str, Dict[str, Any]]:
+    """Normalize a local file to CSV, returning filename, content, hash, and metrics."""
     payload = local_file.read_bytes()
     return normalize_payload_to_csv(local_file.name, payload)

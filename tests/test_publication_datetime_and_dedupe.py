@@ -71,7 +71,19 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
 
     def fake_normalize_to_csv(file_url: str):
         normalize_call_count["count"] += 1
-        return "restrictive.csv", b"A,B\n1,2\n", "hash-123"
+        return (
+            "restrictive.csv",
+            b"A,B\n1,2\n",
+            "hash-123",
+            {
+                "source_bytes": 8,
+                "normalized_bytes": 8,
+                "raw_row_count": 1,
+                "normalized_row_count": 1,
+                "extracted_from_archive": False,
+                "archive_member_name": None,
+            },
+        )
 
     monkeypatch.setattr(
         "function_app.src.run_ingestion.load_manifests", lambda _: [config]
@@ -98,6 +110,7 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     monkeypatch.setattr(
         "function_app.src.run_ingestion.now_utc_compact", lambda: "20260521T101900"
     )
+    monkeypatch.setattr("function_app.src.run_ingestion._new_run_id", lambda: "run123")
     monkeypatch.setenv("MANIFEST_ROOT", str(Path(".").resolve()))
 
     first_result = execute_ingestion()
@@ -113,6 +126,21 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     metadata = json.loads(storage[metadata_path].decode("utf-8"))
     assert metadata["_CONTRACT_VERSION"] == CONTRACT_VERSION
     assert metadata["_SOURCE_ETAG"] == "etag-1"
+
+    telemetry_path = "_telemetry/function_app_events/event_date="
+    telemetry_paths = [
+        path
+        for path in storage
+        if path.startswith(telemetry_path) and path.endswith("run_id=run123.jsonl")
+    ]
+    assert len(telemetry_paths) == 1
+    telemetry_lines = storage[telemetry_paths[0]].decode("utf-8").strip().splitlines()
+    telemetry_events = [json.loads(line) for line in telemetry_lines]
+    stages = {(event["stage"], event["status"]) for event in telemetry_events}
+    assert ("SCAN", "SUCCEEDED") in stages
+    assert ("DOWNLOAD", "SUCCEEDED") in stages
+    assert ("NORMALIZE", "SUCCEEDED") in stages
+    assert ("UPLOAD", "SUCCEEDED") in stages
 
     second_result = execute_ingestion()
     assert second_result["uploaded"] == []

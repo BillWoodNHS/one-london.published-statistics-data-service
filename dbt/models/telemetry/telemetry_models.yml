@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_function_app_events
+    description: "Structured function app telemetry events loaded from RAW_FUNCTION_APP_EVENTS."
+    columns:
+      - name: RUN_ID
+        tests:
+          - not_null
+      - name: STAGE
+        tests:
+          - not_null
+      - name: STATUS
+        tests:
+          - not_null
+      - name: ATTEMPT_NUMBER
+        tests:
+          - not_null
+
+  - name: fct_row_parity
+    description: "Row parity comparison between normalized file row counts and loaded RAW row counts by load_id."
+
+  - name: fct_column_quality_profile
+    description: "Column-level quality profile including null percentage and distinct counts across RAW tables."
