@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "appointments-in-general-practice",
+  "dataset_name": "Appointments in General Practice",
+  "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice",
+  "publication_date_hint": "Publication date is typically on monthly release pages (e.g., 'March 2026') and in page metadata.",
+  "subject_period_hint": "Subject period ranges from October 2022 onwards. Daily counts span 'October 2023 to March 2026'; monthly/regional reports cover single months.",
+  "subpage_link_hint": "Sub-page links follow pattern .../appointments-in-general-practice/march-2026/ (monthly release pages with month slug).",
+  "targets": [
+    {
+      "sub_dataset_id": "actual-duration",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/EF/03CD57/Appointments_GP_Actual_Duration_CSV_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Filenames contain month/year suffix (e.g., Mar_26).",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"Actual_Duration\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "regional",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/A4/4EA59E/Appointments_GP_Regional_CSV_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Regional breakdown of appointments.",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"Regional\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "covid-vaccination-appointments",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/E1/FED684/NIMS%20Covid%20Vaccine%20counts_Mar_26.csv",
+      "notes": "Direct CSV file (not zipped). COVID vaccine appointment counts.",
+      "include_extensions": ["csv"],
+      "preferred_link_selector": "a[href*=\"Covid\"], a[href*=\"NIMS\"]",
+      "preferred_text_filter": "Covid|Vaccine"
+    },
+    {
+      "sub_dataset_id": "national-categories",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/32/29AA3F/Appointments_GP_National_Categories_CSV_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Appointments categorized by type (e.g., follow-up, new).",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"National_Categories\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "sds-role-group",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/1D/63E5EE/Appointments_GP_SDS_Role_CSV_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Appointments by role group (e.g., GP, nurse).",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"SDS_Role\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "national-overview",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/0C/18AE65/National_Overview.csv",
+      "notes": "Direct CSV file (not zipped). High-level national summary.",
+      "include_extensions": ["csv"],
+      "preferred_link_selector": "a[href*=\"National_Overview\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "practice-level",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/5F/C162BA/Practice_Level_Crosstab_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Individual practice-level cross-tabulation.",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"Practice_Level\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "sub-icb-level",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/90/792E50/PCN_GRANULAR.csv",
+      "notes": "Direct CSV file (not zipped). Sub-ICB (Integrated Care Board) level data.",
+      "include_extensions": ["csv"],
+      "preferred_link_selector": "a[href*=\"PCN_GRANULAR\"]",
+      "preferred_text_filter": ""
+    },
+    {
+      "sub_dataset_id": "daily-counts",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026",
+      "sample_file_url": "https://files.digital.nhs.uk/BF/BE560D/Appointments_GP_Daily_CSV_Mar_26.zip",
+      "notes": "ZIP archive with CSV. Daily granular appointment counts (spans 'October 2023 to March 2026' for recent releases).",
+      "include_extensions": ["zip"],
+      "preferred_link_selector": "a[href*=\"Daily\"]",
+      "preferred_text_filter": ""
+    }
+  ]
+}

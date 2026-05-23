@@ -45,7 +45,7 @@ jobs:
 
       - name: Run lint checks
         shell: pwsh
-        run: tools/ci_lint.ps1
+        run: tools/ci/ci_lint.ps1
 
   test:
     name: Unit Tests (pytest)
@@ -65,7 +65,7 @@ jobs:
 
       - name: Run unit tests
         shell: pwsh
-        run: tools/ci_test.ps1
+        run: tools/ci/ci_test.ps1
 
   deploy:
     name: Deploy dbt to Snowflake
@@ -90,7 +90,7 @@ jobs:
 
       - name: Deploy dbt models to Snowflake
         shell: pwsh
-        run: tools/ci_dbt_deploy.ps1
+        run: tools/ci/ci_dbt_deploy.ps1
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}

@@ -1,0 +1,21 @@
+dataset_id: accident-and-emergency-attendances-and-emergency-admissions
+series_id: accident-and-emergency-attendances-and-emergency-admissions
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/
+publication_date:
+  source: link_text
+  pattern: (\w+\s+\d{4})
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/accident-and-emergency-attendances-and-emergency-admissions
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: default
+  scrape_steps:
+  - link_selector: a[href*="ae-attendances-and-emergency-admissions"]
+  - link_selector: a[href]
+    file_extensions:
+    - csv
+  reporting_period_columns: []
+  page_date_selectors:
+  - (?:published|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)

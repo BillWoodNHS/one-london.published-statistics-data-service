@@ -1,0 +1,92 @@
+dataset_id: appointments-in-general-practice
+series_id: appointments-in-general-practice
+entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice
+publication_date:
+  source: link_text
+  pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/appointments-in-general-practice
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: actual-duration
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: &id001
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+- sub_dataset_id: covid-vaccination-appointments
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - csv
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: daily-counts
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: default
+  scrape_steps:
+  - link_selector: a[href*="october"]
+  - link_selector: a[href]
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: national-categories
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: national-overview
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - csv
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: practice-level
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: regional
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: sds-role-group
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - zip
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: sub-icb-level
+  scrape_steps:
+  - link_selector: a[href*="march"]
+  - link_selector: a[href]
+    file_extensions:
+    - csv
+  reporting_period_columns: []
+  page_date_selectors: *id001

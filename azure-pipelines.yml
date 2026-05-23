@@ -50,7 +50,7 @@ stages:
           - script: python -m pip install -r requirements-dev.txt
             displayName: "Install dev dependencies"
 
-          - pwsh: tools/ci_lint.ps1
+          - pwsh: tools/ci/ci_lint.ps1
             displayName: "Run lint checks"
 
       - job: test
@@ -69,7 +69,7 @@ stages:
           - script: python -m pip install -r requirements-dev.txt
             displayName: "Install dev dependencies"
 
-          - pwsh: tools/ci_test.ps1
+          - pwsh: tools/ci/ci_test.ps1
             displayName: "Run unit tests"
 
           - task: PublishTestResults@2
@@ -109,7 +109,7 @@ stages:
                 - script: python -m pip install dbt-snowflake
                   displayName: "Install dbt-snowflake"
 
-                - pwsh: tools/ci_dbt_deploy.ps1
+                - pwsh: tools/ci/ci_dbt_deploy.ps1
                   displayName: "Deploy dbt models to Snowflake"
                   env:
                     SNOWFLAKE_ACCOUNT: $(SNOWFLAKE_ACCOUNT)
