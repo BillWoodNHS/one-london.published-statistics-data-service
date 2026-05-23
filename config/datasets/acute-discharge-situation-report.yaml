@@ -1,6 +1,6 @@
-dataset_id: accident-and-emergency-attendances-and-emergency-admissions
-series_id: accident-and-emergency-attendances-and-emergency-admissions
-entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/
+dataset_id: acute-discharge-situation-report
+series_id: acute-discharge-situation-report
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/discharge-delays/acute-discharge-situation-report/
 publication_date:
   source: link_text
   pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
@@ -14,13 +14,12 @@ subject_period:
     pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
 fallback:
   allow_manual_acquisition: true
-  manual_drop_path: manual/accident-and-emergency-attendances-and-emergency-admissions
+  manual_drop_path: manual/acute-discharge-situation-report
   max_auto_retries: 3
   timeout_threshold_minutes: 5
 targets:
-- sub_dataset_id: default
+- sub_dataset_id: monthly-acute-discharge-situation-report
   scrape_steps:
-  - link_selector: a[href*='ae-attendances-and-emergency-admissions']
   - link_selector: a[href]
     file_extensions:
     - csv

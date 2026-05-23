@@ -25,6 +25,8 @@ from function_app.src.models import (  # noqa: E402
     DatasetSeriesConfig,
     PublicationDateRule,
     ScrapeStep,
+    SubjectPeriodRule,
+    SubjectPeriodRuleItem,
     TargetConfig,
 )
 from function_app.src.scraper import discover_files  # noqa: E402
@@ -37,6 +39,12 @@ DEFAULT_PAGE_DATE_SELECTORS = [
 PUBLICATION_FALLBACK_PATTERN = (
     r"(?:published|publication\s*date|last\s*updated)\s*:?\s*"
     r"(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})"
+)
+
+SUBJECT_PERIOD_FALLBACK_PATTERN = (
+    r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|"
+    r"aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
+    r"(?:[\s_\-/]*\d{2,4})"
 )
 
 
@@ -528,7 +536,7 @@ def _month_tokens(text: str) -> List[Tuple[int, int]]:
         r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
         r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|"
         r"oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
-        r"[\s_\-/]+(\d{2,4})\b"
+        r"[\s_\-/]*(\d{2,4})\b"
     )
     tokens: List[Tuple[int, int]] = []
     for match in re.finditer(pattern, text, flags=re.IGNORECASE):
@@ -714,6 +722,22 @@ def _build_config_for_dataset(
             "source": "link_text",
             "pattern": PUBLICATION_FALLBACK_PATTERN,
         },
+        "subject_period": {
+            "rules": [
+                {
+                    "source": "file_name",
+                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                },
+                {
+                    "source": "url_segment",
+                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                },
+                {
+                    "source": "page_text",
+                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                },
+            ]
+        },
         "fallback": {
             "allow_manual_acquisition": True,
             "manual_drop_path": f"manual/{dataset.dataset_id}",
@@ -732,6 +756,16 @@ def _validate_config_matches(config: Dict[str, object]) -> List[Dict[str, str]]:
         series_id=str(config["series_id"]),
         entry_url=str(config["entry_url"]),
         publication_date=PublicationDateRule(**config["publication_date"]),
+        subject_period=(
+            SubjectPeriodRule(
+                rules=[
+                    SubjectPeriodRuleItem(**rule)
+                    for rule in config.get("subject_period", {}).get("rules", [])
+                ]
+            )
+            if config.get("subject_period")
+            else None
+        ),
         targets=[
             TargetConfig(
                 sub_dataset_id=str(target["sub_dataset_id"]),

@@ -79,9 +79,30 @@ Per-target fields:
 ## Inference Behavior
 
 1. **Publication dates** — Extracted from page metadata markers or link text using regex patterns. Marked as `link_text` source in output YAML.
-2. **Subject periods** — Inferred from month/year tokens in link text or URLs. Range detection for multi-month spans, chronological ordering, correct month-end days.
+2. **Subject periods** — The generated YAML now includes a `subject_period` rule block with prioritized detection sources:
+   1. `file_name` (closest to file)
+   2. `url_segment`
+   3. `page_text` (page elements from which links were discovered)
+   This aligns runtime extraction with partitioning needs when subject period differs from publication date.
 3. **Sub-page links** — Inferred from stable URL path tokens (year/month slugs). Can be overridden via `preferred_link_selector`.
 4. **File patterns** — Extracted from example file URLs and generalized to regex for broad matching.
+
+## Generated YAML Subject Period Rules
+
+The helper emits this shape:
+
+```yaml
+subject_period:
+  rules:
+    - source: file_name
+      pattern: <month-year regex>
+    - source: url_segment
+      pattern: <month-year regex>
+    - source: page_text
+      pattern: <month-year regex>
+```
+
+The function app evaluates rules top-to-bottom and uses the first successful normalized value (YYYYMM).
 
 ## Migration Path
 

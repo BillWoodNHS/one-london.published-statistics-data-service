@@ -24,6 +24,7 @@ def normalize_datetime_value(value: str) -> Optional[str]:
 
     cleaned = " ".join(value.replace(",", " ").split())
     cleaned = _strip_ordinal_suffixes(cleaned)
+    cleaned = cleaned.replace("_", " ").replace("-", " ")
 
     if re.fullmatch(r"\d{8}T\d{6}", cleaned):
         return cleaned
@@ -61,6 +62,33 @@ def normalize_datetime_value(value: str) -> Optional[str]:
             return parsed.strftime("%Y%m%dT%H%M%S")
         except ValueError:
             continue
+
+    compact_month_match = re.fullmatch(
+        r"(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)(\d{2}|\d{4})",
+        cleaned.replace(" ", ""),
+        flags=re.IGNORECASE,
+    )
+    if compact_month_match:
+        month_map = {
+            "jan": 1,
+            "feb": 2,
+            "mar": 3,
+            "apr": 4,
+            "may": 5,
+            "jun": 6,
+            "jul": 7,
+            "aug": 8,
+            "sep": 9,
+            "sept": 9,
+            "oct": 10,
+            "nov": 11,
+            "dec": 12,
+        }
+        month = month_map[compact_month_match.group(1).lower()]
+        year_text = compact_month_match.group(2)
+        year = 2000 + int(year_text) if len(year_text) == 2 else int(year_text)
+        parsed = dt.datetime(year=year, month=month, day=1)
+        return parsed.strftime("%Y%m%dT%H%M%S")
 
     return None
 

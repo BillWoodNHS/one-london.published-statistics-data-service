@@ -10,6 +10,8 @@ from .models import (
     FallbackConfig,
     PublicationDateRule,
     ScrapeStep,
+    SubjectPeriodRule,
+    SubjectPeriodRuleItem,
     TargetConfig,
 )
 
@@ -52,14 +54,36 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
         subject_period_raw = raw.get("subject_period")
         subject_period = None
         if subject_period_raw:
-            subject_period = PublicationDateRule(
-                source=_require(
-                    subject_period_raw.get("source"), "subject_period.source"
-                ),
-                pattern=_require(
-                    subject_period_raw.get("pattern"), "subject_period.pattern"
-                ),
-            )
+            subject_rules: List[SubjectPeriodRuleItem] = []
+            raw_rules = subject_period_raw.get("rules")
+            if raw_rules:
+                for r_idx, rule in enumerate(raw_rules, start=1):
+                    subject_rules.append(
+                        SubjectPeriodRuleItem(
+                            source=_require(
+                                rule.get("source"),
+                                f"subject_period.rules[{r_idx}].source",
+                            ),
+                            pattern=_require(
+                                rule.get("pattern"),
+                                f"subject_period.rules[{r_idx}].pattern",
+                            ),
+                        )
+                    )
+            else:
+                # Backward-compatible single-rule form.
+                subject_rules.append(
+                    SubjectPeriodRuleItem(
+                        source=_require(
+                            subject_period_raw.get("source"), "subject_period.source"
+                        ),
+                        pattern=_require(
+                            subject_period_raw.get("pattern"), "subject_period.pattern"
+                        ),
+                    )
+                )
+
+            subject_period = SubjectPeriodRule(rules=subject_rules)
 
         target_entries = raw.get("targets", [])
         if not target_entries:

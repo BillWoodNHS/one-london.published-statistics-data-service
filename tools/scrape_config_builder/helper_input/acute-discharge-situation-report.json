@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "acute-discharge-situation-report",
+  "dataset_name": "Acute Discharge Situation Report",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/discharge-delays/acute-discharge-situation-report/",
+  "publication_date_hint": "Publication dates extracted from page metadata. Consistent monthly release schedule.",
+  "subject_period_hint": "Subject period is monthly, extracted from filenames. Pattern: 'Daily-discharge-sitrep-monthly-data-webfile-[N]-CSV-[monYY].csv' where N is month number (1-12), monYY is abbreviation + year.",
+  "subpage_link_hint": "All files are available on the main entry page. No sub-pages required. Files are organized chronologically.",
+  "targets": [
+    {
+      "sub_dataset_id": "monthly-acute-discharge-situation-report",
+      "sample_subpage_url": "",
+      "sample_file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Daily-discharge-sitrep-monthly-data-webfile-1-CSV-apr26.csv",
+      "notes": "Monthly CSV files with consistent naming pattern. Webfile numbering (1-12) corresponds to calendar month. Latest 2024-2026 data available.",
+      "include_extensions": ["csv"],
+      "preferred_link_selector": "a[href*='Daily-discharge-sitrep']",
+      "preferred_text_filter": "discharge.*sitrep|sitrep.*discharge"
+    }
+  ]
+}

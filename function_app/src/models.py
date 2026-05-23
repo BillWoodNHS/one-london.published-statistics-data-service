@@ -13,6 +13,21 @@ class PublicationDateRule:
 
 
 @dataclass
+class SubjectPeriodRuleItem:
+    """Represents one subject period extraction rule source+pattern pair."""
+
+    source: str
+    pattern: str
+
+
+@dataclass
+class SubjectPeriodRule:
+    """Represents prioritized subject period extraction rules."""
+
+    rules: List[SubjectPeriodRuleItem] = field(default_factory=list)
+
+
+@dataclass
 class ScrapeStep:
     """Represents a single scraping step for a dataset target."""
 
@@ -57,7 +72,7 @@ class DatasetSeriesConfig:
     entry_url: str
     publication_date: PublicationDateRule
     targets: List[TargetConfig]
-    subject_period: Optional[PublicationDateRule] = None
+    subject_period: Optional[SubjectPeriodRule] = None
     fallback: FallbackConfig = field(default_factory=FallbackConfig)
 
 

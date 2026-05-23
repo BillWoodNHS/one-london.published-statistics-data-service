@@ -44,14 +44,23 @@ def discover_manual_files(
 
         subject_period = None
         if config.subject_period:
-            subject_match = re.search(
-                config.subject_period.pattern, source_value, flags=re.IGNORECASE
-            )
-            if subject_match:
+            for rule in config.subject_period.rules:
+                if rule.source not in {"file_name", "filename", "url_segment"}:
+                    continue
+                rule_source = (
+                    source_value if rule.source != "url_segment" else blob_path
+                )
+                subject_match = re.search(
+                    rule.pattern, rule_source, flags=re.IGNORECASE
+                )
+                if not subject_match:
+                    continue
                 subject_raw = "_".join(
                     group for group in subject_match.groups() if group
                 ) or subject_match.group(0)
                 subject_period = normalize_subject_period_value(subject_raw)
+                if subject_period:
+                    break
 
         discovered.append(
             DiscoveredFile(

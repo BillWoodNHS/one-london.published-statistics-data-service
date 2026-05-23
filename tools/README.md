@@ -35,6 +35,11 @@ Automatic YAML configuration generator for the scraper-driven ingestion system.
 - `matches_found.csv` (live discovery validation with inferred subject periods and publication dates)
 - `normalized_input_specs/*.json` (normalized input specs for CSV-to-JSON migration)
 
+Generated YAML includes a prioritized `subject_period.rules` block for runtime extraction:
+1. `file_name`
+2. `url_segment`
+3. `page_text`
+
 **Quick Start (from repo root):**
 ```powershell
 # JSON mode (recommended)
