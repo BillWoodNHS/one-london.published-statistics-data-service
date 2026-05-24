@@ -1,20 +1,29 @@
 {
-  "schema_version": "1.0",
-  "dataset_id": "accident-and-emergency-attendances-and-emergency-admissions",
-  "dataset_name": "Accident and Emergency Attendances and Emergency Admissions",
-  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/",
-  "publication_date_hint": "Publication dates appear in page metadata and monthly release pages. Files follow pattern 'Monthly-AE-[Month]-[Year].csv'.",
-  "subject_period_hint": "Subject period is monthly, extracted from filenames and release dates. Files cover May 2024 onwards with monthly granularity.",
-  "subpage_link_hint": "Sub-pages are organized by fiscal year (e.g., 2026-27, 2025-26) following pattern .../ae-attendances-and-emergency-admissions-YYYY-YY/",
-  "targets": [
-    {
-      "sub_dataset_id": "default",
-      "sample_subpage_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/",
-      "sample_file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-April-2026-CSV-QD21vf.csv",
-      "notes": "Monthly CSV files. Subject period inferred from filename pattern 'Monthly-AE-[Month]-[Year].csv'. Fiscal year organized pages.",
-      "include_extensions": ["csv"],
-      "preferred_link_selector": "a[href*='ae-attendances-and-emergency-admissions']",
-      "preferred_text_filter": "Monthly|CSV"
-    }
-  ]
-}
+    "schema_version": "2.0",
+    "dataset_id": "accident-and-emergency-attendances-and-emergency-admissions",
+    "dataset_name": "Accident and Emergency Attendances and Emergency Admissions",
+    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/",
+    "hints": {
+        "entry_structure": "Sub-pages are organized by fiscal year (for example 2026-27 and 2025-26) under ae-attendances-and-emergency-admissions-YYYY-YY paths.",
+        "publication_date": "Publication dates appear in page metadata and monthly release pages. Files follow pattern Monthly-AE-[Month]-[Year].csv.",
+        "subject_period": "Subject period is monthly and extracted from filenames and release dates. Files cover May 2024 onwards."},
+    "targets": [
+        {
+            "sub_dataset_id": "default",
+            "sample_subpage_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/",
+            "samples": [
+                {
+                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-April-2026-CSV-QD21vf.csv",
+                    "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."}
+            ],
+            "include_extensions": ["csv"],
+            "preferred_link_selector": "a[href*='ae-attendances-and-emergency-admissions']",
+            "preferred_text_filter": "Monthly|CSV",
+            "hints": {
+                "file_pattern": "Monthly-AE-...-CSV files",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "YYYY-YY sub-page folders",
+                "month_extraction": "Month and year are embedded in filename"}}
+    ]}
+
+

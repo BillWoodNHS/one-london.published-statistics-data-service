@@ -24,6 +24,49 @@ def normalize_datetime_value(value: str) -> Optional[str]:
 
     cleaned = " ".join(value.replace(",", " ").split())
     cleaned = _strip_ordinal_suffixes(cleaned)
+
+    # Check for fiscal_year_and_month format (e.g., "2025-26_march" -> "2025 26 march")
+    fiscal_match = re.match(
+        r"(\d{4})\s+(\d{2})\s+(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)",
+        cleaned.replace("_", " ").replace("-", " "),
+        flags=re.IGNORECASE,
+    )
+    if fiscal_match:
+        start_year = int(fiscal_match.group(1))
+        # Fiscal year suffix (e.g., 26 from 2025-26)
+        month_name = fiscal_match.group(3).lower()
+        month_map = {
+            "jan": 1,
+            "january": 1,
+            "feb": 2,
+            "february": 2,
+            "mar": 3,
+            "march": 3,
+            "apr": 4,
+            "april": 4,
+            "may": 5,
+            "jun": 6,
+            "june": 6,
+            "jul": 7,
+            "july": 7,
+            "aug": 8,
+            "august": 8,
+            "sep": 9,
+            "september": 9,
+            "oct": 10,
+            "october": 10,
+            "nov": 11,
+            "november": 11,
+            "dec": 12,
+            "december": 12,
+        }
+        month = month_map.get(month_name, 1)
+        # Fiscal year 2025-26 means: April 2025 - March 2026
+        # Jan-Mar use start_year+1; Apr-Dec use start_year
+        calendar_year = start_year + 1 if month <= 3 else start_year
+        parsed = dt.datetime(year=calendar_year, month=month, day=1)
+        return parsed.strftime("%Y%m%dT%H%M%S")
+
     cleaned = cleaned.replace("_", " ").replace("-", " ")
 
     if re.fullmatch(r"\d{8}T\d{6}", cleaned):

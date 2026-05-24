@@ -6,8 +6,9 @@ Helper scripts and utilities for the scraper-driven dataset acquisition system.
 
 ```
 tools/
-├── scrape_config_builder/        # Helper tool for generating scraper configs from inventory
-│   ├── build_scrape_configs_from_inventory.py
+├── scrape_config_builder/        # Helper tools for v2 JSON scrape-config generation
+│   ├── scrape-config-helper.py
+│   ├── generate-helper-input-from-csv.py
 │   ├── README.md
 │   └── helper_input/
 │       └── appointments-in-general-practice.json
@@ -27,13 +28,13 @@ tools/
 
 Automatic YAML configuration generator for the scraper-driven ingestion system.
 
-**Purpose:** Infer scraper patterns (link selectors, text filters, file extensions, subject periods) from CSV inventory or per-dataset JSON specs. Generate candidate YAML configs and validate discovery against live pages (non-download).
+**Purpose:** Infer scraper patterns (link selectors, text filters, file extensions, subject periods) from per-dataset JSON v2 specs. Generate candidate YAML configs and validate discovery against live pages (non-download).
 
 **Key Outputs:**
 - Generated YAML configs (ready for manual review)
 - `helper_suggestions.csv` (inferred selectors, patterns, extensions)
 - `matches_found.csv` (live discovery validation with inferred subject periods and publication dates)
-- `normalized_input_specs/*.json` (normalized input specs for CSV-to-JSON migration)
+- `normalized_input_specs/*.json` (normalized v2 input specs used in the run)
 
 Generated YAML includes a prioritized `subject_period.rules` block for runtime extraction:
 1. `file_name`
@@ -43,26 +44,25 @@ Generated YAML includes a prioritized `subject_period.rules` block for runtime e
 **Quick Start (from repo root):**
 ```powershell
 # JSON mode (recommended)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+python tools/scrape_config_builder/scrape-config-helper.py \
   --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
 
-# CSV mode (legacy, bulk seed)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+# CSV to v2 helper-input generation
+python tools/scrape_config_builder/generate-helper-input-from-csv.py \
   --inventory psds-file-inventory.csv \
   --dataset appointments-in-general-practice
 ```
 
 See [scrape_config_builder/README.md](scrape_config_builder/README.md) for:
-- Full input modes documentation (CSV, JSON, mixed)
+- Full input modes documentation (JSON v2 + CSV converter)
 - JSON schema and field definitions
 - Subject period and publication date inference behavior
-- Migration path from CSV to JSON-first workflows
+- Migration path from CSV inventory to JSON v2 helper inputs
 
 ### Input Modes
 
-- **JSON (recommended):** `--input-json path/to/spec.json` or `--input-json-dir path/to/specs/`
-- **CSV (legacy):** `--inventory psds-file-inventory.csv`
-- **Mixed:** Combine both; JSON specs override CSV defaults by dataset_id
+- **JSON v2 (required by helper):** `--input-json path/to/spec.json` or `--input-json-dir path/to/specs/`
+- **CSV conversion (separate tool):** `python tools/scrape_config_builder/generate-helper-input-from-csv.py --inventory psds-file-inventory.csv`
 
 ## ci (CI/CD Scripts)
 
@@ -122,17 +122,17 @@ Local development utilities.
 
 ```powershell
 # Single dataset from JSON
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+python tools/scrape_config_builder/scrape-config-helper.py \
   --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
 
 # Multiple datasets from JSON directory
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+python tools/scrape_config_builder/scrape-config-helper.py \
   --input-json-dir tools/scrape_config_builder/helper_input
 
-# CSV + JSON (mixed)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+# CSV to helper-input v2 generation
+python tools/scrape_config_builder/generate-helper-input-from-csv.py \
   --inventory psds-file-inventory.csv \
-  --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
+  --output-dir tools/scrape_config_builder/helper_input
 ```
 
 ### Local Development Setup
@@ -148,7 +148,7 @@ python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
 ## Implementation Notes
 
 - The scrape config builder does **not download files**; it validates discovery patterns only via HTTP fetch and regex matching.
-- Publication dates and subject periods are **inferred** from page metadata and link text; they can be overridden in JSON specs.
+- Publication dates and subject periods are **inferred** from page metadata and link text and can be improved via JSON v2 hints and samples.
 - Generated YAML configs are **candidates** requiring manual review and testing before version control commit.
-- CSV inputs are backwards-compatible for bulk seeding; **JSON-first workflows are recommended** for new datasets.
+- CSV inputs are handled by `generate-helper-input-from-csv.py`; the main helper accepts JSON v2 only.
 - All scripts support idempotent execution where practical.

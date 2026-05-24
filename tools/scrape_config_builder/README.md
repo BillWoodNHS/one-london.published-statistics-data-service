@@ -1,47 +1,44 @@
 # Scrape Config Builder
 
-Automatic YAML configuration generator for the scraper-driven ingestion system. This tool infers scraper patterns from helper metadata (CSV inventory or per-dataset JSON specs), generates candidate YAML configs, and validates discovery against live web pages without downloading files.
+Automatic YAML configuration generator for the scraper-driven ingestion system. The helper now runs in JSON v2 mode only and validates discovery against live web pages without downloading files.
 
 ## Quick Start
 
 From the repo root:
 
 ```powershell
-# CSV mode (bulk seed from inventory)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py --inventory psds-file-inventory.csv --dataset appointments-in-general-practice
-
 # JSON mode (per-dataset hints)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
+python tools/scrape_config_builder/scrape-config-helper.py --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
 
 # JSON directory mode (all datasets)
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py --input-json-dir tools/scrape_config_builder/helper_input
+python tools/scrape_config_builder/scrape-config-helper.py --input-json-dir tools/scrape_config_builder/helper_input
+
+# Optional: generate v2 helper inputs from legacy inventory CSV
+python tools/scrape_config_builder/generate-helper-input-from-csv.py --inventory psds-file-inventory.csv
 ```
 
 ## Input Modes
 
-### CSV Inventory
-Legacy compatibility mode. Reads a CSV with columns: dataset name, parent link, sub-link, sub-collection, target file, notes. Useful for bulk seed runs.
-
-CSV inputs are converted into normalized dataset specs internally.
-
 ### JSON Dataset Specs
-New first-class mode. Per-dataset JSON files in `helper_input/` directory.
+Only supported mode for `scrape-config-helper.py`. Per-dataset JSON files in `helper_input/` directory.
 
 Supports:
 - Single dataset object
 - Wrapper with `datasets: [...]` array
-- Optional hints: `publication_date_hint`, `subject_period_hint`, `subpage_link_hint`
-- Per-target overrides: `preferred_link_selector`, `preferred_text_filter`
+- `schema_version: "2.0"`
+- Dataset-level `hints` object (`entry_structure`, `publication_date`, `subject_period`)
+- Target-level `samples` array (`file_url`, `notes`)
+- Per-target overrides: `preferred_link_selector`, `preferred_text_filter`, `sample_subpage_url`, `hints`
 
 Example: [helper_input/appointments-in-general-practice.json](helper_input/appointments-in-general-practice.json)
 
-### Mixed Mode
-Combine CSV + JSON. JSON dataset specs override CSV-derived defaults by `dataset_id`.
+### CSV Conversion Tool
+Use `generate-helper-input-from-csv.py` to seed v2 helper JSON files from legacy inventory CSV data.
 
 ```powershell
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+python tools/scrape_config_builder/generate-helper-input-from-csv.py \
   --inventory psds-file-inventory.csv \
-  --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json \
+  --output-dir tools/scrape_config_builder/helper_input \
   --dataset appointments-in-general-practice
 ```
 
@@ -52,29 +49,24 @@ Generated in `--output-dir` (default: `logs/local_helper`):
 - `generated_configs/*.yaml` — Candidate scraper YAML configs ready for manual review and commit.
 - `helper_suggestions.csv` — Inferred selectors, patterns, and extension hints per sub-dataset.
 - `matches_found.csv` — Live discovery validation results (URL, link text, publication date, subject period inference).
-- `normalized_input_specs/*.json` — Final normalized input specs used by the run. Useful for migration from CSV to JSON-first workflows.
+- `normalized_input_specs/*.json` — Final normalized v2 input specs used by the run.
 
 ## Helper Input JSON Schema
 
 Minimal required fields:
-- `dataset_id` — Slug identifier (e.g., `appointments-in-general-practice`)
+- `schema_version` — Must be `"2.0"`
+- `dataset_id` — Slug identifier (for example `appointments-in-general-practice`)
 - `entry_url` — Root listing page URL
 - `targets` — Array of sub-dataset specifications
 
-Optional metadata hints:
-- `dataset_name` — Human-readable name
-- `publication_date_hint` — Notes on how publication dates appear
-- `subject_period_hint` — Notes on report period scope
-- `subpage_link_hint` — Notes on sub-page URL patterns
-
 Per-target fields:
 - `sub_dataset_id` — Sub-dataset identifier (defaults to `"default"`)
-- `sample_subpage_url` — URL to a monthly/release subpage (optional)
-- `sample_file_url` — Example file URL to infer pattern
-- `notes` — Human notes (e.g., "ZIP archive", "formatted report")
+- `sample_subpage_url` — Optional URL to a release subpage
+- `samples` — One or more sample files with `file_url` and optional `notes`
 - `include_extensions` — File extensions to match (e.g., `["zip", "csv"]`)
 - `preferred_link_selector` — Optional CSS selector override
 - `preferred_text_filter` — Optional regex filter override
+- `hints` — Optional target hints (`file_pattern`, `subject_period_pattern`, `fiscal_year_format`, `month_extraction`)
 
 ## Inference Behavior
 
@@ -106,44 +98,33 @@ The function app evaluates rules top-to-bottom and uses the first successful nor
 
 ## Migration Path
 
-1. **Start with CSV** (bulk seed from inventory)
-2. **Inspect normalized_input_specs/*.json** (shows how CSV was converted)
-3. **Copy/tune JSON per dataset** (add hints, overrides)
-4. **Move to JSON-only workflows** (fewer dependencies on fragile CSV formats)
+1. **Generate v2 helper inputs from CSV** with `generate-helper-input-from-csv.py`
+2. **Tune JSON per dataset** (samples, hints, overrides)
+3. **Run `scrape-config-helper.py`** with `--input-json` or `--input-json-dir`
 
 ## Example Workflow
 
 ```powershell
-# 1. Initial CSV run
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
+# 1. Generate v2 helper input from CSV (optional)
+python tools/scrape_config_builder/generate-helper-input-from-csv.py \
   --inventory psds-file-inventory.csv \
-  --dataset appointments-in-general-practice \
+  --dataset appointments-in-general-practice
+
+# 2. Edit helper JSON and add samples/hints as needed
+
+# 3. Run helper with v2 JSON
+python tools/scrape_config_builder/scrape-config-helper.py \
+  --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json \
   --output-dir logs/scrape_run_1
 
-# 2. Review generated YAML and matches
+# 4. Review generated YAML and match quality
 # - Open logs/scrape_run_1/generated_configs/appointments-in-general-practice.yaml
-# - Check logs/scrape_run_1/matches_found.csv for any missing or noisy matches
-
-# 3. Copy normalized spec for customization
-cp logs/scrape_run_1/normalized_input_specs/appointments-in-general-practice.json \
-   tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
-
-# 4. Edit JSON to add hints and overrides
-# - Add subject_period_hint
-# - Add preferred_link_selector per target if defaults are noisy
-
-# 5. Re-run with JSON
-python tools/scrape_config_builder/build_scrape_configs_from_inventory.py \
-  --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json \
-  --output-dir logs/scrape_run_2
-
-# 6. Compare matches
-# - Verify improvements in logs/scrape_run_2/matches_found.csv
+# - Check logs/scrape_run_1/matches_found.csv
 ```
 
 ## Notes
 
 - The tool does **not download files**; it validates discovery patterns only.
-- Publication dates and subject periods are inferred but can be overridden in the JSON input.
+- Publication dates and subject periods are inferred but can be improved with hints and additional samples in JSON v2 input.
 - The generated YAML configs are **candidates** and should be manually reviewed before committing.
-- CSV inventory reads are backwards-compatible; CSV is optional when JSON inputs are provided.
+- CSV is supported only through `generate-helper-input-from-csv.py`; the main helper accepts JSON v2 only.

@@ -1,0 +1,33 @@
+{
+    "schema_version": "2.0",
+    "dataset_id": "community-health-services-waiting-list",
+    "dataset_name": "Community Health Services Waiting List",
+    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/community-health-services-waiting-lists/",
+    "hints": {
+        "entry_structure": "Direct file links on main page; no sub-page navigation required",
+        "publication_date": "Not available; recommend using download date as fallback",
+        "subject_period": "Monthly; extracted from filename pattern with fiscal year + month (e.g., 2025-26-March)"},
+    "targets": [
+        {
+            "sub_dataset_id": "default",
+            "samples": [
+                {
+                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Community-health-services-waiting-lists-2025-26-March.xlsx",
+                    "notes": "March 2025-26 fiscal year"},
+                {
+                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/04/Community-health-services-waiting-lists-2025-26-February.xlsx",
+                    "notes": "February 2025-26 fiscal year"},
+                {
+                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/03/Community-health-services-waiting-lists-2025-26-January.xlsx",
+                    "notes": "January 2025-26 fiscal year"}],
+            "include_extensions": ["xlsx"],
+            "preferred_link_selector": "a[href*='community-health-services-waiting-lists' i]",
+            "preferred_text_filter": "Community|health|services|waiting",
+            "hints": {
+                "file_pattern": "URL contains 'community-health-services-waiting-lists', file extension .xlsx",
+                "subject_period_pattern": "fiscal_year_and_month",
+                "fiscal_year_format": "YYYY-YY (e.g., 2025-26)",
+                "month_extraction": "Month name at end of filename before file extension"}}
+    ]}
+
+

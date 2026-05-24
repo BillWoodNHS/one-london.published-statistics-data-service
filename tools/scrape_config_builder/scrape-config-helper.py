@@ -7,7 +7,6 @@ import csv
 import json
 import re
 import sys
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -41,32 +40,49 @@ PUBLICATION_FALLBACK_PATTERN = (
     r"(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})"
 )
 
-SUBJECT_PERIOD_FALLBACK_PATTERN = (
-    r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|"
-    r"aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
-    r"(?:[\s_\-/]*\d{2,4})"
+MONTH_REGEX = (
+    r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+    r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?)"
 )
+
+PATTERN_TYPES = {
+    "fiscal_year_and_month",
+    "compact_month_year",
+    "month_year",
+}
 
 
 @dataclass
-class InventoryRow:
-    dataset_name: str
-    parent_link: str
-    sub_link: str
-    sub_collection: str
-    target_file: str
-    note: str
+class Sample:
+    file_url: str
+    notes: str = ""
+
+
+@dataclass
+class TargetHints:
+    file_pattern: str = ""
+    subject_period_pattern: str = ""
+    fiscal_year_format: str = ""
+    month_extraction: str = ""
+
+
+@dataclass
+class DatasetHints:
+    entry_structure: str = ""
+    publication_date: str = ""
+    subject_period: str = ""
 
 
 @dataclass
 class HelperTargetInput:
     sub_dataset_id: str
-    sample_subpage_url: str
-    sample_file_url: str
-    notes: str
+    samples: List[Sample]
     include_extensions: List[str]
-    preferred_link_selector: str
-    preferred_text_filter: str
+    preferred_link_selector: str = ""
+    preferred_text_filter: str = ""
+    sample_subpage_url: str = ""
+    hints: Optional[TargetHints] = None
 
 
 @dataclass
@@ -75,25 +91,20 @@ class HelperDatasetInput:
     dataset_name: str
     entry_url: str
     targets: List[HelperTargetInput]
-    source_path: str
-
-
-def _norm(value: str) -> str:
-    return "".join(ch for ch in (value or "").lower().strip() if ch.isalnum())
-
-
-def _pick_header(headers: Sequence[str], *candidates: str) -> Optional[str]:
-    mapping = {_norm(h): h for h in headers}
-    for candidate in candidates:
-        hit = mapping.get(_norm(candidate))
-        if hit:
-            return hit
-    return None
+    hints: Optional[DatasetHints] = None
+    source_path: str = ""
 
 
 def _slugify(value: str) -> str:
     lowered = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return lowered or "unknown-dataset"
+
+
+def _clean_sub_dataset_id(value: str) -> str:
+    normalized = value.strip().lower() if value else ""
+    if normalized in {"", "none", "n/a", "na"}:
+        return "default"
+    return normalized
 
 
 def _is_none_like(value: str) -> bool:
@@ -107,156 +118,37 @@ def _file_extension(url: str) -> str:
     return path.rsplit(".", maxsplit=1)[-1]
 
 
-def _read_inventory(path: Path) -> List[InventoryRow]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if not reader.fieldnames:
-            raise ValueError("Inventory file has no header row.")
+def _detect_subject_period_pattern_type(
+    samples: Sequence[Sample], hints_text: str = ""
+) -> str:
+    if not samples:
+        return "month_year"
 
-        dataset_col = _pick_header(
-            reader.fieldnames,
-            "name",
-            "dataset name",
-            "dataset",
-        )
-        parent_col = _pick_header(reader.fieldnames, "parent link", "parent_link")
-        sub_col = _pick_header(reader.fieldnames, "sub-link", "sub_link")
-        collection_col = _pick_header(
-            reader.fieldnames,
-            "sub-collection",
-            "sub_collection",
-            "sub dataset",
-            "sub_dataset",
-        )
-        target_col = _pick_header(
-            reader.fieldnames,
-            "target file",
-            "target_file",
-            "target file url",
-            "target_url",
-        )
-        note_col = _pick_header(reader.fieldnames, "note", "notes")
+    sample_urls = [s.file_url for s in samples if s.file_url]
+    combined_text = " ".join(sample_urls) + " " + hints_text
+    combined_text_lower = combined_text.lower()
 
-        required = {
-            "name": dataset_col,
-            "parent link": parent_col,
-            "sub-collection": collection_col,
-            "target file": target_col,
-        }
-        missing = [label for label, col in required.items() if not col]
-        if missing:
-            raise ValueError(
-                f"Missing required inventory columns: {', '.join(missing)}"
-            )
-
-        rows: List[InventoryRow] = []
-        for raw in reader:
-            rows.append(
-                InventoryRow(
-                    dataset_name=(raw.get(dataset_col, "") or "").strip(),
-                    parent_link=(raw.get(parent_col, "") or "").strip(),
-                    sub_link=(raw.get(sub_col, "") or "").strip() if sub_col else "",
-                    sub_collection=(raw.get(collection_col, "") or "").strip(),
-                    target_file=(raw.get(target_col, "") or "").strip(),
-                    note=(raw.get(note_col, "") or "").strip() if note_col else "",
-                )
-            )
-    return rows
-
-
-def _clean_sub_dataset_id(value: str) -> str:
-    normalized = value.strip().lower() if value else ""
-    if normalized in {"", "none", "n/a", "na"}:
-        return "default"
-    return normalized
-
-
-def _rows_to_dataset_specs(
-    rows: Sequence[InventoryRow], source_path: str
-) -> List[HelperDatasetInput]:
-    by_dataset: Dict[str, List[InventoryRow]] = defaultdict(list)
-    for row in rows:
-        if row.dataset_name:
-            by_dataset[row.dataset_name].append(row)
-
-    specs: List[HelperDatasetInput] = []
-    for dataset_name, dataset_rows in sorted(
-        by_dataset.items(), key=lambda item: item[0]
+    if re.search(
+        r"\d{4}[-/]\d{2}[-\s_/](jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)",
+        combined_text_lower,
     ):
-        entry_url = next(
-            (
-                row.parent_link
-                for row in dataset_rows
-                if not _is_none_like(row.parent_link)
-            ),
-            "",
-        )
-        if not entry_url:
-            continue
+        return "fiscal_year_and_month"
 
-        grouped_targets: Dict[str, List[InventoryRow]] = defaultdict(list)
-        for row in dataset_rows:
-            grouped_targets[_clean_sub_dataset_id(row.sub_collection)].append(row)
+    if re.search(
+        r"(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)\d{2,4}",
+        combined_text_lower,
+    ):
+        return "compact_month_year"
 
-        targets: List[HelperTargetInput] = []
-        for sub_dataset_id, target_rows in sorted(grouped_targets.items()):
-            sample_subpage_url = next(
-                (
-                    row.sub_link
-                    for row in target_rows
-                    if not _is_none_like(row.sub_link)
-                ),
-                "",
-            )
-            sample_file_url = next(
-                (
-                    row.target_file
-                    for row in target_rows
-                    if not _is_none_like(row.target_file)
-                ),
-                "",
-            )
-            notes = " | ".join(
-                sorted(
-                    {
-                        row.note.strip()
-                        for row in target_rows
-                        if row.note and row.note.strip()
-                    }
-                )
-            )
-            include_extensions = sorted(
-                {
-                    _file_extension(row.target_file)
-                    for row in target_rows
-                    if not _is_none_like(row.target_file)
-                    and _file_extension(row.target_file)
-                }
-            )
+    return "month_year"
 
-            targets.append(
-                HelperTargetInput(
-                    sub_dataset_id=sub_dataset_id,
-                    sample_subpage_url=sample_subpage_url,
-                    sample_file_url=sample_file_url,
-                    notes=notes,
-                    include_extensions=include_extensions,
-                    preferred_link_selector="",
-                    preferred_text_filter="",
-                )
-            )
 
-        specs.append(
-            HelperDatasetInput(
-                dataset_id=_slugify(dataset_name),
-                dataset_name=dataset_name,
-                entry_url=entry_url,
-                targets=targets,
-                source_path=source_path,
-            )
-        )
-
-    return specs
+def _generate_subject_period_pattern(pattern_type: str) -> str:
+    if pattern_type == "fiscal_year_and_month":
+        return rf"(\d{{4}}[-/]\d{{2}})[-\s_/]+{MONTH_REGEX}"
+    if pattern_type == "compact_month_year":
+        return rf"{MONTH_REGEX}(\d{{2,4}})"
+    return rf"{MONTH_REGEX}(?:[\s_\-/]*\d{{2,4}})"
 
 
 def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
@@ -273,14 +165,29 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
         if not isinstance(record, dict):
             raise ValueError(f"JSON record #{index} in {path} is not an object")
 
+        schema_version = str(record.get("schema_version", "")).strip()
+        if schema_version != "2.0":
+            raise ValueError(
+                f"Only schema_version '2.0' is supported in {path} record #{index}; got '{schema_version or 'missing'}'"
+            )
+
         dataset_id = _slugify(str(record.get("dataset_id", "")).strip())
         dataset_name = str(record.get("dataset_name", "")).strip() or dataset_id
         entry_url = str(record.get("entry_url", "")).strip()
-        target_records = record.get("targets", [])
+
         if not dataset_id:
             raise ValueError(f"Missing dataset_id in {path} record #{index}")
         if not entry_url:
             raise ValueError(f"Missing entry_url for dataset '{dataset_id}' in {path}")
+
+        dataset_hints_raw = record.get("hints", {})
+        dataset_hints = DatasetHints(
+            entry_structure=str(dataset_hints_raw.get("entry_structure", "")).strip(),
+            publication_date=str(dataset_hints_raw.get("publication_date", "")).strip(),
+            subject_period=str(dataset_hints_raw.get("subject_period", "")).strip(),
+        )
+
+        target_records = record.get("targets", [])
         if not isinstance(target_records, list):
             raise ValueError(
                 f"targets must be a list for dataset '{dataset_id}' in {path}"
@@ -292,23 +199,53 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 raise ValueError(
                     f"Target #{target_idx} for dataset '{dataset_id}' in {path} is not an object"
                 )
+
             sub_dataset_id = _clean_sub_dataset_id(
                 str(target.get("sub_dataset_id", "default"))
             )
+
+            samples_raw = target.get("samples", [])
+            if not isinstance(samples_raw, list):
+                raise ValueError(
+                    f"samples must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                )
+            samples = [
+                Sample(
+                    file_url=str(s.get("file_url", "")).strip(),
+                    notes=str(s.get("notes", "")).strip(),
+                )
+                for s in samples_raw
+                if isinstance(s, dict) and str(s.get("file_url", "")).strip()
+            ]
+            if not samples:
+                raise ValueError(
+                    f"At least one samples[].file_url is required for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                )
+
             include_extensions = target.get("include_extensions", []) or []
             if not isinstance(include_extensions, list):
                 raise ValueError(
-                    "include_extensions must be a list "
-                    f"for dataset '{dataset_id}' target '{sub_dataset_id}' in {path}"
+                    f"include_extensions must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
                 )
+
+            target_hints_raw = target.get("hints", {})
+            target_hints = TargetHints(
+                file_pattern=str(target_hints_raw.get("file_pattern", "")).strip(),
+                subject_period_pattern=str(
+                    target_hints_raw.get("subject_period_pattern", "")
+                ).strip(),
+                fiscal_year_format=str(
+                    target_hints_raw.get("fiscal_year_format", "")
+                ).strip(),
+                month_extraction=str(
+                    target_hints_raw.get("month_extraction", "")
+                ).strip(),
+            )
+
             targets.append(
                 HelperTargetInput(
                     sub_dataset_id=sub_dataset_id,
-                    sample_subpage_url=str(
-                        target.get("sample_subpage_url", "")
-                    ).strip(),
-                    sample_file_url=str(target.get("sample_file_url", "")).strip(),
-                    notes=str(target.get("notes", "")).strip(),
+                    samples=samples,
                     include_extensions=[
                         str(ext).strip().lower()
                         for ext in include_extensions
@@ -320,6 +257,19 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                     preferred_text_filter=str(
                         target.get("preferred_text_filter", "")
                     ).strip(),
+                    sample_subpage_url=str(
+                        target.get("sample_subpage_url", "")
+                    ).strip(),
+                    hints=target_hints
+                    if any(
+                        [
+                            target_hints.file_pattern,
+                            target_hints.subject_period_pattern,
+                            target_hints.fiscal_year_format,
+                            target_hints.month_extraction,
+                        ]
+                    )
+                    else None,
                 )
             )
 
@@ -329,6 +279,15 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 dataset_name=dataset_name,
                 entry_url=entry_url,
                 targets=targets,
+                hints=dataset_hints
+                if any(
+                    [
+                        dataset_hints.entry_structure,
+                        dataset_hints.publication_date,
+                        dataset_hints.subject_period,
+                    ]
+                )
+                else None,
                 source_path=str(path),
             )
         )
@@ -338,19 +297,6 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
 
 def _load_dataset_specs(args: argparse.Namespace) -> List[HelperDatasetInput]:
     specs: List[HelperDatasetInput] = []
-
-    should_load_inventory = bool(args.inventory) or (
-        not args.inventory
-        and not args.input_json
-        and not args.input_json_dir
-        and Path("psds-file-inventory.csv").exists()
-    )
-    if should_load_inventory:
-        inventory_path = Path(args.inventory or "psds-file-inventory.csv")
-        if not inventory_path.exists():
-            raise FileNotFoundError(f"Inventory file not found: {inventory_path}")
-        rows = _read_inventory(inventory_path)
-        specs.extend(_rows_to_dataset_specs(rows, str(inventory_path)))
 
     for json_path_value in args.input_json:
         json_path = Path(json_path_value)
@@ -369,10 +315,9 @@ def _load_dataset_specs(args: argparse.Namespace) -> List[HelperDatasetInput]:
 
     if not specs:
         raise ValueError(
-            "No input specs found. Provide --inventory, --input-json, or --input-json-dir."
+            "No input specs found. Provide --input-json or --input-json-dir."
         )
 
-    # Last-wins merge by dataset_id so explicit JSON can override CSV-derived defaults.
     deduped: Dict[str, HelperDatasetInput] = {}
     for spec in specs:
         deduped[spec.dataset_id] = spec
@@ -386,20 +331,42 @@ def _write_normalized_input_specs(
     spec_dir.mkdir(parents=True, exist_ok=True)
     for spec in specs:
         payload = {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "dataset_id": spec.dataset_id,
             "dataset_name": spec.dataset_name,
             "entry_url": spec.entry_url,
             "source_path": spec.source_path,
+            "hints": {
+                "entry_structure": spec.hints.entry_structure if spec.hints else "",
+                "publication_date": spec.hints.publication_date if spec.hints else "",
+                "subject_period": spec.hints.subject_period if spec.hints else "",
+            },
             "targets": [
                 {
                     "sub_dataset_id": target.sub_dataset_id,
                     "sample_subpage_url": target.sample_subpage_url,
-                    "sample_file_url": target.sample_file_url,
-                    "notes": target.notes,
+                    "samples": [
+                        {"file_url": sample.file_url, "notes": sample.notes}
+                        for sample in target.samples
+                    ],
+                    "notes": " | ".join([s.notes for s in target.samples if s.notes]),
                     "include_extensions": target.include_extensions,
                     "preferred_link_selector": target.preferred_link_selector,
                     "preferred_text_filter": target.preferred_text_filter,
+                    "hints": {
+                        "file_pattern": target.hints.file_pattern
+                        if target.hints
+                        else "",
+                        "subject_period_pattern": target.hints.subject_period_pattern
+                        if target.hints
+                        else "",
+                        "fiscal_year_format": target.hints.fiscal_year_format
+                        if target.hints
+                        else "",
+                        "month_extraction": target.hints.month_extraction
+                        if target.hints
+                        else "",
+                    },
                 }
                 for target in spec.targets
             ],
@@ -475,7 +442,6 @@ def _escape_for_regex(text: str) -> str:
 
 
 def _generalize_link_text(text: str) -> str:
-    """Reduce brittle terms (months/years/sizes) from link text before regex escaping."""
     value = text.strip()
     if not value:
         return value
@@ -618,6 +584,35 @@ def _stable_sub_link_token(sub_links: Sequence[str]) -> Optional[str]:
     return token or None
 
 
+def _resolve_subject_period_pattern_type(dataset: HelperDatasetInput) -> str:
+    explicit_types: List[str] = []
+    for target in dataset.targets:
+        if target.hints and target.hints.subject_period_pattern:
+            hinted = target.hints.subject_period_pattern.strip().lower()
+            if hinted in PATTERN_TYPES:
+                explicit_types.append(hinted)
+    if explicit_types:
+        return explicit_types[0]
+
+    samples: List[Sample] = []
+    hints_parts: List[str] = []
+    if dataset.hints:
+        hints_parts.append(dataset.hints.subject_period)
+    for target in dataset.targets:
+        samples.extend(target.samples)
+        hints_parts.extend([sample.notes for sample in target.samples if sample.notes])
+        if target.hints:
+            hints_parts.extend(
+                [
+                    target.hints.subject_period_pattern,
+                    target.hints.fiscal_year_format,
+                    target.hints.month_extraction,
+                ]
+            )
+
+    return _detect_subject_period_pattern_type(samples, " ".join(hints_parts))
+
+
 def _build_config_for_dataset(
     dataset: HelperDatasetInput,
     session: requests.Session,
@@ -628,20 +623,29 @@ def _build_config_for_dataset(
     suggestion_rows: List[Dict[str, str]] = []
     targets: List[Dict[str, object]] = []
 
+    subject_period_pattern_type = _resolve_subject_period_pattern_type(dataset)
+    subject_period_pattern = _generate_subject_period_pattern(
+        subject_period_pattern_type
+    )
+
     for target_input in sorted(
         dataset.targets, key=lambda target: target.sub_dataset_id
     ):
+        target_notes = " | ".join(
+            [sample.notes for sample in target_input.samples if sample.notes]
+        )
         normalized_sub_dataset_id = _clean_sub_dataset_id(target_input.sub_dataset_id)
         if (
-            _looks_like_formatted_report(target_input.notes)
+            _looks_like_formatted_report(target_notes)
             or normalized_sub_dataset_id == "summary"
         ):
             continue
 
-        example_file = target_input.sample_file_url
+        example_file = target_input.samples[0].file_url if target_input.samples else ""
         sub_links = (
             [target_input.sample_subpage_url]
-            if not _is_none_like(target_input.sample_subpage_url)
+            if target_input.sample_subpage_url
+            and not _is_none_like(target_input.sample_subpage_url)
             else []
         )
         page_for_file = sub_links[0] if sub_links else dataset.entry_url
@@ -675,7 +679,6 @@ def _build_config_for_dataset(
             scrape_steps.append(step1)
 
         step_last: Dict[str, object] = {"link_selector": "a[href]"}
-        # Keep this optional: extension filtering is the primary matcher for broad discovery tests.
         if file_filter and not extensions:
             step_last["text_filter"] = file_filter
         if extensions:
@@ -710,6 +713,7 @@ def _build_config_for_dataset(
                 "page_contains_date_hint": "yes"
                 if sub_soup and _contains_date_text(sub_soup.get_text(" ", strip=True))
                 else "no",
+                "subject_period_pattern_type": subject_period_pattern_type,
                 "skip_reason": "",
             }
         )
@@ -726,15 +730,15 @@ def _build_config_for_dataset(
             "rules": [
                 {
                     "source": "file_name",
-                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                    "pattern": subject_period_pattern,
                 },
                 {
                     "source": "url_segment",
-                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                    "pattern": subject_period_pattern,
                 },
                 {
                     "source": "page_text",
-                    "pattern": SUBJECT_PERIOD_FALLBACK_PATTERN,
+                    "pattern": subject_period_pattern,
                 },
             ]
         },
@@ -880,31 +884,23 @@ def _build_for_datasets(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Infer scrape config patterns from inventory rows, generate YAML candidates, "
+            "Build scraper YAML configs from v2 JSON helper specs "
             "and run non-download discovery validation."
         )
-    )
-    parser.add_argument(
-        "--inventory",
-        default="",
-        help=(
-            "Path to inventory CSV file. Optional when using JSON inputs. "
-            "If no input is provided and psds-file-inventory.csv exists, that CSV is used."
-        ),
     )
     parser.add_argument(
         "--input-json",
         action="append",
         default=[],
         help=(
-            "Path to JSON dataset spec. Repeat for multiple files. "
-            'Supports a single dataset object or {"datasets": [...]}'
+            "Path to v2 JSON dataset spec. Repeat for multiple files. "
+            'Supports a single dataset object or {"datasets": [...]}.'
         ),
     )
     parser.add_argument(
         "--input-json-dir",
         default="",
-        help="Directory of JSON dataset specs (*.json).",
+        help="Directory of v2 JSON dataset specs (*.json).",
     )
     parser.add_argument(
         "--dataset",
