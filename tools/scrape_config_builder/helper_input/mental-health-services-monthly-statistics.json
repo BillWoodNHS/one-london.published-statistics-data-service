@@ -15,7 +15,7 @@
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
-          "page_role": "archive",
+          "page_role": "default",
           "partitioning_strategy": "subject_period",
           "samples": [
             {
@@ -47,7 +47,7 @@
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
-          "page_role": "archive",
+          "page_role": "default",
           "partitioning_strategy": "subject_period",
           "samples": [
             {
@@ -79,7 +79,7 @@
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
-          "page_role": "archive",
+          "page_role": "default",
           "partitioning_strategy": "subject_period",
           "samples": [
             {

@@ -21,7 +21,7 @@ targets:
 - sub_dataset_id: out-of-area-placements
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
-    page_role: archive
+    page_role: default
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href$='.zip']
@@ -41,7 +41,7 @@ targets:
 - sub_dataset_id: performance-data-file
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
-    page_role: archive
+    page_role: default
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href$='.zip']
@@ -59,7 +59,7 @@ targets:
 - sub_dataset_id: restrictive-interventions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
-    page_role: archive
+    page_role: default
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href$='.zip']
