@@ -1,6 +1,6 @@
-dataset_id: mental_health_services_monthly_statistics
-series_id: mental_health_services_monthly_statistics
-entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics
+dataset_id: learning-disabilities-health-check-scheme
+series_id: learning-disabilities-health-check-scheme
+entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme
 publication_date:
   source: link_text
   pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
@@ -14,33 +14,17 @@ subject_period:
     pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
 fallback:
   allow_manual_acquisition: true
-  manual_drop_path: manual/mental_health_services_monthly_statistics
+  manual_drop_path: manual/learning-disabilities-health-check-scheme
   max_auto_retries: 3
   timeout_threshold_minutes: 5
 targets:
-- sub_dataset_id: out-of-area-placements
+- sub_dataset_id: monthly-publication
   scrape_steps:
-  - link_selector: a[href*='performance-']
+  - link_selector: a[href*="england-march"]
   - link_selector: a[href]
     file_extensions:
-    - zip
+    - csv
   reporting_period_columns: []
-  page_date_selectors: &id001
+  page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
-- sub_dataset_id: performance-data-file
-  scrape_steps:
-  - link_selector: a[href*='performance-']
-  - link_selector: a[href]
-    file_extensions:
-    - zip
-  reporting_period_columns: []
-  page_date_selectors: *id001
-- sub_dataset_id: restrictive-interventions
-  scrape_steps:
-  - link_selector: a[href*='performance-']
-  - link_selector: a[href]
-    file_extensions:
-    - zip
-  reporting_period_columns: []
-  page_date_selectors: *id001

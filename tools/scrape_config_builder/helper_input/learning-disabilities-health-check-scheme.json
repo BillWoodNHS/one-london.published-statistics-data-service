@@ -1,0 +1,38 @@
+{
+  "schema_version": "2.0",
+  "dataset_id": "learning-disabilities-health-check-scheme",
+  "dataset_name": "Learning Disabilities Health Check Scheme",
+  "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme",
+  "hints": {
+    "entry_structure": "The landing page links to monthly England publication pages which each contain a CSV file.",
+    "publication_date": "Publication month and year are present in the subpage URL and file name.",
+    "subject_period": "Monthly subject period appears in file names like learning-disabilities-health-check-scheme-eng-Mar-2026.csv."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "monthly-publication",
+      "sample_subpage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme/england-march-2026",
+      "samples": [
+        {
+          "file_url": "https://files.digital.nhs.uk/C6/6C42BA/learning-disabilities-health-check-scheme-eng-Mar-2026.csv",
+          "notes": "Latest monthly England CSV"
+        },
+        {
+          "file_url": "https://files.digital.nhs.uk/0A/0ED50B/learning-disabilities-health-check-scheme-eng-Feb-2026.csv",
+          "notes": "Previous monthly England CSV"
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "",
+      "preferred_text_filter": "learning-disabilities-health-check-scheme",
+      "hints": {
+        "file_pattern": "learning-disabilities-health-check-scheme-eng-<Mon>-<YYYY>",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year token from file name"
+      }
+    }
+  ]
+}

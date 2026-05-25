@@ -1,0 +1,38 @@
+{
+  "schema_version": "2.0",
+  "dataset_id": "integrated-urgent-care-aggregate-data-collection",
+  "dataset_name": "Integrated Urgent Care Aggregate Data Collection",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/",
+  "hints": {
+    "entry_structure": "Entry page links to yearly IUCADC publication pages that contain monthly provisional raw CSV files.",
+    "publication_date": "Publication date can be inferred from monthly release pages and metadata.",
+    "subject_period": "Subject period is monthly and appears in file names such as Provisional-IUCADC-Raw-Apr26.csv."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "integrated-urgent-care-aggregate-data-collection",
+      "sample_subpage_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/",
+      "samples": [
+        {
+          "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Provisional-IUCADC-Raw-Apr26_NS46i.csv",
+          "notes": "Current period provisional raw monthly CSV"
+        },
+        {
+          "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/04/Provisional-IUCADC-Raw-Mar26_asTV32-1.csv",
+          "notes": "Previous period provisional raw monthly CSV"
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "",
+      "preferred_text_filter": "IUCADC|Provisional",
+      "hints": {
+        "file_pattern": "Provisional-IUCADC-Raw-<MonYY>",
+        "subject_period_pattern": "compact_month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract monYY token from file name"
+      }
+    }
+  ]
+}

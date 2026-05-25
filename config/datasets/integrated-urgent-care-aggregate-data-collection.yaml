@@ -1,0 +1,30 @@
+dataset_id: integrated-urgent-care-aggregate-data-collection
+series_id: integrated-urgent-care-aggregate-data-collection
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/
+publication_date:
+  source: link_text
+  pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
+subject_period:
+  rules:
+  - source: file_name
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+  - source: url_segment
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+  - source: page_text
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/integrated-urgent-care-aggregate-data-collection
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: integrated-urgent-care-aggregate-data-collection
+  scrape_steps:
+  - link_selector: a[href*="integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-mar"]
+  - link_selector: a[href]
+    file_extensions:
+    - csv
+  reporting_period_columns: []
+  page_date_selectors:
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})

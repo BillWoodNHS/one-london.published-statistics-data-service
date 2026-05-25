@@ -6,6 +6,7 @@ import calendar
 import csv
 import json
 import re
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -171,7 +172,7 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 f"Only schema_version '2.0' is supported in {path} record #{index}; got '{schema_version or 'missing'}'"
             )
 
-        dataset_id = _slugify(str(record.get("dataset_id", "")).strip())
+        dataset_id = str(record.get("dataset_id", "")).strip()
         dataset_name = str(record.get("dataset_name", "")).strip() or dataset_id
         entry_url = str(record.get("entry_url", "")).strip()
 
@@ -329,6 +330,8 @@ def _write_normalized_input_specs(
 ) -> None:
     spec_dir = output_dir / "normalized_input_specs"
     spec_dir.mkdir(parents=True, exist_ok=True)
+    for existing_path in spec_dir.glob("*.json"):
+        existing_path.unlink()
     for spec in specs:
         payload = {
             "schema_version": "2.0",
@@ -678,8 +681,9 @@ def _build_config_for_dataset(
             step1: Dict[str, object] = {"link_selector": step1_selector}
             scrape_steps.append(step1)
 
-        step_last: Dict[str, object] = {"link_selector": "a[href]"}
-        if file_filter and not extensions:
+        step_last_selector = target_input.preferred_link_selector or "a[href]"
+        step_last: Dict[str, object] = {"link_selector": step_last_selector}
+        if file_filter:
             step_last["text_filter"] = file_filter
         if extensions:
             step_last["file_extensions"] = extensions
@@ -859,6 +863,11 @@ def _build_for_datasets(
     output_dir.mkdir(parents=True, exist_ok=True)
     generated_dir = output_dir / "generated_configs"
     generated_dir.mkdir(parents=True, exist_ok=True)
+    for existing_path in generated_dir.iterdir():
+        if existing_path.is_file():
+            existing_path.unlink()
+        elif existing_path.is_dir():
+            shutil.rmtree(existing_path)
     _write_normalized_input_specs(output_dir, specs)
 
     session = requests.Session()

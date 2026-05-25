@@ -17,7 +17,7 @@
                     "notes": "ZIP archive with CSV. Month/year suffix appears in filename (for example Mar_26)."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"Actual_Duration\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Appointments_GP_Actual_Duration",
@@ -33,7 +33,7 @@
                     "notes": "ZIP archive with CSV regional breakdown."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"Regional\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Appointments_GP_Regional",
@@ -49,7 +49,7 @@
                     "notes": "Direct CSV with COVID vaccine appointment counts."}
             ],
             "include_extensions": ["csv"],
-            "preferred_link_selector": "a[href*=\"Covid\"], a[href*=\"NIMS\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "Covid|Vaccine",
             "hints": {
                 "file_pattern": "NIMS Covid Vaccine counts",
@@ -65,7 +65,7 @@
                     "notes": "ZIP archive with CSV for national appointment categories."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"National_Categories\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Appointments_GP_National_Categories",
@@ -81,7 +81,7 @@
                     "notes": "ZIP archive with CSV by SDS role group."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"SDS_Role\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Appointments_GP_SDS_Role",
@@ -97,7 +97,7 @@
                     "notes": "Direct CSV national summary."}
             ],
             "include_extensions": ["csv"],
-            "preferred_link_selector": "a[href*=\"National_Overview\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "National_Overview",
@@ -113,7 +113,7 @@
                     "notes": "ZIP archive with practice-level cross-tab data."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"Practice_Level\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Practice_Level_Crosstab",
@@ -129,7 +129,7 @@
                     "notes": "Direct CSV for sub-ICB level data."}
             ],
             "include_extensions": ["csv"],
-            "preferred_link_selector": "a[href*=\"PCN_GRANULAR\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "PCN_GRANULAR",
@@ -145,7 +145,7 @@
                     "notes": "ZIP archive with daily granular appointment counts."}
             ],
             "include_extensions": ["zip"],
-            "preferred_link_selector": "a[href*=\"Daily\"]",
+            "preferred_link_selector": "",
             "preferred_text_filter": "",
             "hints": {
                 "file_pattern": "Appointments_GP_Daily",

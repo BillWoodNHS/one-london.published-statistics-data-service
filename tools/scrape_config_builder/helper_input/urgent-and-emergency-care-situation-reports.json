@@ -1,0 +1,38 @@
+{
+  "schema_version": "2.0",
+  "dataset_id": "urgent-and-emergency-care-situation-reports",
+  "dataset_name": "Urgent and Emergency Care Situation Reports",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/",
+  "hints": {
+    "entry_structure": "The landing page links to annual report pages which provide monthly CSV bed sitrep files.",
+    "publication_date": "Release month and year are present in file names and publication page context.",
+    "subject_period": "Monthly subject period appears in file names such as 202604-April-2026-beds-sitrep-data-provisional.csv."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "critical-care-beds",
+      "sample_subpage_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports-2026-27/",
+      "samples": [
+        {
+          "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/202604-April-2026-beds-sitrep-data-provisional.csv",
+          "notes": "Current period bed sitrep CSV"
+        },
+        {
+          "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/202603-March-2026-beds-sitrep-data-finalversion.csv",
+          "notes": "Previous period bed sitrep CSV"
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "",
+      "preferred_text_filter": "beds|sitrep|critical care",
+      "hints": {
+        "file_pattern": "YYYYMM-<Month>-<YYYY>-beds-sitrep-data-...",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month-year token from file name"
+      }
+    }
+  ]
+}

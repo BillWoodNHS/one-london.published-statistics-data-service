@@ -21,7 +21,7 @@
             "preferred_text_filter": "discharge.*sitrep|sitrep.*discharge",
             "hints": {
                 "file_pattern": "Daily-discharge-sitrep-monthly-data-webfile-...-CSV-...",
-                "subject_period_pattern": "compact_month_year",
+                "subject_period_pattern": "month_year",
                 "fiscal_year_format": "",
                 "month_extraction": "Extract monYY token from filename"}}
     ]}
