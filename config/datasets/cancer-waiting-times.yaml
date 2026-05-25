@@ -19,34 +19,77 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: combined-provider-commissioner
-  scrape_steps:
-  - link_selector: a[href]
-    file_extensions:
-    - csv
-    - xlsx
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='Apr-Mar']
+      text_filter: Apr.*Mar|Combined|Final
+      file_extensions:
+      - csv
+      - xlsx
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: commissioner-based
-  scrape_steps:
-  - link_selector: a[href]
-    file_extensions:
-    - xlsx
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='ICB']
+      text_filter: ICB|Commissioner|Extract
+      file_extensions:
+      - xlsx
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: monthly-cancer-waiting-times-statistics
-  scrape_steps:
-  - link_selector: a[href*='Monthly-Combined-CSV']
-  - link_selector: a[href]
-    file_extensions:
-    - csv
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/2025-26-monthly-cancer-waiting-times-statistics/
+    page_role: archive
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='Monthly-Combined-CSV']
+      text_filter: Monthly|Combined|CSV|Provisional
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: provider-based
-  scrape_steps:
-  - link_selector: a[href]
-    file_extensions:
-    - xlsx
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='Data-Extract-Provider']
+      text_filter: Provider|Extract
+      file_extensions:
+      - xlsx
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: *id001

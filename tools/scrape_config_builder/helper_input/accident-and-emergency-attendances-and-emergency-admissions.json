@@ -1,29 +1,80 @@
 {
-    "schema_version": "2.0",
-    "dataset_id": "accident-and-emergency-attendances-and-emergency-admissions",
-    "dataset_name": "Accident and Emergency Attendances and Emergency Admissions",
-    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/",
-    "hints": {
-        "entry_structure": "Sub-pages are organized by fiscal year (for example 2026-27 and 2025-26) under ae-attendances-and-emergency-admissions-YYYY-YY paths.",
-        "publication_date": "Publication dates appear in page metadata and monthly release pages. Files follow pattern Monthly-AE-[Month]-[Year].csv.",
-        "subject_period": "Subject period is monthly and extracted from filenames and release dates. Files cover May 2024 onwards."},
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "accident-and-emergency-attendances-and-emergency-admissions",
+  "dataset_name": "Accident and Emergency Attendances and Emergency Admissions",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\accident-and-emergency-attendances-and-emergency-admissions.json",
+  "hints": {
+    "entry_structure": "Sub-pages are organized by fiscal year (for example 2026-27 and 2025-26) under ae-attendances-and-emergency-admissions-YYYY-YY paths.",
+    "publication_date": "Publication dates appear in page metadata and monthly release pages. Files follow pattern Monthly-AE-[Month]-[Year].csv.",
+    "subject_period": "Subject period is monthly and extracted from filenames and release dates. Files cover May 2024 onwards."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "default",
+      "sample_pages": [
         {
-            "sub_dataset_id": "default",
-            "sample_subpage_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/",
-            "samples": [
-                {
-                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-April-2026-CSV-QD21vf.csv",
-                    "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."}
-            ],
-            "include_extensions": ["csv"],
-            "preferred_link_selector": "a[href*='ae-attendances-and-emergency-admissions']",
-            "preferred_text_filter": "Monthly|CSV",
-            "hints": {
-                "file_pattern": "Monthly-AE-...-CSV files",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "YYYY-YY sub-page folders",
-                "month_extraction": "Month and year are embedded in filename"}}
-    ]}
-
-
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/",
+          "page_role": "subject_period_index",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-April-2026-CSV-QD21vf.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            }
+          ]
+        },
+        {
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2025-26/",
+          "page_role": "subject_period_index",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-March-2026-revised-flkg42.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/03/February-2026-CSV-Dl8t54.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Monthly-AE-January-2026-revised-3dker.csv",
+              "notes": "Monthly CSV files."
+            }
+          ]
+        },
+        {
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2024-25/",
+          "page_role": "subject_period_index",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            { 
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Monthly-AE-March-2025.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/05/Monthly-AE-February-2025-revised.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Monthly-AE-February-2025-CSV-1h7g9f.csv",
+              "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href*='Monthly-AE'][href$='.csv']",
+      "preferred_text_filter": "Monthly|CSV",
+      "archive_pattern_hint": "sibling_pages_by_subject_period",
+      "hints": {
+        "file_pattern": "Monthly-AE-...-CSV files",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "YYYY-YY sub-page folders",
+        "month_extraction": "Month and year are embedded in filename"
+      }
+    }
+  ]
+}

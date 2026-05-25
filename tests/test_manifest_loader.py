@@ -11,9 +11,15 @@ def test_manifest_loads_targets():
     mh = next(
         m
         for m in manifests
-        if m.series_id == "mental-health-services-monthly-statistics"
+        if m.series_id == "mental_health_services_monthly_statistics"
     )
     assert len(mh.targets) == 3
-    assert mh.targets[0].sub_dataset_id == "performance-data-file"
+    # Find performance-data-file target instead of relying on order
+    perf_target = next(
+        t for t in mh.targets if t.sub_dataset_id == "performance-data-file"
+    )
+    assert perf_target.sub_dataset_id == "performance-data-file"
     assert mh.subject_period is not None
-    assert mh.targets[0].page_date_selectors
+    assert perf_target.page_date_selectors
+    assert perf_target.source_pages
+    assert perf_target.source_pages[0].page_role == "default"

@@ -37,6 +37,30 @@ class ScrapeStep:
 
 
 @dataclass
+class SiblingDiscoveryConfig:
+    """Optional rules for discovering sibling pages from a seed page."""
+
+    enabled: bool = False
+    link_selector: str = "a[href]"
+    url_pattern: Optional[str] = None
+    text_pattern: Optional[str] = None
+    max_pages: int = 25
+
+
+@dataclass
+class SourcePageConfig:
+    """Represents one page context to scrape for a target."""
+
+    page_url: str
+    page_role: str = "default"
+    partitioning_strategy: str = "none"
+    scrape_steps: List[ScrapeStep] = field(default_factory=list)
+    sibling_discovery: SiblingDiscoveryConfig = field(
+        default_factory=SiblingDiscoveryConfig
+    )
+
+
+@dataclass
 class TargetConfig:
     """Configuration for a sub-dataset target.
 
@@ -44,7 +68,8 @@ class TargetConfig:
     """
 
     sub_dataset_id: str
-    scrape_steps: List[ScrapeStep]
+    scrape_steps: List[ScrapeStep] = field(default_factory=list)
+    source_pages: List[SourcePageConfig] = field(default_factory=list)
     compression: Optional[str] = None
     excel_sheet: Optional[str] = None
     delimiter: str = ","

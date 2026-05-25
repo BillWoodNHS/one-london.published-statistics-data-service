@@ -1,65 +1,89 @@
 {
-    "schema_version": "2.0",
-    "dataset_id": "data-quality-maturity-index",
-    "dataset_name": "Data Quality Maturity Index",
-    "entry_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",
-    "hints": {
-        "entry_structure": "The landing page stores the current months publication. Previous months are archived in a sub-page.",
-        "publication_date": "Expected publication dates are stored on the entry page, but actual publication can differ and is not shown on screen.",
-        "subject_period": "Monthly subject appears in file download href. Example 'DQMI-100 (January 2026) CSV'."
-    },
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "data-quality-maturity-index",
+  "dataset_name": "Data Quality Maturity Index",
+  "entry_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\data-quality-maturity-index.json",
+  "hints": {
+    "entry_structure": "Entry: current month. Archive page: previous.",
+    "publication_date": "Expected on entry page; actual may differ.",
+    "subject_period": "In file href. Example 'DQMI-100 (Jan 2026) CSV'."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "without-did",
+      "sample_pages": [
         {
-            "sub_dataset_id": "without-DID",
-            "samples": [
-                {
-                    "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_100_csv-v1.csv",
-                    "notes": "Latest monthly CSV without DID included"
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv']:not([href*='did']):not([href*='DID'])",
-            "preferred_text_filter": "^(?!.*DID included)(?!.*\\bdid\\b).*DQMI.*CSV",
-            "hints": {
-                "file_pattern": "DQMO_nnn_csv-vn.csv",
-                "subject_period_pattern": "month year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year from link href. href must exclude 'DID included'."
+          "page_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_100_csv-v1.csv",
+              "notes": "Latest monthly CSV without DID included"
             }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv']:not([href*='did','DID'])",
+      "preferred_text_filter": "^(?!.*DID included)(?!.*\\bdid\\b).*DQMI.*CSV",
+      "hints": {
+        "file_pattern": "DQMO_nnn_csv-vn.csv",
+        "subject_period_pattern": "month year",
+        "fiscal_year_format": "",
+        "month_extraction": "From href: month + year. Exclude 'DID included'.",
+        "archive_pattern": "none"
+      }
+    },
+    {
+      "sub_dataset_id": "with-did",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_99_csv-v2-did.csv",
+              "notes": "Latest monthly CSV w/ DID. Entry page"
+            }
+          ]
         },
         {
-            "sub_dataset_id": "with-DID",
-            "samples": [
-                {
-                    "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_99_csv-v2-did.csv",
-                    "notes": "Latest monthly CSV with DID included. On Entry URL"
-                },
-                {
-                    "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_98_csv-v2-did.csv",
-                    "notes": "previous monthly csv with DID included. On archive subpage URL"
-                },
-                {
-                    "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/march/dqmi_97_csv-v3-did.csv",
-                    "notes": "previous monthly csv with DID included. On archive subpage URL"
-                },
-                {
-                    "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/february/dqmi_96_csv-v2-did.csv",
-                    "notes": "previous monthly csv with DID included. On archive subpage URL"
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='did'], a[href$='.csv'][href*='DID']",
-            "preferred_text_filter": "DQMI.*CSV.*DID",
-            "hints": {
-                "file_pattern": "DQMO_nnn_csv_did-vn-did.csv",
-                "subject_period_pattern": "month year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year from link href. href must include 'DID included'."
+          "page_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality/archive",
+          "page_role": "archive",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/april/dqmi_98_csv-v2-did.csv",
+              "notes": "Previous monthly CSV w/ DID. Archive"
+            },
+            {
+              "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/march/dqmi_97_csv-v3-did.csv",
+              "notes": "Previous monthly CSV w/ DID. Archive"
+            },
+            {
+              "file_url": "https://digital.nhs.uk/binaries/content/assets/website-assets/data-and-information/data-tools-and-services/data-services/data-quality/dqmi-2026/february/dqmi_96_csv-v2-did.csv",
+              "notes": "Previous monthly CSV w/ DID. Archive"
             }
+          ]
         }
-    ]
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href*='did'], a[href*='DID']",
+      "preferred_text_filter": "DQMI.*CSV.*DID",
+      "hints": {
+        "file_pattern": "DQMO_nnn_csv_did-vn-did.csv",
+        "subject_period_pattern": "month year",
+        "fiscal_year_format": "",
+        "month_extraction": "From href: month + year. Include 'DID included'.",
+        "archive_pattern": "general_archive_subpage"
+      }
+    }
+  ]
 }

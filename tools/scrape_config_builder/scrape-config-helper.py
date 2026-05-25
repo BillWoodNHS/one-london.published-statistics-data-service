@@ -25,6 +25,8 @@ from function_app.src.models import (  # noqa: E402
     DatasetSeriesConfig,
     PublicationDateRule,
     ScrapeStep,
+    SiblingDiscoveryConfig,
+    SourcePageConfig,
     SubjectPeriodRule,
     SubjectPeriodRuleItem,
     TargetConfig,
@@ -61,11 +63,24 @@ class Sample:
 
 
 @dataclass
+class SamplePageInput:
+    page_url: str
+    page_role: str = "default"
+    partitioning_strategy: str = "none"
+    samples: List[Sample] = None
+
+    def __post_init__(self) -> None:
+        if self.samples is None:
+            self.samples = []
+
+
+@dataclass
 class TargetHints:
     file_pattern: str = ""
     subject_period_pattern: str = ""
     fiscal_year_format: str = ""
     month_extraction: str = ""
+    archive_pattern: str = ""
 
 
 @dataclass
@@ -78,11 +93,10 @@ class DatasetHints:
 @dataclass
 class HelperTargetInput:
     sub_dataset_id: str
-    samples: List[Sample]
+    sample_pages: List[SamplePageInput]
     include_extensions: List[str]
     preferred_link_selector: str = ""
     preferred_text_filter: str = ""
-    sample_subpage_url: str = ""
     hints: Optional[TargetHints] = None
 
 
@@ -167,9 +181,9 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
             raise ValueError(f"JSON record #{index} in {path} is not an object")
 
         schema_version = str(record.get("schema_version", "")).strip()
-        if schema_version != "2.0":
+        if schema_version not in {"2.0", "0.1"}:
             raise ValueError(
-                f"Only schema_version '2.0' is supported in {path} record #{index}; got '{schema_version or 'missing'}'"
+                f"Only schema_version '0.1' or '2.0' is supported in {path} record #{index}; got '{schema_version or 'missing'}'"
             )
 
         dataset_id = str(record.get("dataset_id", "")).strip()
@@ -205,22 +219,83 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 str(target.get("sub_dataset_id", "default"))
             )
 
-            samples_raw = target.get("samples", [])
-            if not isinstance(samples_raw, list):
-                raise ValueError(
-                    f"samples must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
-                )
-            samples = [
-                Sample(
-                    file_url=str(s.get("file_url", "")).strip(),
-                    notes=str(s.get("notes", "")).strip(),
-                )
-                for s in samples_raw
-                if isinstance(s, dict) and str(s.get("file_url", "")).strip()
-            ]
-            if not samples:
-                raise ValueError(
-                    f"At least one samples[].file_url is required for dataset '{dataset_id}' target '{sub_dataset_id}'"
+            sample_pages_raw = target.get("sample_pages", [])
+            sample_pages: List[SamplePageInput] = []
+
+            if sample_pages_raw:
+                if not isinstance(sample_pages_raw, list):
+                    raise ValueError(
+                        f"sample_pages must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                    )
+
+                for page_idx, page in enumerate(sample_pages_raw, start=1):
+                    if not isinstance(page, dict):
+                        raise ValueError(
+                            f"sample_pages[{page_idx}] must be an object for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                        )
+                    page_url = str(page.get("page_url", "")).strip()
+                    if not page_url:
+                        raise ValueError(
+                            f"sample_pages[{page_idx}].page_url is required for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                        )
+                    page_samples_raw = page.get("samples", [])
+                    if not isinstance(page_samples_raw, list):
+                        raise ValueError(
+                            f"sample_pages[{page_idx}].samples must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                        )
+                    page_samples = [
+                        Sample(
+                            file_url=str(s.get("file_url", "")).strip(),
+                            notes=str(s.get("notes", "")).strip(),
+                        )
+                        for s in page_samples_raw
+                        if isinstance(s, dict) and str(s.get("file_url", "")).strip()
+                    ]
+                    if not page_samples:
+                        raise ValueError(
+                            f"sample_pages[{page_idx}].samples must include at least one file_url for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                        )
+                    sample_pages.append(
+                        SamplePageInput(
+                            page_url=page_url,
+                            page_role=str(page.get("page_role", "default")).strip()
+                            or "default",
+                            partitioning_strategy=str(
+                                page.get("partitioning_strategy", "none")
+                            ).strip()
+                            or "none",
+                            samples=page_samples,
+                        )
+                    )
+
+            else:
+                samples_raw = target.get("samples", [])
+                if not isinstance(samples_raw, list):
+                    raise ValueError(
+                        f"samples must be a list for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                    )
+                samples = [
+                    Sample(
+                        file_url=str(s.get("file_url", "")).strip(),
+                        notes=str(s.get("notes", "")).strip(),
+                    )
+                    for s in samples_raw
+                    if isinstance(s, dict) and str(s.get("file_url", "")).strip()
+                ]
+                if not samples:
+                    raise ValueError(
+                        f"At least one samples[].file_url is required for dataset '{dataset_id}' target '{sub_dataset_id}'"
+                    )
+                legacy_subpage = str(target.get("sample_subpage_url", "")).strip()
+                sample_pages.append(
+                    SamplePageInput(
+                        page_url=legacy_subpage if legacy_subpage else entry_url,
+                        page_role="archive"
+                        if legacy_subpage and legacy_subpage != entry_url
+                        else "default",
+                        partitioning_strategy="none",
+                        samples=samples,
+                    )
                 )
 
             include_extensions = target.get("include_extensions", []) or []
@@ -241,12 +316,15 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 month_extraction=str(
                     target_hints_raw.get("month_extraction", "")
                 ).strip(),
+                archive_pattern=str(
+                    target_hints_raw.get("archive_pattern", "")
+                ).strip(),
             )
 
             targets.append(
                 HelperTargetInput(
                     sub_dataset_id=sub_dataset_id,
-                    samples=samples,
+                    sample_pages=sample_pages,
                     include_extensions=[
                         str(ext).strip().lower()
                         for ext in include_extensions
@@ -258,9 +336,6 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                     preferred_text_filter=str(
                         target.get("preferred_text_filter", "")
                     ).strip(),
-                    sample_subpage_url=str(
-                        target.get("sample_subpage_url", "")
-                    ).strip(),
                     hints=target_hints
                     if any(
                         [
@@ -268,6 +343,7 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                             target_hints.subject_period_pattern,
                             target_hints.fiscal_year_format,
                             target_hints.month_extraction,
+                            target_hints.archive_pattern,
                         ]
                     )
                     else None,
@@ -334,7 +410,7 @@ def _write_normalized_input_specs(
         existing_path.unlink()
     for spec in specs:
         payload = {
-            "schema_version": "2.0",
+            "schema_version": "0.1",
             "dataset_id": spec.dataset_id,
             "dataset_name": spec.dataset_name,
             "entry_url": spec.entry_url,
@@ -347,12 +423,21 @@ def _write_normalized_input_specs(
             "targets": [
                 {
                     "sub_dataset_id": target.sub_dataset_id,
-                    "sample_subpage_url": target.sample_subpage_url,
-                    "samples": [
-                        {"file_url": sample.file_url, "notes": sample.notes}
-                        for sample in target.samples
+                    "sample_pages": [
+                        {
+                            "page_url": page.page_url,
+                            "page_role": page.page_role,
+                            "partitioning_strategy": page.partitioning_strategy,
+                            "samples": [
+                                {
+                                    "file_url": sample.file_url,
+                                    "notes": sample.notes,
+                                }
+                                for sample in page.samples
+                            ],
+                        }
+                        for page in target.sample_pages
                     ],
-                    "notes": " | ".join([s.notes for s in target.samples if s.notes]),
                     "include_extensions": target.include_extensions,
                     "preferred_link_selector": target.preferred_link_selector,
                     "preferred_text_filter": target.preferred_text_filter,
@@ -367,6 +452,9 @@ def _write_normalized_input_specs(
                         if target.hints
                         else "",
                         "month_extraction": target.hints.month_extraction
+                        if target.hints
+                        else "",
+                        "archive_pattern": target.hints.archive_pattern
                         if target.hints
                         else "",
                     },
@@ -602,14 +690,18 @@ def _resolve_subject_period_pattern_type(dataset: HelperDatasetInput) -> str:
     if dataset.hints:
         hints_parts.append(dataset.hints.subject_period)
     for target in dataset.targets:
-        samples.extend(target.samples)
-        hints_parts.extend([sample.notes for sample in target.samples if sample.notes])
+        for page in target.sample_pages:
+            samples.extend(page.samples)
+            hints_parts.extend(
+                [sample.notes for sample in page.samples if sample.notes]
+            )
         if target.hints:
             hints_parts.extend(
                 [
                     target.hints.subject_period_pattern,
                     target.hints.fiscal_year_format,
                     target.hints.month_extraction,
+                    target.hints.archive_pattern,
                 ]
             )
 
@@ -635,7 +727,12 @@ def _build_config_for_dataset(
         dataset.targets, key=lambda target: target.sub_dataset_id
     ):
         target_notes = " | ".join(
-            [sample.notes for sample in target_input.samples if sample.notes]
+            [
+                sample.notes
+                for page in target_input.sample_pages
+                for sample in page.samples
+                if sample.notes
+            ]
         )
         normalized_sub_dataset_id = _clean_sub_dataset_id(target_input.sub_dataset_id)
         if (
@@ -644,17 +741,11 @@ def _build_config_for_dataset(
         ):
             continue
 
-        example_file = target_input.samples[0].file_url if target_input.samples else ""
-        sub_links = (
-            [target_input.sample_subpage_url]
-            if target_input.sample_subpage_url
-            and not _is_none_like(target_input.sample_subpage_url)
-            else []
-        )
-        page_for_file = sub_links[0] if sub_links else dataset.entry_url
-        sub_soup = _fetch_page(session, page_for_file)
-        sub_page_links = _all_links(sub_soup) if sub_soup else []
-
+        first_sample_url = ""
+        for page in target_input.sample_pages:
+            if page.samples:
+                first_sample_url = page.samples[0].file_url
+                break
         extensions = sorted(
             {
                 ext.lower()
@@ -662,65 +753,92 @@ def _build_config_for_dataset(
                 if ext and ext.strip()
             }
         )
-        if not extensions and not _is_none_like(example_file):
-            file_extension = _file_extension(example_file)
+        if not extensions and not _is_none_like(first_sample_url):
+            file_extension = _file_extension(first_sample_url)
             if file_extension:
                 extensions = [file_extension]
 
-        file_filter = target_input.preferred_text_filter or (
-            _choose_file_pattern(example_file, sub_page_links) if example_file else None
+        archive_pattern = (
+            target_input.hints.archive_pattern.strip().lower()
+            if target_input.hints and target_input.hints.archive_pattern
+            else ""
         )
 
-        sub_link_token = _stable_sub_link_token(sub_links)
+        source_pages: List[Dict[str, object]] = []
+        for page in target_input.sample_pages:
+            page_url = page.page_url or dataset.entry_url
+            page_soup = _fetch_page(session, page_url)
+            page_links = _all_links(page_soup) if page_soup else []
+            example_file = page.samples[0].file_url if page.samples else ""
 
-        scrape_steps: List[Dict[str, object]] = []
-        if sub_links:
-            step1_selector = target_input.preferred_link_selector or (
-                f'a[href*="{sub_link_token}"]' if sub_link_token else "a[href]"
+            file_filter = target_input.preferred_text_filter or (
+                _choose_file_pattern(example_file, page_links) if example_file else None
             )
-            step1: Dict[str, object] = {"link_selector": step1_selector}
-            scrape_steps.append(step1)
 
-        step_last_selector = target_input.preferred_link_selector or "a[href]"
-        step_last: Dict[str, object] = {"link_selector": step_last_selector}
-        if file_filter:
-            step_last["text_filter"] = file_filter
-        if extensions:
-            step_last["file_extensions"] = extensions
-        scrape_steps.append(step_last)
+            step_selector = target_input.preferred_link_selector or "a[href]"
+            step_last: Dict[str, object] = {"link_selector": step_selector}
+            if file_filter:
+                step_last["text_filter"] = file_filter
+            if extensions:
+                step_last["file_extensions"] = extensions
+
+            sibling_discovery_enabled = (
+                archive_pattern == "sibling_pages_by_subject_period"
+                and page.partitioning_strategy.lower() in {"subject_period", "mixed"}
+            )
+
+            source_pages.append(
+                {
+                    "page_url": page_url,
+                    "page_role": page.page_role,
+                    "partitioning_strategy": page.partitioning_strategy,
+                    "scrape_steps": [step_last],
+                    "sibling_discovery": {
+                        "enabled": sibling_discovery_enabled,
+                        "link_selector": "a[href]",
+                        "url_pattern": None,
+                        "text_pattern": None,
+                        "max_pages": 25,
+                    },
+                }
+            )
 
         targets.append(
             {
                 "sub_dataset_id": _slugify(normalized_sub_dataset_id),
-                "scrape_steps": scrape_steps,
+                "source_pages": source_pages,
                 "reporting_period_columns": [],
                 "page_date_selectors": DEFAULT_PAGE_DATE_SELECTORS,
             }
         )
 
-        suggestion_rows.append(
-            {
-                "dataset_name": dataset.dataset_name,
-                "dataset_id": dataset.dataset_id,
-                "sub_collection": normalized_sub_dataset_id,
-                "entry_url": dataset.entry_url,
-                "example_sub_link": sub_links[0] if sub_links else "",
-                "example_target_file": example_file,
-                "suggested_sub_link_text_filter": "",
-                "suggested_sub_link_selector": f'a[href*="{sub_link_token}"]'
-                if sub_link_token
-                else "a[href]",
-                "suggested_file_text_filter": file_filter or "",
-                "suggested_extensions": "|".join(extensions),
-                "page_for_file_matching": page_for_file,
-                "source_path": dataset.source_path,
-                "page_contains_date_hint": "yes"
-                if sub_soup and _contains_date_text(sub_soup.get_text(" ", strip=True))
-                else "no",
-                "subject_period_pattern_type": subject_period_pattern_type,
-                "skip_reason": "",
-            }
-        )
+        for page in target_input.sample_pages:
+            page_url = page.page_url or dataset.entry_url
+            page_soup = _fetch_page(session, page_url)
+            example_file = page.samples[0].file_url if page.samples else ""
+            suggestion_rows.append(
+                {
+                    "dataset_name": dataset.dataset_name,
+                    "dataset_id": dataset.dataset_id,
+                    "sub_collection": normalized_sub_dataset_id,
+                    "entry_url": dataset.entry_url,
+                    "example_sub_link": page_url,
+                    "example_target_file": example_file,
+                    "suggested_sub_link_text_filter": "",
+                    "suggested_sub_link_selector": "a[href]",
+                    "suggested_file_text_filter": target_input.preferred_text_filter
+                    or "",
+                    "suggested_extensions": "|".join(extensions),
+                    "page_for_file_matching": page_url,
+                    "source_path": dataset.source_path,
+                    "page_contains_date_hint": "yes"
+                    if page_soup
+                    and _contains_date_text(page_soup.get_text(" ", strip=True))
+                    else "no",
+                    "subject_period_pattern_type": subject_period_pattern_type,
+                    "skip_reason": "",
+                }
+            )
 
     config = {
         "dataset_id": dataset.dataset_id,
@@ -777,7 +895,25 @@ def _validate_config_matches(config: Dict[str, object]) -> List[Dict[str, str]]:
         targets=[
             TargetConfig(
                 sub_dataset_id=str(target["sub_dataset_id"]),
-                scrape_steps=[ScrapeStep(**step) for step in target["scrape_steps"]],
+                scrape_steps=[
+                    ScrapeStep(**step) for step in target.get("scrape_steps", [])
+                ],
+                source_pages=[
+                    SourcePageConfig(
+                        page_url=str(page["page_url"]),
+                        page_role=str(page.get("page_role", "default")),
+                        partitioning_strategy=str(
+                            page.get("partitioning_strategy", "none")
+                        ),
+                        scrape_steps=[
+                            ScrapeStep(**step) for step in page.get("scrape_steps", [])
+                        ],
+                        sibling_discovery=SiblingDiscoveryConfig(
+                            **page.get("sibling_discovery", {})
+                        ),
+                    )
+                    for page in target.get("source_pages", [])
+                ],
                 reporting_period_columns=target.get("reporting_period_columns", []),
                 page_date_selectors=target.get("page_date_selectors", []),
             )

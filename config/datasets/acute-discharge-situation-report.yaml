@@ -19,10 +19,21 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: monthly-acute-discharge-situation-report
-  scrape_steps:
-  - link_selector: a[href]
-    file_extensions:
-    - csv
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/discharge-delays/acute-discharge-situation-report/
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='Daily-discharge-sitrep']
+      text_filter: discharge.*sitrep|sitrep.*discharge
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})

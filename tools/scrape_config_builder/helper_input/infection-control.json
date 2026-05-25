@@ -1,8 +1,9 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "0.1",
   "dataset_id": "infection-control",
   "dataset_name": "Infection Control",
   "entry_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\infection-control.json",
   "hints": {
     "entry_structure": "The publication page links directly to monthly ODS files for each organism category.",
     "publication_date": "Publication timing is monthly and reflected in link text and file names.",
@@ -11,15 +12,21 @@
   "targets": [
     {
       "sub_dataset_id": "c-difficile-infection",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f21b670bb62e692c5d6e54/CDI-monthly-table-2026-march.ods",
-          "notes": "Latest CDI ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a5dba661abbaa1cf9dc7/CDI-monthly-table-2026-february.ods",
-          "notes": "Previous CDI ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f21b670bb62e692c5d6e54/CDI-monthly-table-2026-march.ods",
+              "notes": "Latest CDI ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a5dba661abbaa1cf9dc7/CDI-monthly-table-2026-february.ods",
+              "notes": "Previous CDI ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -31,20 +38,27 @@
         "file_pattern": "CDI-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     },
     {
       "sub_dataset_id": "e-coli-bacteraemia",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f21b78c42061e837e3ac85/E-coli-monthly-table-2026-march.ods",
-          "notes": "Latest E. coli ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a5f413f1436476e4436d/E-coli-monthly-table-2026-february.ods",
-          "notes": "Previous E. coli ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f21b78c42061e837e3ac85/E-coli-monthly-table-2026-march.ods",
+              "notes": "Latest E. coli ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a5f413f1436476e4436d/E-coli-monthly-table-2026-february.ods",
+              "notes": "Previous E. coli ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -56,20 +70,27 @@
         "file_pattern": "E-coli-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     },
     {
       "sub_dataset_id": "klebsiella-spp-bacteraemia",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f0bf91b0c3a4023e5d6d86/Klebsiella-monthly-table-2026-march.ods",
-          "notes": "Latest Klebsiella ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a60ba661abbaa1cf9dca/Klebsiella-monthly-table-2026-february.ods",
-          "notes": "Previous Klebsiella ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f0bf91b0c3a4023e5d6d86/Klebsiella-monthly-table-2026-march.ods",
+              "notes": "Latest Klebsiella ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a60ba661abbaa1cf9dca/Klebsiella-monthly-table-2026-february.ods",
+              "notes": "Previous Klebsiella ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -81,20 +102,27 @@
         "file_pattern": "Klebsiella-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     },
     {
       "sub_dataset_id": "mrsa-bacteraemia",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f21bae0bb62e692c5d6e55/MRSA-monthly-table-2026-march.ods",
-          "notes": "Latest MRSA ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a64613f1436476e44370/MRSA-monthly-table-2026-february.ods",
-          "notes": "Previous MRSA ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f21bae0bb62e692c5d6e55/MRSA-monthly-table-2026-march.ods",
+              "notes": "Latest MRSA ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a64613f1436476e44370/MRSA-monthly-table-2026-february.ods",
+              "notes": "Previous MRSA ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -106,20 +134,27 @@
         "file_pattern": "MRSA-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     },
     {
       "sub_dataset_id": "mssa-bacteraemia",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f21aefb8ce27acfa096864/MSSA-monthly-table-2026-march.ods",
-          "notes": "Latest MSSA ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a66755cc7fccb3e0dbd7/MSSA-monthly-table-2026-february.ods",
-          "notes": "Previous MSSA ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f21aefb8ce27acfa096864/MSSA-monthly-table-2026-march.ods",
+              "notes": "Latest MSSA ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a66755cc7fccb3e0dbd7/MSSA-monthly-table-2026-february.ods",
+              "notes": "Previous MSSA ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -131,20 +166,27 @@
         "file_pattern": "MSSA-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     },
     {
       "sub_dataset_id": "p-aeruginosa",
-      "sample_subpage_url": "",
-      "samples": [
+      "sample_pages": [
         {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69f0bfddb73b862445e3abab/P-aeruginosa-monthly-table-2026-march.ods",
-          "notes": "Latest P. aeruginosa ODS"
-        },
-        {
-          "file_url": "https://assets.publishing.service.gov.uk/media/69c2a68813f1436476e44371/P-aeruginosa-monthly-table-2026-february.ods",
-          "notes": "Previous P. aeruginosa ODS"
+          "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69f0bfddb73b862445e3abab/P-aeruginosa-monthly-table-2026-march.ods",
+              "notes": "Latest P. aeruginosa ODS"
+            },
+            {
+              "file_url": "https://assets.publishing.service.gov.uk/media/69c2a68813f1436476e44371/P-aeruginosa-monthly-table-2026-february.ods",
+              "notes": "Previous P. aeruginosa ODS"
+            }
+          ]
         }
       ],
       "include_extensions": [
@@ -156,7 +198,8 @@
         "file_pattern": "P-aeruginosa-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
-        "month_extraction": "Extract month and year token from file name"
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": ""
       }
     }
   ]

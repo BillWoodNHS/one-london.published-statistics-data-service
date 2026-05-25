@@ -1,6 +1,6 @@
-dataset_id: accident-and-emergency-attendances-and-emergency-admissions
-series_id: accident-and-emergency-attendances-and-emergency-admissions
-entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/
+dataset_id: data-quality-maturity-index
+series_id: data-quality-maturity-index
+entry_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality
 publication_date:
   source: link_text
   pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
@@ -14,18 +14,18 @@ subject_period:
     pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
 fallback:
   allow_manual_acquisition: true
-  manual_drop_path: manual/accident-and-emergency-attendances-and-emergency-admissions
+  manual_drop_path: manual/data-quality-maturity-index
   max_auto_retries: 3
   timeout_threshold_minutes: 5
 targets:
-- sub_dataset_id: default
+- sub_dataset_id: with-did
   source_pages:
-  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/
-    page_role: subject_period_index
-    partitioning_strategy: subject_period
+  - page_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality
+    page_role: default
+    partitioning_strategy: none
     scrape_steps:
-    - link_selector: a[href*='Monthly-AE'][href$='.csv']
-      text_filter: Monthly|CSV
+    - link_selector: a[href*='did'], a[href*='DID']
+      text_filter: DQMI.*CSV.*DID
       file_extensions: &id001
       - csv
     sibling_discovery:
@@ -34,25 +34,12 @@ targets:
       url_pattern: null
       text_pattern: null
       max_pages: 25
-  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2025-26/
-    page_role: subject_period_index
+  - page_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality/archive
+    page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='Monthly-AE'][href$='.csv']
-      text_filter: Monthly|CSV
-      file_extensions: *id001
-    sibling_discovery:
-      enabled: false
-      link_selector: a[href]
-      url_pattern: null
-      text_pattern: null
-      max_pages: 25
-  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2024-25/
-    page_role: subject_period_index
-    partitioning_strategy: subject_period
-    scrape_steps:
-    - link_selector: a[href*='Monthly-AE'][href$='.csv']
-      text_filter: Monthly|CSV
+    - link_selector: a[href*='did'], a[href*='DID']
+      text_filter: DQMI.*CSV.*DID
       file_extensions: *id001
     sibling_discovery:
       enabled: false
@@ -61,6 +48,24 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
-  page_date_selectors:
+  page_date_selectors: &id002
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+- sub_dataset_id: without-did
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href$='.csv']
+      text_filter: ^(?!.*DID included)(?!.*\bdid\b).*DQMI.*CSV
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
+  reporting_period_columns: []
+  page_date_selectors: *id002

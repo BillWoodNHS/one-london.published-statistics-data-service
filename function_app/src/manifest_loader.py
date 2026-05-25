@@ -10,6 +10,8 @@ from .models import (
     FallbackConfig,
     PublicationDateRule,
     ScrapeStep,
+    SiblingDiscoveryConfig,
+    SourcePageConfig,
     SubjectPeriodRule,
     SubjectPeriodRuleItem,
     TargetConfig,
@@ -94,9 +96,54 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
             target_id = _require(
                 target.get("sub_dataset_id"), f"targets[{idx}].sub_dataset_id"
             )
-            steps: List[ScrapeStep] = []
+            source_pages: List[SourcePageConfig] = []
+            for p_idx, page in enumerate(target.get("source_pages", []), start=1):
+                page_url = _require(
+                    page.get("page_url"),
+                    f"targets[{idx}].source_pages[{p_idx}].page_url",
+                )
+
+                steps: List[ScrapeStep] = []
+                for s_idx, step in enumerate(page.get("scrape_steps", []), start=1):
+                    steps.append(
+                        ScrapeStep(
+                            link_selector=_require(
+                                step.get("link_selector"),
+                                f"targets[{idx}].source_pages[{p_idx}].scrape_steps[{s_idx}].link_selector",
+                            ),
+                            text_filter=step.get("text_filter"),
+                            file_extensions=step.get("file_extensions", []),
+                        )
+                    )
+
+                if not steps:
+                    raise ManifestError(
+                        f"{file_path.name}: target {target_id} source_page "
+                        f"{p_idx} has no scrape_steps"
+                    )
+
+                sibling_raw = page.get("sibling_discovery", {}) or {}
+                source_pages.append(
+                    SourcePageConfig(
+                        page_url=page_url,
+                        page_role=page.get("page_role", "default"),
+                        partitioning_strategy=page.get("partitioning_strategy", "none"),
+                        scrape_steps=steps,
+                        sibling_discovery=SiblingDiscoveryConfig(
+                            enabled=bool(sibling_raw.get("enabled", False)),
+                            link_selector=str(
+                                sibling_raw.get("link_selector", "a[href]")
+                            ),
+                            url_pattern=sibling_raw.get("url_pattern"),
+                            text_pattern=sibling_raw.get("text_pattern"),
+                            max_pages=int(sibling_raw.get("max_pages", 25)),
+                        ),
+                    )
+                )
+
+            legacy_steps: List[ScrapeStep] = []
             for s_idx, step in enumerate(target.get("scrape_steps", []), start=1):
-                steps.append(
+                legacy_steps.append(
                     ScrapeStep(
                         link_selector=_require(
                             step.get("link_selector"),
@@ -107,15 +154,40 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                     )
                 )
 
-            if not steps:
+            if source_pages and legacy_steps:
                 raise ManifestError(
-                    f"{file_path.name}: target {target_id} has no scrape_steps"
+                    (
+                        f"{file_path.name}: target {target_id} must not define "
+                        "both source_pages and scrape_steps"
+                    )
                 )
+            if not source_pages and not legacy_steps:
+                raise ManifestError(
+                    (
+                        f"{file_path.name}: target {target_id} must define "
+                        "source_pages or scrape_steps"
+                    )
+                )
+
+            if source_pages:
+                normalized_source_pages = source_pages
+                normalized_steps: List[ScrapeStep] = []
+            else:
+                normalized_source_pages = [
+                    SourcePageConfig(
+                        page_url=entry_url,
+                        page_role="default",
+                        partitioning_strategy="none",
+                        scrape_steps=legacy_steps,
+                    )
+                ]
+                normalized_steps = legacy_steps
 
             targets.append(
                 TargetConfig(
                     sub_dataset_id=target_id,
-                    scrape_steps=steps,
+                    scrape_steps=normalized_steps,
+                    source_pages=normalized_source_pages,
                     compression=target.get("compression"),
                     excel_sheet=target.get("excel_sheet"),
                     delimiter=target.get("delimiter", ","),

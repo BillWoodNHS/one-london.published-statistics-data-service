@@ -1,76 +1,159 @@
 {
-    "schema_version": "2.0",
-    "dataset_id": "cancer-waiting-times",
-    "dataset_name": "Cancer Waiting Times",
-    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
-    "hints": {
-        "entry_structure": "Current year release pages (for example 2025-26) contain monthly CSV files, while historical XLSX files remain on landing pages.",
-        "publication_date": "Publication dates appear in page metadata and release pages with multiple date formats.",
-        "subject_period": "Subject period varies by sub-dataset: monthly CSVs, fiscal-year ranges, and historical files."},
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "cancer-waiting-times",
+  "dataset_name": "Cancer Waiting Times",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\cancer-waiting-times.json",
+  "hints": {
+    "entry_structure": "Current year release pages (for example 2025-26) contain monthly CSV files, while historical XLSX files remain on landing pages.",
+    "publication_date": "Publication dates appear in page metadata and release pages with multiple date formats.",
+    "subject_period": "Subject period varies by sub-dataset: monthly CSVs, fiscal-year ranges, and historical files."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "monthly-cancer-waiting-times-statistics",
+      "sample_pages": [
         {
-            "sub_dataset_id": "monthly-cancer-waiting-times-statistics",
-            "sample_subpage_url": "https://www.england.nhs.uk/statistics/2025-26-monthly-cancer-waiting-times-statistics/",
-            "samples": [
-                {
-                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/2025-26-Apr-Aug-Monthly-Combined-CSV-Provisional.csv",
-                    "notes": "Monthly CSV files (2025 onwards). Filenames can contain periods like Apr-Aug or Oct-Mar."}
-            ],
-            "include_extensions": ["csv"],
-            "preferred_link_selector": "a[href*='Monthly-Combined-CSV']",
-            "preferred_text_filter": "Monthly|Combined|CSV|Provisional",
-            "hints": {
-                "file_pattern": "Monthly-Combined-CSV files",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "YYYY-YY",
-                "month_extraction": "Month tokens may be ranges"}},
+          "page_url": "https://www.england.nhs.uk/statistics/2025-26-monthly-cancer-waiting-times-statistics/",
+          "page_role": "archive",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/March-2026-Monthly-Combined-CSV-Provisional.csv",
+              "notes": "Monthly CSV files (2025 onwards). Filenames can contain periods like Apr-Aug or Oct-Mar."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/04/February-2026-Monthly-Combined-CSV-Provisional.csv",
+              "notes": "Monthly CSV files (2025 onwards). Filenames can contain periods like Apr-Aug or Oct-Mar."
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href*='Monthly-Combined-CSV']",
+      "preferred_text_filter": "Monthly|Combined|CSV|Provisional",
+      "archive_pattern_hint": "sibling_pages_by_subject_period",
+      "hints": {
+        "file_pattern": "Monthly-Combined-CSV files",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "YYYY-YY",
+        "month_extraction": "Month tokens may be ranges"
+      }
+    },
+    {
+      "sub_dataset_id": "provider-based",
+      "sample_pages": [
         {
-            "sub_dataset_id": "provider-based",
-            "sample_subpage_url": "",
-            "samples": [
-                {
-                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/CWT-CRS-Oct-2025-to-Mar-2026-Data-Extract-Provider.xlsx",
-                    "notes": "Provider-level XLSX with period in filename."}
-            ],
-            "include_extensions": ["xlsx"],
-            "preferred_link_selector": "a[href*='Data-Extract-Provider']",
-            "preferred_text_filter": "Provider|Extract",
-            "hints": {
-                "file_pattern": "Data-Extract-Provider files",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Start and end months are in filename"}},
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/CWT-CRS-Oct-2025-to-Mar-2026-Data-Extract-Provider.xlsx",
+              "notes": "Provider-level XLSX with period in filename."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/01/CWT-CRS-Apr-2025-to-Sep-2025-Data-Extract-Provider-Final.xlsx",
+              "notes": "Provider-level XLSX with period in filename."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/10/CWT-CRS-Apr-2024-to-Mar-2025-Data-Extract-Provider-Final.xlsx",
+              "notes": "Provider-level XLSX with period in filename."
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "xlsx"
+      ],
+      "preferred_link_selector": "a[href*='Data-Extract-Provider']",
+      "preferred_text_filter": "Provider|Extract",
+      "archive_pattern_hint": "none",
+      "hints": {
+        "file_pattern": "Data-Extract-Provider files",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Start and end months are in filename"
+      }
+    },
+    {
+      "sub_dataset_id": "commissioner-based",
+      "sample_pages": [
         {
-            "sub_dataset_id": "commissioner-based",
-            "sample_subpage_url": "",
-            "samples": [
-                {
-                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/01/CWT-CRS-Apr-2025-to-Sep-2025-Data-Extract-Provider-Final.xlsx",
-                    "notes": "ICB/commissioner-level half-year XLSX periods."}
-            ],
-            "include_extensions": ["xlsx"],
-            "preferred_link_selector": "a[href*='ICB']",
-            "preferred_text_filter": "ICB|Commissioner|Extract",
-            "hints": {
-                "file_pattern": "ICB and commissioner extracts",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Start and end months are in filename"}},
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/01/CWT-CRS-Apr-2025-to-Sep-2025-Data-Extract-Provider-Final.xlsx",
+              "notes": "ICB/commissioner-level half-year XLSX periods."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/01/CWT-CRS-Apr-25-to-Sep-25-Data-Extract-ICB-Sub-Location-2.xlsx",
+              "notes": "ICB/commissioner-level half-year XLSX periods."
+            },
+            {
+              "file_url":"https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/10/CWT-CRS-Apr-24-to-Mar-25-Data-Extract-ICB-Sub-Location-Final.xlsx",  
+              "notes": "ICB/commissioner-level monthly CSV files with periods in filename."
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "xlsx"
+      ],
+      "preferred_link_selector": "a[href*='ICB']",
+      "preferred_text_filter": "ICB|Commissioner|Extract",
+      "archive_pattern_hint": "none",
+      "hints": {
+        "file_pattern": "ICB and commissioner extracts",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Start and end months are in filename"
+      }
+    },
+    {
+      "sub_dataset_id": "combined-provider-commissioner",
+      "sample_pages": [
         {
-            "sub_dataset_id": "combined-provider-commissioner",
-            "sample_subpage_url": "",
-            "samples": [
-                {
-                    "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/02/2024-25-Apr-Mar-Monthly-Combined-CSV-Final.csv",
-                    "notes": "Combined annual Apr-Mar fiscal period in CSV."}
-            ],
-            "include_extensions": ["csv", "xlsx"],
-            "preferred_link_selector": "a[href*='Apr-Mar']",
-            "preferred_text_filter": "Apr.*Mar|Combined|Final",
-            "hints": {
-                "file_pattern": "Apr-Mar combined final files",
-                "subject_period_pattern": "fiscal_year_and_month",
-                "fiscal_year_format": "YYYY-YY",
-                "month_extraction": "Apr-Mar period tokens in filename"}}]}
-
-
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
+          "page_role": "default",
+          "partitioning_strategy": "none",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/02/2024-25-Apr-Mar-Monthly-Combined-CSV-Final.csv",
+              "notes": "Combined annual Apr-Mar fiscal period in CSV."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/02/2024-25-Apr-Mar-Monthly-Combined-CSV-Final.csv",
+              "notes": "Combined annual Apr-Mar fiscal period in CSV."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/02/2023-24-Apr-Mar-Monthly-Combined-CSV-Final.csv",
+              "notes": "Combined annual Apr-Mar fiscal period in CSV."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/02/2022-23-Apr-Mar-Monthly-Combined-CSV-Final.csv",
+              "notes": "Combined annual Apr-Mar fiscal period in CSV."
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv",
+        "xlsx"
+      ],
+      "preferred_link_selector": "a[href*='Apr-Mar']",
+      "preferred_text_filter": "Apr.*Mar|Combined|Final",
+      "archive_pattern_hint": "none",
+      "hints": {
+        "file_pattern": "Apr-Mar combined final files",
+        "subject_period_pattern": "fiscal_year_and_month",
+        "fiscal_year_format": "YYYY-YY",
+        "month_extraction": "Apr-Mar period tokens in filename"
+      }
+    }
+  ]
+}
