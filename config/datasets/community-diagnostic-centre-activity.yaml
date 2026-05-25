@@ -1,0 +1,40 @@
+dataset_id: community-diagnostic-centre-activity
+series_id: community-diagnostic-centre-activity
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/cdc-management-information/
+publication_date:
+  source: link_text
+  pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
+subject_period:
+  rules:
+  - source: file_name
+    pattern: (\d{4}[-/]\d{2})[-\s_/]+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)
+  - source: url_segment
+    pattern: (\d{4}[-/]\d{2})[-\s_/]+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)
+  - source: page_text
+    pattern: (\d{4}[-/]\d{2})[-\s_/]+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/community-diagnostic-centre-activity
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: default
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/cdc-management-information/
+    page_role: default
+    partitioning_strategy: none
+    scrape_steps:
+    - link_selector: a[href*='CDC-Activity' i]
+      text_filter: CDC|Activity|diagnostic
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: false
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
+  reporting_period_columns: []
+  page_date_selectors:
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})

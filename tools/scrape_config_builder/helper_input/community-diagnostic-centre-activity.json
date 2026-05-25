@@ -1,0 +1,46 @@
+{
+    "schema_version": "0.1",
+    "dataset_id": "community-diagnostic-centre-activity",
+    "dataset_name": "Community Diagnostic Centre Activity",
+    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/cdc-management-information/",
+    "source_path": "tools\\scrape_config_builder\\helper_input\\community-diagnostic-centre-activity.json",
+    "hints": {
+        "entry_structure": "single page only",
+        "publication_date": "next publication shown only",
+        "subject_period": "cumulative financial year to date, extracted from filename pattern"
+    },
+    "targets": [
+        {  
+            "sub_dataset_id": "default",
+            "sample_pages": [
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/cdc-management-information/",
+                    "page_role": "default",
+                    "partitioning_strategy": "none",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/CDC-Activity-by-Provider-2025-26_March_32W3L.csv",
+                            "notes": "Latest CDC Activity CSV with financial year to date subject period in filename"
+                        },
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/07/CDC-Activity-by-Provider_2122-to-2425.csv",
+                            "notes": "archival file of history"
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv"
+            ],
+            "preferred_link_selector": "a[href*='CDC-Activity' i]",
+            "preferred_text_filter": "CDC|Activity|diagnostic",
+            "hints": {
+                "file_pattern": "URL contains 'CDC-Activity', file extension .csv",
+                "subject_period_pattern": "fiscal_year_to_date",
+                "fiscal_year_format": "YYYY-YY",
+                "month_extraction": "Month name before fiscal year token at end of filename",
+                "archive_pattern": "none"
+            }
+        }
+    ]
+}

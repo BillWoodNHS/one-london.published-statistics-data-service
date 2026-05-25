@@ -1,0 +1,72 @@
+{
+    "schema_version": "0.1",
+    "dataset_id": "monthly-diagnostic-waiting-times-and-activity",
+    "dataset_name": "Monthly Diagnostic Waiting Times and Activity",
+    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/",
+    "source_path": "tools\\scrape_config_builder\\helper_input\\monthly-diagnostic-waiting-times-and-activity.json",
+    "hints": {
+        "entry_structure": "Entry page links to fiscal-year sub-pages (monthly-diagnostics-data-YYYY-YY). ZIP CSV extracts available from 2012-13 onwards; 2008-09 to 2011-12 are XLS only.",
+        "publication_date": "Publication dates appear in page metadata. Link text pattern: 'CSV Extract [Month] [Year] – All Provider-Commissioner Data'.",
+        "subject_period": "Subject period is monthly. ZIP filenames always contain 'DM01' e.g. DM01-MARCH-2026-full-extract_32W3L.zip or DM01-Monthly-Diagnostics-EXTRACTS-REVISED.zip."
+    },
+    "targets": [
+        {
+            "sub_dataset_id": "default",
+            "sample_pages": [
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/monthly-diagnostics-data-2025-26/",
+                    "page_role": "subject_period_index",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/DM01-MARCH-2026-full-extract_32W3L.zip",
+                            "notes": "Link text: 'CSV Extract – March 2026 – All Provider-Commissioner Data'. Recent years use DM01-[MONTH]-[YYYY]-full-extract_[code].zip pattern."
+                        },
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/04/DM01-FEBRUARY-2026-full-extract_M0N7G.zip",
+                            "notes": "Link text: 'CSV Extract – February 2026 – All Provider – Commissioner Data'."
+                        }
+                    ]
+                },
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/monthly-diagnostics-data-2024-25/",
+                    "page_role": "subject_period_index",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/04/DM01-MARCH-2025-full-extract_M0N7G.zip",
+                            "notes": "Link text: 'CSV Extract March 2025 – All Provider-Commissioner Data'."
+                        }
+                    ]
+                },
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/monthly-diagnostics-data-2012-13/",
+                    "page_role": "subject_period_index",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2013/04/DM01-Monthly-Diagnostics-EXTRACTS-REVISED.zip",
+                            "notes": "Earliest year with ZIP extracts. Link text: 'CSV Extract March 2013 – All Provider-Commissioner Data'. Older years use DM01-Monthly-Diagnostics-EXTRACTS[-suffix].zip naming."
+                        },
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2013/04/DM01-Monthly-Diagnostics-EXTRACTS-REVISED1.zip",
+                            "notes": "February 2013 ZIP."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='DM01'][href$='.zip']",
+            "preferred_text_filter": "CSV Extract",
+            "hints": {
+                "file_pattern": "All ZIP filenames contain 'DM01'. Recent: DM01-[MONTH]-[YYYY]-full-extract_[code].zip. Older: DM01-Monthly-Diagnostics-EXTRACTS[-suffix].zip.",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from filename or link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        }
+    ]
+}
