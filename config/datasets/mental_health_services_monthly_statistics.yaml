@@ -19,28 +19,58 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: out-of-area-placements
-  scrape_steps:
-  - link_selector: a[href*='performance-']
-  - link_selector: a[href]
-    file_extensions:
-    - zip
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip']
+      text_filter: Out of Area Placements
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: performance-data-file
-  scrape_steps:
-  - link_selector: a[href*='performance-']
-  - link_selector: a[href]
-    file_extensions:
-    - zip
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip']
+      text_filter: 'MHSDS Monthly: Performance .* Data File'
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: restrictive-interventions
-  scrape_steps:
-  - link_selector: a[href*='performance-']
-  - link_selector: a[href]
-    file_extensions:
-    - zip
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip']
+      text_filter: Restrictive Interventions
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors: *id001

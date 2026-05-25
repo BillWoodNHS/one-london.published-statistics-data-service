@@ -19,11 +19,21 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: monthly-publication
-  scrape_steps:
-  - link_selector: a[href*="england-march"]
-  - link_selector: a[href]
-    file_extensions:
-    - csv
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme/england-march-2026
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv']
+      text_filter: learning-disabilities-health-check-scheme
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})

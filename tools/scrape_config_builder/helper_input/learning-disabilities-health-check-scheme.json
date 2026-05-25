@@ -16,7 +16,7 @@
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme/england-march-2026",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://files.digital.nhs.uk/C6/6C42BA/learning-disabilities-health-check-scheme-eng-Mar-2026.csv",
@@ -32,14 +32,14 @@
       "include_extensions": [
         "csv"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.csv']",
       "preferred_text_filter": "learning-disabilities-health-check-scheme",
       "hints": {
         "file_pattern": "learning-disabilities-health-check-scheme-eng-<Mon>-<YYYY>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     }
   ]

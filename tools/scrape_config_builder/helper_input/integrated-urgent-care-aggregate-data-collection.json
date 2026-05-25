@@ -16,7 +16,7 @@
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Provisional-IUCADC-Raw-Apr26_NS46i.csv",
@@ -32,14 +32,14 @@
       "include_extensions": [
         "csv"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.csv']",
       "preferred_text_filter": "IUCADC|Provisional",
       "hints": {
         "file_pattern": "Provisional-IUCADC-Raw-<MonYY>",
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract monYY token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     }
   ]

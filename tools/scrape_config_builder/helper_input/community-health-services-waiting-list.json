@@ -43,7 +43,7 @@
         "subject_period_pattern": "fiscal_year_and_month",
         "fiscal_year_format": "YYYY-YY (e.g., 2025-26)",
         "month_extraction": "Month name at end of filename before file extension",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     }
   ]

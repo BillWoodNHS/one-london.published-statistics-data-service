@@ -32,14 +32,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "CDI|C difficile",
       "hints": {
         "file_pattern": "CDI-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     },
     {
@@ -64,14 +64,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "E-coli|Ecoli",
       "hints": {
         "file_pattern": "E-coli-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     },
     {
@@ -96,14 +96,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "Klebsiella",
       "hints": {
         "file_pattern": "Klebsiella-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     },
     {
@@ -128,14 +128,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "MRSA",
       "hints": {
         "file_pattern": "MRSA-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     },
     {
@@ -160,14 +160,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "MSSA",
       "hints": {
         "file_pattern": "MSSA-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     },
     {
@@ -192,14 +192,14 @@
       "include_extensions": [
         "ods"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.ods']",
       "preferred_text_filter": "P-aeruginosa|P_aeruginosa",
       "hints": {
         "file_pattern": "P-aeruginosa-monthly-table-<YYYY>-<month>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "none"
       }
     }
   ]

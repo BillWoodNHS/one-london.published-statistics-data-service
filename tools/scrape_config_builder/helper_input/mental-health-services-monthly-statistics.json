@@ -16,7 +16,7 @@
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://files.digital.nhs.uk/6B/9434E9/MHSDS%20Data_MarPerf_2026_v2.zip",
@@ -32,14 +32,14 @@
       "include_extensions": [
         "zip"
       ],
-      "preferred_link_selector": "a[href*='performance-']",
+      "preferred_link_selector": "a[href$='.zip']",
       "preferred_text_filter": "MHSDS Monthly: Performance .* Data File",
       "hints": {
         "file_pattern": "MHSDS Data_<Month>Perf_<Year>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Month-year appears in filename and link text",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     },
     {
@@ -48,7 +48,7 @@
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://files.digital.nhs.uk/85/192778/MHSDS%20Data_Rstr_Mar2026_Prf.zip",
@@ -64,14 +64,14 @@
       "include_extensions": [
         "zip"
       ],
-      "preferred_link_selector": "a[href*='performance-']",
+      "preferred_link_selector": "a[href$='.zip']",
       "preferred_text_filter": "Restrictive Interventions",
       "hints": {
         "file_pattern": "MHSDS Data_Rstr_<Month><Year>",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Month-year appears in filename",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     },
     {
@@ -80,7 +80,7 @@
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://files.digital.nhs.uk/B4/BCE9B7/MHSDS%20Data_OAPs_MarPerf_2026_v2.zip",
@@ -96,14 +96,14 @@
       "include_extensions": [
         "zip"
       ],
-      "preferred_link_selector": "a[href*='performance-']",
+      "preferred_link_selector": "a[href$='.zip']",
       "preferred_text_filter": "Out of Area Placements",
       "hints": {
         "file_pattern": "MHSDS Data_OAPs or MHSDS OAPs_Time_Series",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Month-year appears in filename",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     }
   ]

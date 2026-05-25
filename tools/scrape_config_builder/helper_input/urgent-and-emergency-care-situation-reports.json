@@ -16,7 +16,7 @@
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports-2026-27/",
           "page_role": "archive",
-          "partitioning_strategy": "none",
+          "partitioning_strategy": "subject_period",
           "samples": [
             {
               "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/202604-April-2026-beds-sitrep-data-provisional.csv",
@@ -32,14 +32,14 @@
       "include_extensions": [
         "csv"
       ],
-      "preferred_link_selector": "",
+      "preferred_link_selector": "a[href$='.csv']",
       "preferred_text_filter": "beds|sitrep|critical care",
       "hints": {
         "file_pattern": "YYYYMM-<Month>-<YYYY>-beds-sitrep-data-...",
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Extract month-year token from file name",
-        "archive_pattern": ""
+        "archive_pattern": "sibling_pages_by_subject_period"
       }
     }
   ]

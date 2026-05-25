@@ -19,11 +19,21 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: integrated-urgent-care-aggregate-data-collection
-  scrape_steps:
-  - link_selector: a[href*="integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-mar"]
-  - link_selector: a[href]
-    file_extensions:
-    - csv
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv']
+      text_filter: IUCADC|Provisional
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})

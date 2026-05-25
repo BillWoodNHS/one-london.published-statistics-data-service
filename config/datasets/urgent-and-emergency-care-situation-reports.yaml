@@ -19,11 +19,21 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: critical-care-beds
-  scrape_steps:
-  - link_selector: a[href*="critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports"]
-  - link_selector: a[href]
-    file_extensions:
-    - csv
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports-2026-27/
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv']
+      text_filter: beds|sitrep|critical care
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
   reporting_period_columns: []
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
