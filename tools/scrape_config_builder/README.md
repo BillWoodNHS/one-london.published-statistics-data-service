@@ -35,13 +35,13 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py --inventory
 
 Per `sample_page`:
 - `page_url` — URL to scrape
-- `page_role` — `default` | `archive` | `sub_dataset_dedicated` | `subject_period_index` — Describes page's purpose and lifecycle
-- `partitioning_strategy` — `none` | `subject_period` | `pagination` | `mixed` — How files are organized on this page
+- `page_role` — `default` | `archive` | `sub_dataset_dedicated` | `subject_period_index` — Descriptive metadata copied to YAML (not used for scraper branching today)
+- `partitioning_strategy` — `none` | `subject_period` | `mixed` — Helper metadata; sibling discovery auto-enable currently keys off `subject_period`/`mixed`
 - `samples[]` — Sample file URLs with optional `notes`
 
 **Target-level controls**:
-- `archive_pattern_hint` — `none` | `general_archive_subpage` | `sibling_pages_by_subject_period` | `same_page_paginated` | `mixed` — Hints helper on sibling discovery strategy
-- `include_extensions` — Required file types
+- `hints.archive_pattern` — `none` | `sibling_pages_by_subject_period` — Controls whether helper emits `sibling_discovery.enabled: true`
+- `include_extensions` — Optional but strongly recommended file types (otherwise inferred from samples)
 - `preferred_link_selector`, `preferred_text_filter` — Optional CSS/regex overrides
 
 **Example v0.1**: [helper_input/data-quality-maturity-index.json](helper_input/data-quality-maturity-index.json)
@@ -91,31 +91,45 @@ Use v0.1 when:
 
 | Page Role | Purpose | Example |
 |-----------|---------|---------|
-| `default` | Primary/landing page; files from current period | Entry URL with latest month's files |
+| `default` | Primary page context for this target. Can contain latest files and/or links to period pages. | Entry URL with latest files and/or sublinks to each period's files |
 | `archive` | Historical releases; older files grouped together | `/archive` subpage with previous months |
 | `sub_dataset_dedicated` | Dedicated to one sub-dataset only | Dataset-specific subdomain or folder |
-| `subject_period_index` | Navigates to period-specific pages | Index page with year/quarter links |
+| `subject_period_index` | Explicit label for an index/navigation page that mainly links to period pages | Index page with year/quarter/month links and little/no direct files |
+
+`page_role` is currently descriptive only. It is preserved in YAML for readability/review, but the scraper does not branch behavior by role.
 
 ### Partitioning Strategies
 
 | Strategy | Meaning | Sibling Discovery Use |
 |----------|---------|----------------------|
 | `none` | Files not partitioned by subject period | Not applicable (disabled) |
-| `subject_period` | Files split across pages by month/year | Enable sibling discovery to find all period pages |
-| `pagination` | Files paginated within a single period | Not typical; rarely needed |
-| `mixed` | Both pagination and subject-period partitioning | Use for complex layouts |
+| `subject_period` | Files split across pages by month/year | Helper can auto-enable sibling discovery when `hints.archive_pattern` is `sibling_pages_by_subject_period` |
+| `mixed` | Combination of subject-period partitioning and other navigation patterns | Treated like `subject_period` for helper auto-enable |
 
 ### Archive Pattern Hints
 
-The `archive_pattern_hint` tells the helper how to discover related pages and generates appropriate `sibling_discovery` config in the YAML:
+For v0.1, archive behavior is controlled by `targets[].hints.archive_pattern`:
 
 | Archive Pattern | Sibling Discovery Strategy | Generated YAML Config |
 |-----------------|----------------------------|-----------------------|
 | `none` | Single page only | `sibling_discovery.enabled: false` |
-| `general_archive_subpage` | Navigate from archive URL to find older files | `enabled: true`, `link_selector: a[href]`, patterns auto-inferred |
-| `sibling_pages_by_subject_period` | Follow subject-period links (FY/month) to find related pages | `enabled: true`, `url_pattern` and `text_pattern` target subject-period tokens |
-| `same_page_paginated` | Pagination within single page | `enabled: true`, `text_pattern` matches "next" / page numbers |
-| `mixed` | Combination of multiple strategies | Multiple `sibling_discovery` configs per page |
+| `sibling_pages_by_subject_period` | Follow subject-period links (FY/month) from each seed page | `enabled: true`, `link_selector: a[href]`, `url_pattern: null`, `text_pattern: null`, `max_pages` set by helper |
+
+Any other archive hint strings are currently treated as unsupported/no-op for v0.1 generation.
+
+### v0.1 Property Usage Map (JSON -> YAML -> Scraper)
+
+| JSON property | Generated YAML | Scraper use today |
+|---|---|---|
+| `entry_url` | `entry_url` | Used when needed for dataset context; direct discovery is driven by `targets[].source_pages[].page_url` |
+| `targets[].sample_pages[].page_url` | `targets[].source_pages[].page_url` | Seed page URL fetched by scraper; sibling discovery starts from this page |
+| `targets[].sample_pages[].page_role` | `targets[].source_pages[].page_role` | Preserved as metadata only (no branching behavior) |
+| `targets[].sample_pages[].partitioning_strategy` | `targets[].source_pages[].partitioning_strategy` | Preserved as metadata; helper checks this when deciding sibling enablement |
+| `targets[].preferred_link_selector` | `targets[].source_pages[].scrape_steps[].link_selector` | CSS selector used to extract candidate links/files |
+| `targets[].preferred_text_filter` | `targets[].source_pages[].scrape_steps[].text_filter` | Regex filter on link text |
+| `targets[].include_extensions` | `targets[].source_pages[].scrape_steps[].file_extensions` | Extension filter for candidate URLs |
+| `targets[].hints.archive_pattern` | `targets[].source_pages[].sibling_discovery.enabled` (+ defaults) | Enables sibling-page expansion when set to `sibling_pages_by_subject_period` and partitioning is `subject_period`/`mixed` |
+| Helper-generated sibling defaults | `sibling_discovery.link_selector/url_pattern/text_pattern/max_pages` | `link_selector` used to collect sibling links; patterns optional; `max_pages` caps sibling traversal |
 
 ### How Function App Uses v0.1 YAML
 
@@ -128,7 +142,7 @@ The scraper (`function_app/src/scraper.py`) processes v0.1 YAML as follows:
    - **If `sibling_discovery.enabled: true`**:
      - Extract page links using `link_selector` CSS selector
      - Filter candidate links with `url_pattern` and `text_pattern` regex
-     - Recursively visit matching sibling pages (up to `max_pages` limit)
+  - Visit matching sibling pages discovered from the seed page (single-hop list, capped by `max_pages`)
      - Collect files from each sibling page with same scrape_steps
 3. **Deduplicate**: Remove duplicate files across all source pages by `(sub_dataset_id, canonical_url)`
 4. **Return**: Consolidated file list for ingestion
@@ -143,7 +157,9 @@ The scraper (`function_app/src/scraper.py`) processes v0.1 YAML as follows:
   "targets": [
     {
       "sub_dataset_id": "with-did",
-      "archive_pattern_hint": "general_archive_subpage",
+      "hints": {
+        "archive_pattern": "sibling_pages_by_subject_period"
+      },
       "sample_pages": [
         {
           "page_url": "https://.../data-quality",
@@ -249,8 +265,25 @@ targets:
 1. Use `sample_pages[]` when dataset has **multiple page contexts**.
 2. Set `page_role` to accurately describe each page's lifecycle role.
 3. Set `partitioning_strategy` based on how files are organized on that page.
-4. If sibling discovery is needed, set `archive_pattern_hint` to the appropriate strategy; helper auto-enables `sibling_discovery.enabled: true` in generated YAML.
+4. If sibling discovery is needed, set `targets[].hints.archive_pattern` to `sibling_pages_by_subject_period`; helper auto-enables `sibling_discovery.enabled: true` in generated YAML.
 5. Provide 2-3 sample files from each page context to ensure all discovery paths are tested.
+
+### Common Web Patterns (v0.1)
+
+#### Pattern A: Entry page links to monthly/quarterly period pages
+
+Use this when the landing page is mostly a release index and each period page contains the files.
+
+Recommended setup:
+1. Set `sample_pages[0].page_url` to the dataset `entry_url` for each target (this is the sibling-discovery seed).
+2. Set `partitioning_strategy` to `subject_period` (or `mixed` if needed).
+3. Set `targets[].hints.archive_pattern` to `sibling_pages_by_subject_period`.
+4. Use `preferred_link_selector`/`preferred_text_filter` to match files on period pages.
+5. Use `page_role: default` or `page_role: subject_period_index` interchangeably for readability; behavior is currently the same.
+
+When to use `subject_period_index`:
+- Use it when you want to explicitly document that a page is primarily navigational (index of period pages) rather than a direct file page.
+- It does not currently alter scraper behavior; it helps human review and future-proofing.
 
 ### For v2.0 (Legacy Single-Page)
 
@@ -274,7 +307,9 @@ targets:
   "targets": [
     {
       "sub_dataset_id": "with-did",
-      "archive_pattern_hint": "general_archive_subpage",
+      "hints": {
+        "archive_pattern": "sibling_pages_by_subject_period"
+      },
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data.../data-quality",
@@ -311,7 +346,7 @@ targets:
 - `source_pages[]` array with both default and archive roles
 - `page_role: archive` on second page
 - `partitioning_strategy: subject_period` on archive page
-- `sibling_discovery.enabled: true` on archive page with inferred patterns for month-year links
+- `sibling_discovery.enabled: true` on archive page
 
 ### V2.0 Example: Two-step Release-Page Dataset (ZIP files)
 
@@ -395,7 +430,7 @@ To migrate a dataset from v2.0 to v0.1 multi-page discovery:
 1. **Identify page contexts**: Determine all distinct pages where files appear (entry, archive subpages, year-specific pages, etc.)
 2. **Create `sample_pages[]` array**: Add one entry per page context with appropriate `page_role` and `partitioning_strategy`
 3. **Move samples**: Distribute sample file URLs across the relevant `sample_pages` based on which page they come from
-4. **Set `archive_pattern_hint`**: Select the appropriate sibling discovery strategy for each target
+4. **Set `targets[].hints.archive_pattern`**: Use `sibling_pages_by_subject_period` when period pages should be discovered from seed pages
 5. **Test**: Run helper and verify `matches_found.csv` shows all expected files from all page contexts
 
 Example migration flow:
@@ -419,7 +454,9 @@ Example migration flow:
   "schema_version": "0.1",
   "targets": [{
     "sub_dataset_id": "monthly",
-    "archive_pattern_hint": "sibling_pages_by_subject_period",
+    "hints": {
+      "archive_pattern": "sibling_pages_by_subject_period"
+    },
     "sample_pages": [
       {
         "page_url": "https://example.org",
@@ -512,28 +549,27 @@ if source_page.sibling_discovery.enabled:
 
 ### Understanding Page Roles During Discovery
 
-The scraper uses `page_role` for logging and potential future lifecycle decisions:
+`page_role` is currently descriptive metadata only. The scraper does not branch by role.
 
-- **`default`**: Expected to be present every run; errors flag missing current data
-- **`archive`**: May have new content intermittently; absence is non-fatal
-- **`sub_dataset_dedicated`**: Dataset-specific page; discovery should not cross to other datasets
-- **`subject_period_index`**: Navigational page; links may not be direct file URLs
+- **`default`**: General-purpose page context (landing page and/or period-linked page)
+- **`archive`**: Historical page context label
+- **`sub_dataset_dedicated`**: Dedicated page context for one sub-dataset
+- **`subject_period_index`**: Explicitly marks a period index/navigation page
 
 ### Understanding Partitioning Strategy
 
-`partitioning_strategy` doesn't directly affect scraper logic but informs sibling discovery and human review:
+`partitioning_strategy` is metadata in YAML. In helper generation, sibling auto-enable currently requires `subject_period` or `mixed` when archive pattern is set to subject-period sibling discovery.
 
 - **`none`**: All files on single page; no sibling discovery needed (even if hint provided)
-- **`subject_period`**: Files split by month/year across URLs; sibling discovery extracts year/month tokens from link text or URL path
-- **`pagination`**: Multiple files on same URL split across page numbers; sibling discovery follows "next" links
-- **`mixed`**: Both pagination and subject-period partitioning (complex; rare)
+- **`subject_period`**: Files split by month/year across URLs; use with sibling discovery
+- **`mixed`**: Complex layouts combining period partitioning with other navigation
 
 ## Example: DQMI V0.1 Workflow
 
 Dataset: **data-quality-maturity-index**, Sub-dataset: **with-did**
 
 ### Input JSON
-- `archive_pattern_hint: "general_archive_subpage"` — Files grouped on archive subpage
+- `hints.archive_pattern: "sibling_pages_by_subject_period"` — Files grouped across related archive/period pages
 
 ### Generated YAML
 - Two `source_pages`:

@@ -1,0 +1,148 @@
+dataset_id: talking-therapies-statistics
+series_id: talking-therapies-statistics
+entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+publication_date:
+  source: link_text
+  pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
+subject_period:
+  rules:
+  - source: file_name
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
+  - source: url_segment
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
+  - source: page_text
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/talking-therapies-statistics
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: data-quality-report
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv'][href*='dq' i]
+      text_filter: Data Quality
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: &id001
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+- sub_dataset_id: employment-advisors
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv'][href*='ea_performance' i][href*='month' i]
+      text_filter: Employment Advisor
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: enter-treatment-rolling-quarter
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv'][href*='rolling_quarterly' i]
+      text_filter: Rolling Quarter
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: monthly-activity
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv'][href*='activity_performance' i]
+      text_filter: Monthly Activity Data File
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: quarterly-activity
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip'][href*='quarterly_data' i]
+      text_filter: Quarter
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: quarterly-employment-advisor-data
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip'][href*='quarterly_ea_report' i]
+      text_filter: Quarterly Report on Employment Advisor
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001
+- sub_dataset_id: time-series-for-key-measures
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.csv'][href*='key_measures' i]
+      text_filter: Key Measures
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  page_date_selectors: *id001

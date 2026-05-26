@@ -798,7 +798,7 @@ def _build_config_for_dataset(
                         "link_selector": "a[href]",
                         "url_pattern": None,
                         "text_pattern": None,
-                        "max_pages": 25,
+                        "max_pages": 100,
                     },
                 }
             )
