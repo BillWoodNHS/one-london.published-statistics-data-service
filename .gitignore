@@ -34,4 +34,5 @@ dbt/logs/
 
 # Local logs and diagnostics
 logs/
+tools/scrape_config_builder/helper_generated/
 diag_output.txt

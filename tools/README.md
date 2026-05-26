@@ -9,6 +9,8 @@ tools/
 ├── scrape_config_builder/        # Helper tools for v2 JSON scrape-config generation
 │   ├── scrape-config-helper.py
 │   ├── generate-helper-input-from-csv.py
+│   ├── promote-generated-configs.py
+│   ├── promote-generated-configs.ps1
 │   ├── README.md
 │   └── helper_input/
 │       └── appointments-in-general-practice.json
@@ -31,10 +33,10 @@ Automatic YAML configuration generator for the scraper-driven ingestion system.
 **Purpose:** Infer scraper patterns (link selectors, text filters, file extensions, subject periods) from per-dataset JSON v2 specs. Generate candidate YAML configs and validate discovery against live pages (non-download).
 
 **Key Outputs:**
-- Generated YAML configs (ready for manual review)
-- `helper_suggestions.csv` (inferred selectors, patterns, extensions)
-- `matches_found.csv` (live discovery validation with inferred subject periods and publication dates)
-- `normalized_input_specs/*.json` (normalized v2 input specs used in the run)
+- Generated YAML configs under `tools/scrape_config_builder/helper_generated/<dataset_id>/run-<timestamp>/generated_configs/`
+- Validation reports under `tools/scrape_config_builder/helper_generated/<dataset_id>/run-<timestamp>/reports/`
+- Stable mirror under `tools/scrape_config_builder/helper_generated/<dataset_id>/latest/`
+- Promotion script to copy generated YAML into `config/datasets`
 
 Generated YAML includes a prioritized `subject_period.rules` block for runtime extraction:
 1. `file_name`
@@ -46,6 +48,14 @@ Generated YAML includes a prioritized `subject_period.rules` block for runtime e
 # JSON mode (recommended)
 python tools/scrape_config_builder/scrape-config-helper.py \
   --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
+
+# Promote latest generated YAML for one dataset
+python tools/scrape_config_builder/promote-generated-configs.py \
+  --dataset appointments-in-general-practice
+
+# Promote latest generated YAML for one dataset (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 \
+  -Dataset appointments-in-general-practice
 
 # CSV to v2 helper-input generation
 python tools/scrape_config_builder/generate-helper-input-from-csv.py \
@@ -128,6 +138,18 @@ python tools/scrape_config_builder/scrape-config-helper.py \
 # Multiple datasets from JSON directory
 python tools/scrape_config_builder/scrape-config-helper.py \
   --input-json-dir tools/scrape_config_builder/helper_input
+
+# Validate + generate + summarize for a single dataset
+./tools/scrape_config_builder/run-helper.ps1 \
+  -InputJson tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
+
+# Promote latest generated config(s) into config/datasets
+python tools/scrape_config_builder/promote-generated-configs.py \
+  --dataset appointments-in-general-practice
+
+# Promote latest generated config(s) into config/datasets (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 \
+  -Dataset appointments-in-general-practice
 
 # CSV to helper-input v2 generation
 python tools/scrape_config_builder/generate-helper-input-from-csv.py \

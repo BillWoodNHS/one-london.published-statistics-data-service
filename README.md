@@ -72,6 +72,22 @@ Sample local settings are provided at `function_app/local.settings.sample.json`.
 
 ## Adding a New Dataset Configuration
 
+Preferred helper workflow:
+
+```powershell
+# 1) Validate + generate + report summary
+./tools/scrape_config_builder/run-helper.ps1 -InputJson tools/scrape_config_builder/helper_input/<dataset>.json
+
+# 2) Review generated artifacts
+# tools/scrape_config_builder/helper_generated/<dataset_id>/latest/
+
+# 3) Promote reviewed YAML into config/datasets
+python tools/scrape_config_builder/promote-generated-configs.py --dataset <dataset_id>
+
+# 3b) Promote reviewed YAML into config/datasets (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset <dataset_id>
+```
+
 1. Create a new YAML file in `config/datasets/`.
 2. Define required top-level keys:
    - `dataset_id`

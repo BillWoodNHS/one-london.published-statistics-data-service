@@ -9,6 +9,7 @@ import re
 import shutil
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import urlparse
@@ -109,6 +110,17 @@ class HelperDatasetInput:
     targets: List[HelperTargetInput]
     hints: Optional[DatasetHints] = None
     source_path: str = ""
+
+
+@dataclass
+class DatasetOutputLayout:
+    dataset_id: str
+    run_id: str
+    dataset_root: Path
+    run_dir: Path
+    latest_dir: Path
+    generated_dir: Path
+    reports_dir: Path
 
 
 def _slugify(value: str) -> str:
@@ -406,9 +418,8 @@ def _load_dataset_specs(args: argparse.Namespace) -> List[HelperDatasetInput]:
 
 
 def _write_normalized_input_specs(
-    output_dir: Path, specs: Sequence[HelperDatasetInput]
+    spec_dir: Path, specs: Sequence[HelperDatasetInput]
 ) -> None:
-    spec_dir = output_dir / "normalized_input_specs"
     spec_dir.mkdir(parents=True, exist_ok=True)
     for existing_path in spec_dir.glob("*.json"):
         existing_path.unlink()
@@ -468,6 +479,81 @@ def _write_normalized_input_specs(
         }
         path = spec_dir / f"{spec.dataset_id}.json"
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _timestamp_run_id() -> str:
+    return datetime.now(tz=timezone.utc).strftime("run-%Y%m%dT%H%M%SZ")
+
+
+def _dataset_output_layout(
+    output_root: Path,
+    dataset_id: str,
+    run_id: str,
+) -> DatasetOutputLayout:
+    dataset_root = output_root / dataset_id
+    run_dir = dataset_root / run_id
+    return DatasetOutputLayout(
+        dataset_id=dataset_id,
+        run_id=run_id,
+        dataset_root=dataset_root,
+        run_dir=run_dir,
+        latest_dir=dataset_root / "latest",
+        generated_dir=run_dir / "generated_configs",
+        reports_dir=run_dir / "reports",
+    )
+
+
+def _ensure_clean_dir(path: Path) -> None:
+    if path.exists():
+        shutil.rmtree(path)
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def _status_counts(rows: Sequence[Dict[str, str]]) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for row in rows:
+        status = row.get("status", "")
+        if not status:
+            continue
+        counts[status] = counts.get(status, 0) + 1
+    return counts
+
+
+def _write_metadata(
+    metadata_path: Path,
+    spec: HelperDatasetInput,
+    layout: DatasetOutputLayout,
+    yaml_path: Path,
+    suggestions_count: int,
+    matches: Sequence[Dict[str, str]],
+) -> None:
+    metadata = {
+        "dataset_id": spec.dataset_id,
+        "dataset_name": spec.dataset_name,
+        "source_path": spec.source_path,
+        "run_id": layout.run_id,
+        "generated_at_utc": datetime.now(tz=timezone.utc).isoformat(),
+        "paths": {
+            "run_dir": str(layout.run_dir),
+            "latest_dir": str(layout.latest_dir),
+            "generated_configs_dir": str(layout.generated_dir),
+            "reports_dir": str(layout.reports_dir),
+            "generated_yaml": str(yaml_path),
+            "matches_found_csv": str(layout.reports_dir / "matches_found.csv"),
+            "helper_suggestions_csv": str(
+                layout.reports_dir / "helper_suggestions.csv"
+            ),
+            "normalized_input_specs_dir": str(
+                layout.reports_dir / "normalized_input_specs"
+            ),
+        },
+        "summary": {
+            "suggestions_rows": suggestions_count,
+            "matches_rows": len(matches),
+            "status_counts": _status_counts(matches),
+        },
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
 
 def _fetch_page(session: requests.Session, url: str) -> Optional[BeautifulSoup]:
@@ -1001,38 +1087,42 @@ def _write_csv(path: Path, rows: Sequence[Dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def _build_for_datasets(
-    specs: Sequence[HelperDatasetInput],
-    output_dir: Path,
-) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    generated_dir = output_dir / "generated_configs"
-    generated_dir.mkdir(parents=True, exist_ok=True)
-    for existing_path in generated_dir.iterdir():
-        if existing_path.is_file():
-            existing_path.unlink()
-        elif existing_path.is_dir():
-            shutil.rmtree(existing_path)
-    _write_normalized_input_specs(output_dir, specs)
+def _build_for_dataset(
+    spec: HelperDatasetInput,
+    output_root: Path,
+    run_id: str,
+    session: requests.Session,
+) -> DatasetOutputLayout:
+    layout = _dataset_output_layout(
+        output_root=output_root, dataset_id=spec.dataset_id, run_id=run_id
+    )
+    _ensure_clean_dir(layout.generated_dir)
+    _ensure_clean_dir(layout.reports_dir)
 
-    session = requests.Session()
-    all_suggestions: List[Dict[str, str]] = []
-    all_matches: List[Dict[str, str]] = []
+    config, suggestions = _build_config_for_dataset(spec, session)
+    yaml_path = layout.generated_dir / f"{spec.dataset_id}.yaml"
+    yaml_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
-    for spec in specs:
-        config, suggestions = _build_config_for_dataset(spec, session)
-        yaml_path = generated_dir / f"{spec.dataset_id}.yaml"
-        yaml_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+    matches = _validate_config_matches(config)
+    for row in matches:
+        row["yaml_path"] = str(yaml_path)
 
-        matches = _validate_config_matches(config)
-        for row in matches:
-            row["yaml_path"] = str(yaml_path)
+    _write_csv(layout.reports_dir / "helper_suggestions.csv", suggestions)
+    _write_csv(layout.reports_dir / "matches_found.csv", matches)
+    _write_normalized_input_specs(layout.reports_dir / "normalized_input_specs", [spec])
+    _write_metadata(
+        metadata_path=layout.run_dir / "metadata.json",
+        spec=spec,
+        layout=layout,
+        yaml_path=yaml_path,
+        suggestions_count=len(suggestions),
+        matches=matches,
+    )
 
-        all_suggestions.extend(suggestions)
-        all_matches.extend(matches)
-
-    _write_csv(output_dir / "helper_suggestions.csv", all_suggestions)
-    _write_csv(output_dir / "matches_found.csv", all_matches)
+    if layout.latest_dir.exists():
+        shutil.rmtree(layout.latest_dir)
+    shutil.copytree(layout.run_dir, layout.latest_dir)
+    return layout
 
 
 def parse_args() -> argparse.Namespace:
@@ -1073,8 +1163,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        default="logs/local_helper",
-        help="Directory for generated YAML and CSV outputs.",
+        default="tools/scrape_config_builder/helper_generated",
+        help=(
+            "Output root for generated artifacts. "
+            "Files are written to <output-dir>/<dataset_id>/<run-id>/... and mirrored to latest/."
+        ),
+    )
+    parser.add_argument(
+        "--run-id",
+        default="",
+        help=(
+            "Optional explicit run id (for example run-20260526T120000Z). "
+            "If omitted, a UTC timestamp run id is generated."
+        ),
     )
     return parser.parse_args()
 
@@ -1108,17 +1209,32 @@ def main() -> int:
     if args.max_datasets > 0:
         selected_specs = selected_specs[: args.max_datasets]
 
-    output_dir = Path(args.output_dir)
-    _build_for_datasets(selected_specs, output_dir)
+    output_root = Path(args.output_dir)
+    run_id = args.run_id.strip() or _timestamp_run_id()
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    session = requests.Session()
+    layouts: List[DatasetOutputLayout] = []
+    for spec in selected_specs:
+        layouts.append(
+            _build_for_dataset(
+                spec=spec,
+                output_root=output_root,
+                run_id=run_id,
+                session=session,
+            )
+        )
 
     print(f"Processed datasets: {len(selected_specs)}")
-    print(f"Output directory: {output_dir.resolve()}")
-    print(f"Generated YAML dir: {(output_dir / 'generated_configs').resolve()}")
-    print(
-        f"Normalized input specs dir: {(output_dir / 'normalized_input_specs').resolve()}"
-    )
-    print(f"Suggestions CSV: {(output_dir / 'helper_suggestions.csv').resolve()}")
-    print(f"Matches CSV: {(output_dir / 'matches_found.csv').resolve()}")
+    print(f"Output root: {output_root.resolve()}")
+    print(f"Run id: {run_id}")
+    for layout in layouts:
+        print(f"Dataset: {layout.dataset_id}")
+        print(f"Run directory: {layout.run_dir.resolve()}")
+        print(f"Latest directory: {layout.latest_dir.resolve()}")
+        print(f"Generated YAML dir: {layout.generated_dir.resolve()}")
+        print(f"Reports dir: {layout.reports_dir.resolve()}")
+        print(f"Metadata JSON: {(layout.run_dir / 'metadata.json').resolve()}")
     return 0
 
 

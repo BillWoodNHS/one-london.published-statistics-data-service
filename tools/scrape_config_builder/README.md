@@ -17,6 +17,15 @@ python tools/scrape_config_builder/scrape-config-helper.py --input-json-dir tool
 # Single dataset
 python tools/scrape_config_builder/scrape-config-helper.py --input-json tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
 
+# Single dataset (validate + generate + matches summary)
+./tools/scrape_config_builder/run-helper.ps1 -InputJson tools/scrape_config_builder/helper_input/appointments-in-general-practice.json
+
+# Promote latest generated YAML to config/datasets
+python tools/scrape_config_builder/promote-generated-configs.py --dataset appointments-in-general-practice
+
+# Promote latest generated YAML to config/datasets (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset appointments-in-general-practice
+
 # Optional: generate v2 helper inputs from legacy inventory CSV
 python tools/scrape_config_builder/generate-helper-input-from-csv.py --inventory psds-file-inventory.csv
 ```
@@ -70,14 +79,61 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 
 ## Output Files
 
-Generated in `--output-dir` (default: `logs/local_helper`):
+Generated in `--output-dir` (default: `tools/scrape_config_builder/helper_generated`) using:
 
-- `generated_configs/*.yaml` — Candidate scraper YAML configs ready for manual review and commit.
+`<output-dir>/<dataset_id>/run-<timestamp>/`
+
+Each run folder contains:
+
+- `generated_configs/*.yaml` — Candidate scraper YAML configs ready for manual review and promotion.
   - v0.1 JSON inputs → v0.1 YAML with `source_pages` array and `sibling_discovery` config
   - v2.0 JSON inputs → v2.0 YAML with `scrape_steps` only (legacy)
-- `helper_suggestions.csv` — Inferred selectors, patterns, and extension hints per sub-dataset.
-- `matches_found.csv` — Live discovery validation results (URL, link text, publication date, subject period inference).
-- `normalized_input_specs/*.json` — Final normalized input specs used by the run (with inferred schemas).
+- `reports/helper_suggestions.csv` — Inferred selectors, patterns, and extension hints per sub-dataset.
+- `reports/matches_found.csv` — Live discovery validation results (URL, link text, publication date, subject period inference).
+- `reports/normalized_input_specs/*.json` — Final normalized input specs used by the run (with inferred schemas).
+- `metadata.json` — Run metadata and summary counts.
+
+The helper mirrors each run to:
+
+`<output-dir>/<dataset_id>/latest/`
+
+This gives a stable path for operational scripts and future UI tooling.
+
+## Promote Workflow
+
+Recommended workflow:
+
+1. Generate and validate with the helper.
+2. Review files under `<dataset_id>/latest/generated_configs/` and `<dataset_id>/latest/reports/`.
+3. Promote selected YAML files into `config/datasets`.
+
+Promotion command examples:
+
+```powershell
+# Promote one dataset from latest
+python tools/scrape_config_builder/promote-generated-configs.py --dataset appointments-in-general-practice
+
+# Promote one dataset from latest (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset appointments-in-general-practice
+
+# Promote multiple datasets from latest
+python tools/scrape_config_builder/promote-generated-configs.py --dataset dataset-a --dataset dataset-b
+
+# Promote multiple datasets from latest (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset dataset-a,dataset-b
+
+# Promote from a specific run id
+python tools/scrape_config_builder/promote-generated-configs.py --dataset dataset-a --run-id run-20260526T120000Z
+
+# Promote from a specific run id (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset dataset-a -RunId run-20260526T120000Z
+
+# Preview only
+python tools/scrape_config_builder/promote-generated-configs.py --dataset dataset-a --dry-run
+
+# Preview only (PowerShell wrapper)
+./tools/scrape_config_builder/promote-generated-configs.ps1 -Dataset dataset-a -DryRun
+```
 
 ## V0.1 Schema Details
 
