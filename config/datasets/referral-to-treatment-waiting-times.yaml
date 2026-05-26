@@ -1,0 +1,40 @@
+dataset_id: referral-to-treatment-waiting-times
+series_id: referral-to-treatment-waiting-times
+entry_url: https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/
+publication_date:
+  source: link_text
+  pattern: (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\d{4}-\d{2}-\d{2})
+subject_period:
+  rules:
+  - source: file_name
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+  - source: url_segment
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+  - source: page_text
+    pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(\d{2,4})
+fallback:
+  allow_manual_acquisition: true
+  manual_drop_path: manual/referral-to-treatment-waiting-times
+  max_auto_retries: 3
+  timeout_threshold_minutes: 5
+targets:
+- sub_dataset_id: default
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href*='Full-CSV-data-file'], a[href*='18wksRTT-Monthly-EXTRACTS']
+      text_filter: Full CSV data file
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: rtt-data-\d{4}-\d{2}
+      text_pattern: null
+      max_pages: 200
+  reporting_period_columns: []
+  page_date_selectors:
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})

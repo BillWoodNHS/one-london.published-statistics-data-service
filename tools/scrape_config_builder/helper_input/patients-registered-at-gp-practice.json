@@ -1,0 +1,163 @@
+{
+    "schema_version": "0.1",
+    "dataset_id": "patients-registered-at-gp-practice",
+    "dataset_name": "Patients Registered at a GP Practice",
+    "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+    "source_path": "tools\\scrape_config_builder\\helper_input\\patients-registered-at-gp-practice.json",
+    "hints": {
+        "entry_structure": "Entry page links to monthly publication subpages; each subpage contains data files for that month.",
+        "publication_date": "Publication date appears in release metadata and page heading.",
+        "subject_period": "Monthly period appears in publication page title and link text."
+    },
+    "targets": [
+        {
+            "sub_dataset_id": "gp-practice-all-persons",
+            "sample_pages": [
+                {
+                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+                    "page_role": "default",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://files.digital.nhs.uk/4F/64EF9E/gp-reg-pat-prac-all.zip",
+                            "notes": "Totals (GP practice-all persons)."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv",
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='gp-reg-pat-prac-all' i]",
+            "preferred_text_filter": "",
+            "hints": {
+                "file_pattern": "gp-reg-pat-prac-all.(csv|zip)",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        },
+        {
+            "sub_dataset_id": "single-year-of-age-regions",
+            "sample_pages": [
+                {
+                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+                    "page_role": "default",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://files.digital.nhs.uk/83/C5B810/gp-reg-pat-prac-sing-age-regions.zip",
+                            "notes": "Single year of age by commissioning regions/ICB/SICBL/PCN."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv",
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='gp-reg-pat-prac-sing-age-regions' i]",
+            "preferred_text_filter": "",
+            "hints": {
+                "file_pattern": "gp-reg-pat-prac-sing-age-regions.(csv|zip)",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        },
+        {
+            "sub_dataset_id": "single-year-of-age-gp-practice-females-males",
+            "sample_pages": [
+                {
+                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+                    "page_role": "default",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://files.digital.nhs.uk/03/E55E98/gp-reg-pat-prac-sing-age-female.zip",
+                            "notes": "Single year of age by GP practice females."
+                        },
+                        {
+                            "file_url": "https://files.digital.nhs.uk/72/ED6109/gp-reg-pat-prac-sing-age-male.zip",
+                            "notes": "Single year of age by GP practice males."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv",
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='gp-reg-pat-prac-sing-age-female' i], a[href*='gp-reg-pat-prac-sing-age-male' i]",
+            "preferred_text_filter": "",
+            "hints": {
+                "file_pattern": "gp-reg-pat-prac-sing-age-(female|male).(csv|zip)",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        },
+        {
+            "sub_dataset_id": "five-year-age-groups-regions",
+            "sample_pages": [
+                {
+                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+                    "page_role": "default",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://files.digital.nhs.uk/88/41565D/gp-reg-pat-prac-quin-age.zip",
+                            "notes": "Five-year age groups by commissioning regions/ICB/SICBL/PCN/GP practice."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv",
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='gp-reg-pat-prac-quin-age' i]",
+            "preferred_text_filter": "",
+            "hints": {
+                "file_pattern": "gp-reg-pat-prac-quin-age.(csv|zip)",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        },
+        {
+            "sub_dataset_id": "mapping-commissioning-regions",
+            "sample_pages": [
+                {
+                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice",
+                    "page_role": "default",
+                    "partitioning_strategy": "subject_period",
+                    "samples": [
+                        {
+                            "file_url": "https://files.digital.nhs.uk/DE/3BFF65/gp-reg-pat-prac-map.zip",
+                            "notes": "Mapping for commissioning regions/ICB/SICBL/PCN/GP practice."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv",
+                "zip"
+            ],
+            "preferred_link_selector": "a[href*='gp-reg-pat-prac-map' i]",
+            "preferred_text_filter": "",
+            "hints": {
+                "file_pattern": "gp-reg-pat-prac-map.(csv|zip)",
+                "subject_period_pattern": "month_year",
+                "fiscal_year_format": "",
+                "month_extraction": "Extract month and year from link text",
+                "archive_pattern": "sibling_pages_by_subject_period"
+            }
+        }
+    ]
+}

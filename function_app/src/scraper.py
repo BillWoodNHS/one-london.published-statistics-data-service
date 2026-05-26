@@ -168,7 +168,9 @@ def _discover_sibling_pages(
         href_lower = full_url.lower()
 
         # Skip direct file links; sibling discovery is for page URLs.
-        if re.search(r"\.(csv|xlsx?|zip|xlsm|txt|json|xml)(?:$|\?)", href_lower):
+        if re.search(
+            r"\.(csv|xlsx?|zip|xlsm|txt|json|xml|pdf|docx?|pptx?)(?:$|\?)", href_lower
+        ):
             continue
 
         if full_url in seen:

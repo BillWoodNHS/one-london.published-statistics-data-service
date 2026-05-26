@@ -1,0 +1,72 @@
+{
+    "schema_version": "0.1",
+    "dataset_id": "specialist-advice-activity-data",
+    "dataset_name": "Specialist Advice Activity Data",
+    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/outpatient-transformation/specialist-advice/",
+    "source_path": "tools\\scrape_config_builder\\helper_input\\specialist-advice-activity-data.json",
+    "hints": {
+        "entry_structure": "Entry page hosts all data files directly; no publication sub-pages. Files are overwritten in-place as new data is released.",
+        "publication_date": "Publication month appears in the download URL path (sites/2/YYYY/MM/).",
+        "subject_period": "Files are cumulative from April 2022; no per-period partitioning."
+    },
+    "targets": [
+        {
+            "sub_dataset_id": "commissioner-specialist-advice-activity",
+            "sample_pages": [
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/outpatient-transformation/specialist-advice/",
+                    "page_role": "default",
+                    "partitioning_strategy": "none",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/ICB-specialist-advice-activity-full-dataset-from-April-2022.csv",
+                            "notes": "Cumulative ICB/commissioner specialist advice activity full dataset CSV. File is overwritten in place when updated. 'ICB' label used on site but 'commissioner' preferred as ICBs are a type of commissioner."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv"
+            ],
+            "preferred_link_selector": "a[href*='ICB-specialist'][href$='.csv']",
+            "preferred_text_filter": "ICB specialist advi[cs]e activity full dataset",
+            "hints": {
+                "file_pattern": "ICB-specialist-advi(c|s)e-activity-full-dataset-from-April-2022.csv",
+                "subject_period_pattern": "",
+                "fiscal_year_format": "",
+                "month_extraction": "",
+                "archive_pattern": "none",
+                "sibling_url_pattern": ""
+            }
+        },
+        {
+            "sub_dataset_id": "provider-specialist-advice-activity",
+            "sample_pages": [
+                {
+                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/outpatient-transformation/specialist-advice/",
+                    "page_role": "default",
+                    "partitioning_strategy": "none",
+                    "samples": [
+                        {
+                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Provider-specialist-advice-activity-full-dataset-from-April-2022.csv",
+                            "notes": "Cumulative provider specialist advice activity full dataset CSV. File is overwritten in place when updated."
+                        }
+                    ]
+                }
+            ],
+            "include_extensions": [
+                "csv"
+            ],
+            "preferred_link_selector": "a[href*='Provider-specialist'][href$='.csv']",
+            "preferred_text_filter": "Provider specialist advi[cs]e activity full dataset",
+            "hints": {
+                "file_pattern": "Provider-specialist-advi(c|s)e-activity-full-dataset-from-April-2022.csv",
+                "subject_period_pattern": "",
+                "fiscal_year_format": "",
+                "month_extraction": "",
+                "archive_pattern": "none",
+                "sibling_url_pattern": ""
+            }
+        }
+    ]
+}

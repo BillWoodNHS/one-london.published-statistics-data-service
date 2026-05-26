@@ -81,6 +81,7 @@ class TargetHints:
     fiscal_year_format: str = ""
     month_extraction: str = ""
     archive_pattern: str = ""
+    sibling_url_pattern: str = ""
 
 
 @dataclass
@@ -318,6 +319,9 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                 ).strip(),
                 archive_pattern=str(
                     target_hints_raw.get("archive_pattern", "")
+                ).strip(),
+                sibling_url_pattern=str(
+                    target_hints_raw.get("sibling_url_pattern", "")
                 ).strip(),
             )
 
@@ -796,9 +800,14 @@ def _build_config_for_dataset(
                     "sibling_discovery": {
                         "enabled": sibling_discovery_enabled,
                         "link_selector": "a[href]",
-                        "url_pattern": None,
+                        "url_pattern": (
+                            target_input.hints.sibling_url_pattern
+                            if target_input.hints
+                            and target_input.hints.sibling_url_pattern
+                            else None
+                        ),
                         "text_pattern": None,
-                        "max_pages": 100,
+                        "max_pages": 200,
                     },
                 }
             )
