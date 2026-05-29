@@ -15,15 +15,15 @@
 
 
 {% macro create_ingest_table(database_name, schema_name, table_name) %}
-    {%- doc -%}
+    {#
     Create an INGEST table that receives Snowpipe loads directly.
     
     INGEST tables:
     - Receive all file uploads (including re-uploads/duplicates)
     - Preserve full audit trail via metadata columns
     - Auto-evolve schema as new columns appear in CSV files
-    - Deduplicated downstream by RAW materialized models
-    {%- enddoc -%}
+    - Deduplicated downstream by RAW views
+    #}
     
     {% set sql %}
         create table if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(table_name) }} (
@@ -46,16 +46,13 @@
 
 
 {% macro create_raw_table(database_name, schema_name, table_name) %}
-    {%- doc -%}
-    Deprecated: Use create_ingest_table instead.
-    This macro is kept for backwards compatibility.
-    {%- enddoc -%}
+    {# Deprecated: Use create_ingest_table instead. This macro is kept for backwards compatibility. #}
     {{ return(one_london_psds.create_ingest_table(database_name, schema_name, table_name)) }}
 {% endmacro %}
 
 
 {% macro create_raw_dedup_view(database_name, raw_schema, raw_view, ingest_schema, ingest_table) %}
-    {%- doc -%}
+    {#
     Create or replace a RAW deduplication view over an INGEST table.
 
     The RAW view:
@@ -66,7 +63,7 @@
     - Can be promoted to a Dynamic Table later if query performance requires it
 
     Called by provision_target_pipeline as part of the standard dataset provisioning workflow.
-    {%- enddoc -%}
+    #}
 
     {% set sql %}
         create or replace view {{ adapter.quote(database_name) }}.{{ adapter.quote(raw_schema) }}.{{ adapter.quote(raw_view) }} as
