@@ -2,6 +2,18 @@
 
 This repository provides a manifest-driven data ingestion and validation service for published statistics.
 
+## Data Flow Overview
+
+```
+Azure Data Lake Storage (ADLS)
+    ↓ (Snowpipe)
+INGEST schema (unmodified, duplicates preserved, auto-evolving)
+   ↓ (dbt view with window-function deduplication)
+RAW schema (deduplicated view, always current)
+    ↓ (dbt views)
+PRESENTATION schema (business views with filtering/aliasing)
+```
+
 It is designed to:
 - discover downloadable files from supplier publication pages,
 - land normalized CSV data into ADLS-compatible paths,
@@ -109,10 +121,35 @@ Example manifests are available under `config/datasets/` and `tests/fixtures/man
 
 ## dbt and Snowflake Provisioning Notes
 
-The dbt project includes macros to:
-- normalize column names to SCREAMING_SNAKE_CASE,
-- generate presentation and revision views,
-- create storage integration, file format, raw tables, stages, and pipes.
+The dbt project implements a three-layer data pipeline:
+
+### INGEST Schema
+Snowpipe-loaded tables receiving all file uploads directly from ADLS (including re-uploads/duplicates).
+- Auto-evolving schema via Snowflake's `enable_schema_evolution=true`
+- Full audit trail of ingestions
+- Zero maintenance required
+
+### RAW Schema
+Deduplicated views over INGEST tables, always reflecting current data.
+- One view per INGEST table
+- Deduplication based on file content hash (`_FILE_CONTENT_KEY`) via window function
+- Preserves latest version when same file is uploaded multiple times
+- Schema auto-inherits from INGEST — new CSV columns flow through immediately
+- Can be promoted to a Dynamic Table later if query performance requires it
+
+### PRESENTATION Schema
+Business views on top of RAW tables with filtering and aliasing.
+
+**To provision a new dataset**:
+
+1. Create manifest at `config/datasets/<dataset_id>.yml`
+2. Run a single dbt macro to create INGEST table, stage, pipe, and RAW dedup view together:
+   ```powershell
+   dbt run-operation one_london_psds.provision_series_from_manifest \
+     --args 'manifest_path: ../config/datasets/<dataset_id>.yml'
+   ```
+
+No per-dataset SQL files are required. The macro applies identical logic to every dataset.
 
 Before using dbt operations, ensure dependencies are installed:
 

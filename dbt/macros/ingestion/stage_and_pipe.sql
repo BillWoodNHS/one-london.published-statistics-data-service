@@ -1,4 +1,4 @@
-{% macro create_stage_and_pipe(database_name, schema_name, stage_name, storage_integration, url, file_format, pipe_name, target_table, pattern='.*') %}
+{% macro create_stage_and_pipe(database_name, schema_name, stage_name, storage_integration, url, file_format, pipe_name, target_table, target_schema, pattern='.*') %}
     {% set create_stage %}
         create stage if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(stage_name) }}
         storage_integration = {{ adapter.quote(storage_integration) }}
@@ -10,7 +10,7 @@
         create pipe if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(pipe_name) }}
         auto_ingest = true
         as
-        copy into {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(target_table) }}
+        copy into {{ adapter.quote(database_name) }}.{{ adapter.quote(target_schema) }}.{{ adapter.quote(target_table) }}
         from @{{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(stage_name) }}
         match_by_column_name = case_insensitive
         include_metadata = (
@@ -31,16 +31,17 @@
 {% endmacro %}
 
 
-{% macro provision_target_pipeline(database_name, infra_schema, raw_schema, series_id, sub_dataset_id, adls_url_root, storage_integration_name, file_format_name) %}
+{% macro provision_target_pipeline(database_name, infra_schema, ingest_schema, raw_schema, series_id, sub_dataset_id, adls_url_root, storage_integration_name, file_format_name) %}
     {% set series_token = one_london_psds.normalize_identifier(series_id) %}
     {% set sub_token = one_london_psds.normalize_identifier(sub_dataset_id) %}
 
     {% set stage_name = 'STG_' ~ series_token ~ '_' ~ sub_token %}
-    {% set table_name = 'RAW_' ~ series_token ~ '_' ~ sub_token %}
+    {% set ingest_table_name = 'INGEST_' ~ series_token ~ '_' ~ sub_token %}
+    {% set raw_table_name = 'RAW_' ~ series_token ~ '_' ~ sub_token %}
     {% set pipe_name = 'PIPE_' ~ series_token ~ '_' ~ sub_token %}
     {% set target_url = adls_url_root.rstrip('/') ~ '/' ~ series_id ~ '/' ~ sub_dataset_id ~ '/' %}
 
-    {% do one_london_psds.create_raw_table(database_name, raw_schema, table_name) %}
+    {% do one_london_psds.create_ingest_table(database_name, ingest_schema, ingest_table_name) %}
     {% do one_london_psds.create_stage_and_pipe(
         database_name,
         infra_schema,
@@ -49,14 +50,16 @@
         target_url,
         file_format_name,
         pipe_name,
-        table_name
+        ingest_table_name,
+        target_schema=ingest_schema
     ) %}
+    {% do one_london_psds.create_raw_dedup_view(database_name, raw_schema, raw_table_name, ingest_schema, ingest_table_name) %}
 
-    {{ return({'stage': stage_name, 'pipe': pipe_name, 'table': table_name, 'url': target_url}) }}
+    {{ return({'stage': stage_name, 'pipe': pipe_name, 'ingest_table': ingest_table_name, 'raw_view': raw_table_name, 'url': target_url}) }}
 {% endmacro %}
 
 
-{% macro provision_series_from_manifest(manifest_path, database_name=target.database, infra_schema=var('infra_schema'), raw_schema=var('raw_schema')) %}
+{% macro provision_series_from_manifest(manifest_path, database_name=target.database, infra_schema=var('infra_schema'), ingest_schema=var('ingest_schema'), raw_schema=var('raw_schema')) %}
     {% set manifest = fromyaml(read_file(manifest_path)) %}
 
     {% if manifest is none %}
@@ -82,6 +85,7 @@
         {% set result = one_london_psds.provision_target_pipeline(
             database_name,
             infra_schema,
+            ingest_schema,
             raw_schema,
             series_id,
             target_cfg['sub_dataset_id'],

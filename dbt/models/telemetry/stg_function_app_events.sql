@@ -22,4 +22,4 @@ select
     ERROR_TYPE,
     ERROR_MESSAGE,
     DISCOVERED_FILE_COUNT
-from {{ source('raw', 'RAW_FUNCTION_APP_EVENTS') }}
+from {{ source('ingest', 'INGEST_FUNCTION_APP_EVENTS') }}

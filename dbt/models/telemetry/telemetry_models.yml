@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_function_app_events
-    description: "Structured function app telemetry events loaded from RAW_FUNCTION_APP_EVENTS."
+    description: "Structured function app telemetry events sourced from INGEST_FUNCTION_APP_EVENTS (Snowpipe-loaded table)."
     columns:
       - name: RUN_ID
         tests:
@@ -18,7 +18,7 @@ models:
           - not_null
 
   - name: fct_row_parity
-    description: "Row parity comparison between normalized file row counts and loaded RAW row counts by load_id."
+    description: "Row parity comparison between normalized file row counts and INGEST table row counts by load_id."
 
   - name: fct_column_quality_profile
-    description: "Column-level quality profile including null percentage and distinct counts across RAW tables."
+    description: "Column-level quality profile including null percentage and distinct counts across INGEST tables."

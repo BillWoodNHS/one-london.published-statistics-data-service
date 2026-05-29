@@ -52,3 +52,38 @@
     {%- enddoc -%}
     {{ return(one_london_psds.create_ingest_table(database_name, schema_name, table_name)) }}
 {% endmacro %}
+
+
+{% macro create_raw_dedup_view(database_name, raw_schema, raw_view, ingest_schema, ingest_table) %}
+    {%- doc -%}
+    Create or replace a RAW deduplication view over an INGEST table.
+
+    The RAW view:
+    - Always reflects the current state of INGEST (no lag, no refresh required)
+    - Deduplicates by selecting the most recent ingestion of each unique file (_FILE_CONTENT_KEY)
+    - Inherits all columns from the INGEST table automatically via SELECT * EXCLUDE
+    - Is safe to re-run: CREATE OR REPLACE is idempotent
+    - Can be promoted to a Dynamic Table later if query performance requires it
+
+    Called by provision_target_pipeline as part of the standard dataset provisioning workflow.
+    {%- enddoc -%}
+
+    {% set sql %}
+        create or replace view {{ adapter.quote(database_name) }}.{{ adapter.quote(raw_schema) }}.{{ adapter.quote(raw_view) }} as
+        with ranked as (
+            select
+                row_number() over (
+                    partition by _FILE_CONTENT_KEY
+                    order by _INGESTED_AT desc
+                ) as _dedup_rank,
+                *
+            from {{ adapter.quote(database_name) }}.{{ adapter.quote(ingest_schema) }}.{{ adapter.quote(ingest_table) }}
+        )
+        select * exclude (_dedup_rank)
+        from ranked
+        where _dedup_rank = 1
+    {% endset %}
+
+    {% do run_query(sql) %}
+    {{ return('created or replaced raw dedup view ' ~ raw_schema ~ '.' ~ raw_view) }}
+{% endmacro %}

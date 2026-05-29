@@ -1,8 +1,11 @@
 version: 2
 
 sources:
-  - name: raw
+  - name: ingest
+    description: |
+      INGEST schema tables that receive Snowpipe loads directly.
+      These tables preserve the full audit trail including re-uploads/duplicates.
     database: "{{ target.database }}"
-    schema: "{{ var('raw_schema') }}"
+    schema: "{{ var('ingest_schema') }}"
     tables:
-      - name: RAW_FUNCTION_APP_EVENTS
+      - name: INGEST_FUNCTION_APP_EVENTS

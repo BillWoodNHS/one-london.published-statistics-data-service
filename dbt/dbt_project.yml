@@ -17,6 +17,7 @@ models:
       +schema: PRESENTATION
 
 vars:
+  ingest_schema: INGEST
   raw_schema: RAW
   presentation_schema: PRESENTATION
   infra_schema: INFRA
