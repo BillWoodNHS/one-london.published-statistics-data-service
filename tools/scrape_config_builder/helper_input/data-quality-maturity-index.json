@@ -12,6 +12,8 @@
   "targets": [
     {
       "sub_dataset_id": "without-did",
+      "object_name_suffix": "DQMI_WITHOUT_DID",
+      "adls_path_prefix": "data-quality-maturity-index/without-did",
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",
@@ -40,6 +42,8 @@
     },
     {
       "sub_dataset_id": "with-did",
+      "object_name_suffix": "DQMI_WITH_DID",
+      "adls_path_prefix": "data-quality-maturity-index/with-did",
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality",

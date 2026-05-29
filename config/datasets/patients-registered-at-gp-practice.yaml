@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: five-year-age-groups-regions
+  object_name_suffix: GP_PATIENTS_FIVE_YEAR_REGIONS
+  adls_path_prefix: patients-registered-at-gp-practice/five-year-age-groups-regions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice
     page_role: default
@@ -39,6 +41,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: gp-practice-all-persons
+  object_name_suffix: GP_PATIENTS_ALL_PERSONS
+  adls_path_prefix: patients-registered-at-gp-practice/gp-practice-all-persons
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice
     page_role: default
@@ -57,6 +61,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: mapping-commissioning-regions
+  object_name_suffix: GP_PATIENTS_COMMISSIONING_MAP
+  adls_path_prefix: patients-registered-at-gp-practice/mapping-commissioning-regions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice
     page_role: default
@@ -75,6 +81,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: single-year-of-age-gp-practice-females-males
+  object_name_suffix: GP_PATIENTS_SINGLE_YEAR_GP_GENDER
+  adls_path_prefix: patients-registered-at-gp-practice/single-year-of-age-gp-practice-females-males
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice
     page_role: default
@@ -94,6 +102,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: single-year-of-age-regions
+  object_name_suffix: GP_PATIENTS_SINGLE_YEAR_REGIONS
+  adls_path_prefix: patients-registered-at-gp-practice/single-year-of-age-regions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/patients-registered-at-a-gp-practice
     page_role: default

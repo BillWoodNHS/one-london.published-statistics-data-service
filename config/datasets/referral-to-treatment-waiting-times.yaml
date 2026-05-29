@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
+  object_name_suffix: RTT_WAIT_DEFAULT
+  adls_path_prefix: referral-to-treatment-waiting-times/default
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/
     page_role: default

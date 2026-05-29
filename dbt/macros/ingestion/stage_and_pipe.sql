@@ -31,15 +31,19 @@
 {% endmacro %}
 
 
-{% macro provision_target_pipeline(database_name, infra_schema, ingest_schema, raw_schema, series_id, sub_dataset_id, adls_url_root, storage_integration_name, file_format_name) %}
-    {% set series_token = one_london_psds.normalize_identifier(series_id) %}
-    {% set sub_token = one_london_psds.normalize_identifier(sub_dataset_id) %}
+{% macro provision_target_pipeline(database_name, infra_schema, ingest_schema, raw_schema, series_id, sub_dataset_id, object_name_suffix, adls_path_prefix, adls_url_root, storage_integration_name, file_format_name) %}
+    {% if object_name_suffix == '' %}
+        {{ exceptions.raise_compiler_error('object_name_suffix is required for provisioning target ' ~ series_id ~ '/' ~ sub_dataset_id) }}
+    {% endif %}
+    {% if adls_path_prefix == '' %}
+        {{ exceptions.raise_compiler_error('adls_path_prefix is required for provisioning target ' ~ series_id ~ '/' ~ sub_dataset_id) }}
+    {% endif %}
 
-    {% set stage_name = 'STG_' ~ series_token ~ '_' ~ sub_token %}
-    {% set ingest_table_name = 'INGEST_' ~ series_token ~ '_' ~ sub_token %}
-    {% set raw_table_name = 'RAW_' ~ series_token ~ '_' ~ sub_token %}
-    {% set pipe_name = 'PIPE_' ~ series_token ~ '_' ~ sub_token %}
-    {% set target_url = adls_url_root.rstrip('/') ~ '/' ~ series_id ~ '/' ~ sub_dataset_id ~ '/' %}
+    {% set stage_name = 'STG_' ~ object_name_suffix %}
+    {% set ingest_table_name = 'INGEST_' ~ object_name_suffix %}
+    {% set raw_table_name = 'RAW_' ~ object_name_suffix %}
+    {% set pipe_name = 'PIPE_' ~ object_name_suffix %}
+    {% set target_url = adls_url_root.rstrip('/') ~ '/' ~ adls_path_prefix ~ '/' %}
 
     {% do one_london_psds.create_ingest_table(database_name, ingest_schema, ingest_table_name) %}
     {% do one_london_psds.create_stage_and_pipe(
@@ -89,6 +93,8 @@
             raw_schema,
             series_id,
             target_cfg['sub_dataset_id'],
+            target_cfg['object_name_suffix'],
+            target_cfg['adls_path_prefix'],
             adls_url_root,
             storage_integration_name,
             file_format_name

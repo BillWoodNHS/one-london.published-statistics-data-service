@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
+  object_name_suffix: CDC_DEFAULT
+  adls_path_prefix: community-diagnostic-centre-activity/default
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/cdc-management-information/
     page_role: default

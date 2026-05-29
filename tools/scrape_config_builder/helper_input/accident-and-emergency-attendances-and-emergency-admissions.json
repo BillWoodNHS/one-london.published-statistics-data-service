@@ -12,6 +12,8 @@
   "targets": [
     {
       "sub_dataset_id": "default",
+      "object_name_suffix": "AE_DEFAULT",
+      "adls_path_prefix": "accident-and-emergency-attendances-and-emergency-admissions/default",
       "sample_pages": [
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/",
@@ -48,7 +50,7 @@
           "page_role": "subject_period_index",
           "partitioning_strategy": "subject_period",
           "samples": [
-            { 
+            {
               "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Monthly-AE-March-2025.csv",
               "notes": "Monthly CSV files. Subject period inferred from filename pattern Monthly-AE-[Month]-[Year].csv. Fiscal-year-organized pages."
             },

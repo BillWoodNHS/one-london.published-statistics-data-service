@@ -8,6 +8,7 @@ capture it directly.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -27,6 +28,38 @@ ALLOWED_SUBJECT_PERIOD_PATTERNS = {
     "fiscal_year_and_month",
     "quarter_year",
 }
+OBJECT_NAME_SUFFIX_PATTERN = re.compile(r"^[A-Z0-9_]+$")
+RESERVED_OBJECT_NAME_PREFIXES = ("STG_", "PIPE_", "INGEST_", "RAW_")
+ADLS_PATH_PREFIX_PATTERN = re.compile(
+    r"^[a-z0-9_\-][a-z0-9_\-/]*[a-z0-9_\-]$|^[a-z0-9_\-]$"
+)
+
+
+def _validate_object_name_suffix(value: object) -> str | None:
+    suffix = str(value or "").strip()
+    if not suffix:
+        return "must not be empty when provided"
+    if suffix != suffix.upper():
+        return "must use uppercase letters, digits, and underscores only"
+    if not OBJECT_NAME_SUFFIX_PATTERN.fullmatch(suffix):
+        return "must use uppercase letters, digits, and underscores only"
+    if suffix.startswith(RESERVED_OBJECT_NAME_PREFIXES):
+        return "must not include STG_, PIPE_, INGEST_, or RAW_ prefixes"
+    return None
+
+
+def _validate_adls_path_prefix(value: object) -> str | None:
+    prefix = str(value or "").strip().strip("/")
+    if not prefix:
+        return "must not be empty when provided"
+    if ".." in prefix.split("/"):
+        return "must not contain path traversal (..)"
+    if not ADLS_PATH_PREFIX_PATTERN.fullmatch(prefix):
+        return (
+            "must use only lowercase letters, digits, hyphens, underscores, and "
+            "forward slashes — no leading/trailing slashes"
+        )
+    return None
 
 
 def validate(path: Path) -> list[str]:
@@ -76,6 +109,20 @@ def validate(path: Path) -> list[str]:
 
             if not str(target.get("sub_dataset_id", "")).strip():
                 errors.append(f"{tprefix}.sub_dataset_id: required")
+
+            if "object_name_suffix" in target:
+                suffix_error = _validate_object_name_suffix(
+                    target.get("object_name_suffix")
+                )
+                if suffix_error:
+                    errors.append(f"{tprefix}.object_name_suffix: {suffix_error}")
+
+            if "adls_path_prefix" in target:
+                prefix_error = _validate_adls_path_prefix(
+                    target.get("adls_path_prefix")
+                )
+                if prefix_error:
+                    errors.append(f"{tprefix}.adls_path_prefix: {prefix_error}")
 
             sample_pages = target.get("sample_pages")
             if not isinstance(sample_pages, list) or not sample_pages:

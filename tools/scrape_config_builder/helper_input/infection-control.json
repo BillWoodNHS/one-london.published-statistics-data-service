@@ -12,6 +12,8 @@
   "targets": [
     {
       "sub_dataset_id": "c-difficile-infection",
+      "object_name_suffix": "INFECTION_DIFFICILE",
+      "adls_path_prefix": "infection-control/c-difficile-infection",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
@@ -44,6 +46,8 @@
     },
     {
       "sub_dataset_id": "e-coli-bacteraemia",
+      "object_name_suffix": "INFECTION_ECOLI",
+      "adls_path_prefix": "infection-control/e-coli-bacteraemia",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
@@ -76,6 +80,8 @@
     },
     {
       "sub_dataset_id": "klebsiella-spp-bacteraemia",
+      "object_name_suffix": "INFECTION_KLEBSIELLA",
+      "adls_path_prefix": "infection-control/klebsiella-spp-bacteraemia",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
@@ -108,6 +114,8 @@
     },
     {
       "sub_dataset_id": "mrsa-bacteraemia",
+      "object_name_suffix": "INFECTION_MRSA",
+      "adls_path_prefix": "infection-control/mrsa-bacteraemia",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
@@ -140,6 +148,8 @@
     },
     {
       "sub_dataset_id": "mssa-bacteraemia",
+      "object_name_suffix": "INFECTION_MSSA",
+      "adls_path_prefix": "infection-control/mssa-bacteraemia",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",
@@ -172,6 +182,8 @@
     },
     {
       "sub_dataset_id": "p-aeruginosa",
+      "object_name_suffix": "INFECTION_PSEUDOMONAS",
+      "adls_path_prefix": "infection-control/p-aeruginosa",
       "sample_pages": [
         {
           "page_url": "https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026",

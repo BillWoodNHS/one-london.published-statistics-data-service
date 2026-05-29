@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
+  object_name_suffix: DIAGNOSTIC_WAIT_DEFAULT
+  adls_path_prefix: monthly-diagnostic-waiting-times-and-activity/default
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/monthly-diagnostics-data-2025-26/
     page_role: subject_period_index

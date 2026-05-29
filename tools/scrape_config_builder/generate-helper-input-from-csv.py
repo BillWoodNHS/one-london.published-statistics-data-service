@@ -63,6 +63,23 @@ def _clean_sub_dataset_id(value: str) -> str:
     return normalized
 
 
+def _normalize_object_name_token(value: str) -> str:
+    token = re.sub(r"[^A-Za-z0-9]+", "_", value.strip()).strip("_")
+    token = re.sub(r"_+", "_", token)
+    return token.upper() or "DEFAULT"
+
+
+def _infer_object_name_suffix(dataset_id: str, sub_dataset_id: str) -> str:
+    return (
+        f"{_normalize_object_name_token(dataset_id)}"
+        f"_{_normalize_object_name_token(sub_dataset_id)}"
+    )
+
+
+def _infer_adls_path_prefix(dataset_id: str, sub_dataset_id: str) -> str:
+    return f"{dataset_id}/{sub_dataset_id}"
+
+
 def _read_inventory(path: Path) -> List[InventoryRow]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -177,6 +194,12 @@ def _rows_to_v2_payloads(
             targets.append(
                 {
                     "sub_dataset_id": sub_dataset_id,
+                    "object_name_suffix": _infer_object_name_suffix(
+                        _slugify(dataset_name), sub_dataset_id
+                    ),
+                    "adls_path_prefix": _infer_adls_path_prefix(
+                        _slugify(dataset_name), sub_dataset_id
+                    ),
                     "sample_subpage_url": sample_subpage_url,
                     "samples": [
                         {"file_url": sample.file_url, "notes": sample.notes}

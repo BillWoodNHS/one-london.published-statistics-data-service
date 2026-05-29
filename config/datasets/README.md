@@ -21,6 +21,8 @@ Optional `subject_period`:
 
 Each entry in `targets`:
 - `sub_dataset_id`: defines path isolation and downstream raw-table isolation
+- `object_name_suffix`: explicit Snowflake naming suffix consumed by dbt provisioning
+- `adls_path_prefix`: explicit relative ADLS sub-folder path for file storage (e.g. `appointments-in-general-practice/practice-level`)
 - `scrape_steps`: ordered chain of link extraction steps
 - optional: `reporting_period_columns`
 - optional: `page_date_selectors` (regex patterns to extract page-level publication/revision date per sub-publication)
@@ -28,6 +30,10 @@ Each entry in `targets`:
 ## Authoring Rules
 
 - Keep `sub_dataset_id` specific and stable.
+- Keep `object_name_suffix` stable and concise; use uppercase letters, digits, and underscores only.
+- Do not include Snowflake object prefixes in `object_name_suffix`; dbt prepends `STG_`, `PIPE_`, `INGEST_`, and `RAW_`.
+- Keep `adls_path_prefix` stable; use only lowercase letters, digits, hyphens, underscores, and forward slashes — no leading/trailing slashes, no `..`.
+- `adls_path_prefix` is a relative path within the shared ADLS container. The storage account and container are provided via the `adls_url_root` dbt variable.
 - Use narrow `text_filter` patterns to avoid ambiguous links.
 - Set `file_extensions` where possible (`csv`, `zip`, `xlsx`, `xls`).
 - If manual fallback is required, configure `fallback.manual_drop_path` clearly.

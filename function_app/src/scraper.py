@@ -256,6 +256,7 @@ def _discover_from_page(
                 publication_date_value=publication_date_value,
                 link_text=link_text,
                 subject_period_value=subject_period_value,
+                adls_path_prefix=target.adls_path_prefix,
             )
         )
 

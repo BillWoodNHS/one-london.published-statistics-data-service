@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: out-of-area-placements
+  object_name_suffix: MH_SERVICES_OOA
+  adls_path_prefix: mental_health_services_monthly_statistics/out-of-area-placements
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default
@@ -39,6 +41,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: performance-data-file
+  object_name_suffix: MH_SERVICES_PERFORMANCE
+  adls_path_prefix: mental_health_services_monthly_statistics/performance-data-file
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default
@@ -57,6 +61,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: restrictive-interventions
+  object_name_suffix: MH_SERVICES_RESTRICTIVE
+  adls_path_prefix: mental_health_services_monthly_statistics/restrictive-interventions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default

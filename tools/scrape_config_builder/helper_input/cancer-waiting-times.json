@@ -12,6 +12,8 @@
   "targets": [
     {
       "sub_dataset_id": "monthly-cancer-waiting-times-statistics",
+      "object_name_suffix": "CANCER_WAIT_MONTHLY",
+      "adls_path_prefix": "cancer-waiting-times/monthly-cancer-waiting-times-statistics",
       "sample_pages": [
         {
           "page_url": "https://www.england.nhs.uk/statistics/2025-26-monthly-cancer-waiting-times-statistics/",
@@ -44,6 +46,8 @@
     },
     {
       "sub_dataset_id": "provider-based",
+      "object_name_suffix": "CANCER_WAIT_PROVIDER",
+      "adls_path_prefix": "cancer-waiting-times/provider-based",
       "sample_pages": [
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
@@ -80,6 +84,8 @@
     },
     {
       "sub_dataset_id": "commissioner-based",
+      "object_name_suffix": "CANCER_WAIT_COMMISSIONER",
+      "adls_path_prefix": "cancer-waiting-times/commissioner-based",
       "sample_pages": [
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",
@@ -95,7 +101,7 @@
               "notes": "ICB/commissioner-level half-year XLSX periods."
             },
             {
-              "file_url":"https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/10/CWT-CRS-Apr-24-to-Mar-25-Data-Extract-ICB-Sub-Location-Final.xlsx",  
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/10/CWT-CRS-Apr-24-to-Mar-25-Data-Extract-ICB-Sub-Location-Final.xlsx",
               "notes": "ICB/commissioner-level monthly CSV files with periods in filename."
             }
           ]
@@ -116,6 +122,8 @@
     },
     {
       "sub_dataset_id": "combined-provider-commissioner",
+      "object_name_suffix": "CANCER_WAIT_COMBINED",
+      "adls_path_prefix": "cancer-waiting-times/combined-provider-commissioner",
       "sample_pages": [
         {
           "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/",

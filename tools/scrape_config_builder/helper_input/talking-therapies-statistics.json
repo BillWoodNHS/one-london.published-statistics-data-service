@@ -1,212 +1,226 @@
 {
-    "schema_version": "0.1",
-    "dataset_id": "talking-therapies-statistics",
-    "dataset_name": "Talking Therapies Statistics",
-    "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-    "source_path": "tools\\scrape_config_builder\\helper_input\\talking-therapies-statistics.json",
-    "hints": {
-        "entry_structure": "Entry page links to monthly publication pages which each contain a CSV file.",
-        "publication_date": "Publication date is below the subpage url, and in the heading of the subpage.",
-        "subject_period": "Monthly subject period appears in file names such as 'nhstalkingtherapies_dq_mar_2026_performance.csv'."
-    },
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "talking-therapies-statistics",
+  "dataset_name": "Talking Therapies Statistics",
+  "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\talking-therapies-statistics.json",
+  "hints": {
+    "entry_structure": "Entry page links to monthly publication pages which each contain a CSV file.",
+    "publication_date": "Publication date is below the subpage url, and in the heading of the subpage.",
+    "subject_period": "Monthly subject period appears in file names such as 'nhstalkingtherapies_dq_mar_2026_performance.csv'."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "monthly-activity",
+      "object_name_suffix": "TALKING_THERAPY_MONTHLY",
+      "adls_path_prefix": "talking-therapies-statistics/monthly-activity",
+      "sample_pages": [
         {
-            "sub_dataset_id": "monthly-activity",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/C5/C280AE/nhstalkingtherapies_month_mar_2026_activity_performance.csv",
-                            "notes": "Latest monthly performance CSV file"
-                        }
-                    ]
-                }
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='activity_performance' i]",
-            "preferred_text_filter": "Monthly Activity Data File",
-            "hints": {
-                "file_pattern": "nhstalkingtherapies_month_<Mon>_<YYYY>_activity_performance.csv",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year token from file name",
-                "archive_pattern": "sibling_pages_by_subject_period"
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/C5/C280AE/nhstalkingtherapies_month_mar_2026_activity_performance.csv",
+              "notes": "Latest monthly performance CSV file"
             }
-        },
-        {
-            "sub_dataset_id": "data-quality-report",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/05/038025/nhstalkingtherapies_dq_mar_2026_performance.csv",
-                            "notes": "Latest monthly data quality CSV file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='dq' i]",
-            "preferred_text_filter": "Data Quality",
-            "hints": {
-                "file_pattern": "nhstalkingtherapies_dq_<Mon>_<YYYY>_performance.csv",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year token from file name",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
-        },
-        {
-            "sub_dataset_id": "employment-advisors",
-            "sub_dataset_name": "Employment Advisors Monthly Data",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/81/FFC020/nhstalkingtherapies_month_mar_2026_ea_performance.csv",
-                            "notes": "Latest monthly employment advisors CSV file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='ea_performance' i][href*='month' i]",
-            "preferred_text_filter": "Employment Advisor",
-            "hints": {
-                "file_pattern": "nhstalkingtherapies_month_<Mon>_<YYYY>_ea_performance.csv",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year token from file name",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
-        },
-        {
-            "sub_dataset_id": "time_series_for_key_measures",
-            "sub_dataset_name": "Time Series for Key Measures",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/01/E52FE7/nhstalkingtherapies_time_series_mar_2025_mar_2026_key_measures.csv",
-                            "notes": "Time series for key measures CSV file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='key_measures' i]",
-            "preferred_text_filter": "Key Measures",
-            "hints": {
-                "file_pattern": "nhstalkingtherapies_time_series_<Mon>_<YYYY>_key_measures.csv",
-                "subject_period_pattern": "month_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year token from file name",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
-        },
-        {
-            "sub_dataset_id": "quarterly-activity",
-            "sub_dataset_name": "Quarterly Activity Data",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/FB/5AE15F/nhstalkingtherapies_quarterly_data_q4_25_26.zip",
-                            "notes": "Previous month quarterly activity data ZIP file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "zip"
-            ],
-            "preferred_link_selector": "a[href$='.zip'][href*='quarterly_data' i]",
-            "preferred_text_filter": "Quarter",
-            "hints": {
-                "file_pattern": "nhstalkingtherapies_quarterly_data_q<quarter>_<YY>_<YY>.zip",
-                "subject_period_pattern": "quarter_year",
-                "fiscal_year_format": "YY-YY",
-                "month_extraction": "Extract quarter and fiscal year from filename",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
-        },
-        {
-            "sub_dataset_id": "quarterly-employment-advisor-data",
-            "sub_dataset_name": "Quarterly Employment Advisor Data",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/BF/56CCB0/quarterly_ea_report_q4_25_26.zip",
-                            "notes": "Latest quarterly employment advisor data ZIP file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "zip"
-            ],
-            "preferred_link_selector": "a[href$='.zip'][href*='quarterly_ea_report' i]",
-            "preferred_text_filter": "Quarterly Report on Employment Advisor",
-            "hints": {
-                "file_pattern": "quarterly_ea_report_q<quarter>_<YY>_<YY>.zip",
-                "subject_period_pattern": "quarter_year",
-                "fiscal_year_format": "YY-YY",
-                "month_extraction": "Extract quarter and fiscal year from filename",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
-        },
-        {
-            "sub_dataset_id": "enter-treatment-rolling-quarter",
-            "sub_dataset_name": "Enter Treatment Rolling Quarter Data",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/31/B1FFD5/nhstalkingtherapies_rolling_quarterly_dec_jan_feb_2026.csv",
-                            "notes": "Current rolling quarterly file"
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv'][href*='rolling_quarterly' i]",
-            "preferred_text_filter": "Rolling Quarter",
-            "hints": {
-                "file_pattern": "All CSV files contain 'rolling_quarterly' with three included months names 'nhstalkingtherapies_rolling_quarterly_<mon>_<mon>_<mon>_<YYYY>.csv'.",
-                "subject_period_pattern": "quarter_year",
-                "fiscal_year_format": "",
-                "month_extraction": "Extract month and year from filename",
-                "archive_pattern": "sibling_pages_by_subject_period"
-            }
+          ]
         }
-    ]
+      ],
+      "preferred_link_selector": "a[href$='.csv'][href*='activity_performance' i]",
+      "preferred_text_filter": "Monthly Activity Data File",
+      "hints": {
+        "file_pattern": "nhstalkingtherapies_month_<Mon>_<YYYY>_activity_performance.csv",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "data-quality-report",
+      "object_name_suffix": "TALKING_THERAPY_DATA_QUALITY",
+      "adls_path_prefix": "talking-therapies-statistics/data-quality-report",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/05/038025/nhstalkingtherapies_dq_mar_2026_performance.csv",
+              "notes": "Latest monthly data quality CSV file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv'][href*='dq' i]",
+      "preferred_text_filter": "Data Quality",
+      "hints": {
+        "file_pattern": "nhstalkingtherapies_dq_<Mon>_<YYYY>_performance.csv",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "employment-advisors",
+      "object_name_suffix": "TALKING_THERAPY_EMPLOYMENT",
+      "adls_path_prefix": "talking-therapies-statistics/employment-advisors",
+      "sub_dataset_name": "Employment Advisors Monthly Data",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/81/FFC020/nhstalkingtherapies_month_mar_2026_ea_performance.csv",
+              "notes": "Latest monthly employment advisors CSV file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv'][href*='ea_performance' i][href*='month' i]",
+      "preferred_text_filter": "Employment Advisor",
+      "hints": {
+        "file_pattern": "nhstalkingtherapies_month_<Mon>_<YYYY>_ea_performance.csv",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "time_series_for_key_measures",
+      "object_name_suffix": "TALKING_THERAPY_TIME_SERIES",
+      "adls_path_prefix": "talking-therapies-statistics/time_series_for_key_measures",
+      "sub_dataset_name": "Time Series for Key Measures",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/01/E52FE7/nhstalkingtherapies_time_series_mar_2025_mar_2026_key_measures.csv",
+              "notes": "Time series for key measures CSV file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv'][href*='key_measures' i]",
+      "preferred_text_filter": "Key Measures",
+      "hints": {
+        "file_pattern": "nhstalkingtherapies_time_series_<Mon>_<YYYY>_key_measures.csv",
+        "subject_period_pattern": "month_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year token from file name",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "quarterly-activity",
+      "object_name_suffix": "TALKING_THERAPY_QUARTERLY",
+      "adls_path_prefix": "talking-therapies-statistics/quarterly-activity",
+      "sub_dataset_name": "Quarterly Activity Data",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/FB/5AE15F/nhstalkingtherapies_quarterly_data_q4_25_26.zip",
+              "notes": "Previous month quarterly activity data ZIP file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "zip"
+      ],
+      "preferred_link_selector": "a[href$='.zip'][href*='quarterly_data' i]",
+      "preferred_text_filter": "Quarter",
+      "hints": {
+        "file_pattern": "nhstalkingtherapies_quarterly_data_q<quarter>_<YY>_<YY>.zip",
+        "subject_period_pattern": "quarter_year",
+        "fiscal_year_format": "YY-YY",
+        "month_extraction": "Extract quarter and fiscal year from filename",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "quarterly-employment-advisor-data",
+      "object_name_suffix": "TALKING_THERAPY_QUARTERLY_EMPLOYMENT",
+      "adls_path_prefix": "talking-therapies-statistics/quarterly-employment-advisor-data",
+      "sub_dataset_name": "Quarterly Employment Advisor Data",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/BF/56CCB0/quarterly_ea_report_q4_25_26.zip",
+              "notes": "Latest quarterly employment advisor data ZIP file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "zip"
+      ],
+      "preferred_link_selector": "a[href$='.zip'][href*='quarterly_ea_report' i]",
+      "preferred_text_filter": "Quarterly Report on Employment Advisor",
+      "hints": {
+        "file_pattern": "quarterly_ea_report_q<quarter>_<YY>_<YY>.zip",
+        "subject_period_pattern": "quarter_year",
+        "fiscal_year_format": "YY-YY",
+        "month_extraction": "Extract quarter and fiscal year from filename",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    },
+    {
+      "sub_dataset_id": "enter-treatment-rolling-quarter",
+      "object_name_suffix": "TALKING_THERAPY_ENTER_TREATMENT",
+      "adls_path_prefix": "talking-therapies-statistics/enter-treatment-rolling-quarter",
+      "sub_dataset_name": "Enter Treatment Rolling Quarter Data",
+      "sample_pages": [
+        {
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/31/B1FFD5/nhstalkingtherapies_rolling_quarterly_dec_jan_feb_2026.csv",
+              "notes": "Current rolling quarterly file"
+            }
+          ]
+        }
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv'][href*='rolling_quarterly' i]",
+      "preferred_text_filter": "Rolling Quarter",
+      "hints": {
+        "file_pattern": "All CSV files contain 'rolling_quarterly' with three included months names 'nhstalkingtherapies_rolling_quarterly_<mon>_<mon>_<mon>_<YYYY>.csv'.",
+        "subject_period_pattern": "quarter_year",
+        "fiscal_year_format": "",
+        "month_extraction": "Extract month and year from filename",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    }
+  ]
 }

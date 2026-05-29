@@ -49,6 +49,8 @@ Per `sample_page`:
 - `samples[]` — Sample file URLs with optional `notes`
 
 **Target-level controls**:
+- `object_name_suffix` — Optional Snowflake naming override. If omitted, the helper infers a default from `dataset_id` + `sub_dataset_id` and writes it into generated YAML.
+- `adls_path_prefix` — Optional ADLS storage path override (relative path within the shared container, e.g. `appointments-in-general-practice/practice-level`). If omitted, the helper infers a default from `dataset_id`/`sub_dataset_id` and writes it into generated YAML.
 - `hints.archive_pattern` — `none` | `sibling_pages_by_subject_period` — Controls whether helper emits `sibling_discovery.enabled: true`
 - `include_extensions` — Optional but strongly recommended file types (otherwise inferred from samples)
 - `preferred_link_selector`, `preferred_text_filter` — Optional CSS/regex overrides
@@ -63,6 +65,8 @@ Per `sample_page`:
 - `schema_version: "2.0"`
 - Dataset-level `hints` object
 - Target-level `samples` array + optional `sample_subpage_url`
+- Optional `targets[].object_name_suffix` override with the same behavior as v0.1
+- Optional `targets[].adls_path_prefix` override with the same behavior as v0.1
 - Per-target overrides: `preferred_link_selector`, `preferred_text_filter`, `hints`
 
 **Example v2.0**: [helper_input/appointments-in-general-practice.json](helper_input/appointments-in-general-practice.json)
@@ -88,6 +92,7 @@ Each run folder contains:
 - `generated_configs/*.yaml` — Candidate scraper YAML configs ready for manual review and promotion.
   - v0.1 JSON inputs → v0.1 YAML with `source_pages` array and `sibling_discovery` config
   - v2.0 JSON inputs → v2.0 YAML with `scrape_steps` only (legacy)
+- Generated YAML always includes explicit `object_name_suffix` and `adls_path_prefix` values for downstream dbt provisioning and ADLS routing.
 - `reports/helper_suggestions.csv` — Inferred selectors, patterns, and extension hints per sub-dataset.
 - `reports/matches_found.csv` — Live discovery validation results (URL, link text, publication date, subject period inference).
 - `reports/normalized_input_specs/*.json` — Final normalized input specs used by the run (with inferred schemas).

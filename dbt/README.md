@@ -13,7 +13,7 @@ The project implements a three-layer data pipeline with clear separation of conc
 - **Snowpipe target tables** receiving direct loads from Azure Blob Storage
 - **Full audit trail** of all file uploads (including re-uploads and duplicates)
 - **Auto-evolving schema** via Snowflake's `enable_schema_evolution=true`
-- **Table naming**: `INGEST_{SERIES_TOKEN}_{SUB_DATASET_TOKEN}`
+- **Table naming**: `INGEST_{OBJECT_NAME_SUFFIX}` where the suffix comes from `targets[].object_name_suffix` in the dataset manifest
 - **Metadata columns**: `_INGESTED_AT`, `_SOURCE_FILE_NAME`, `_FILE_CONTENT_KEY`, etc.
 - **No maintenance required**: New columns in CSV files automatically detected and added
 
@@ -77,12 +77,14 @@ dbt run-operation one_london_psds.provision_series_from_manifest \
 ```
 
 This creates in a single operation:
-- `INGEST_<SERIES>_<DATASET>` table (receives Snowpipe loads, auto-evolving schema)
-- `STG_<SERIES>_<DATASET>` Snowflake external stage
-- `PIPE_<SERIES>_<DATASET>` Snowpipe pipe
-- `RAW_<SERIES>_<DATASET>` table (deduplicated, inherits INGEST schema)
+- `INGEST_<OBJECT_NAME_SUFFIX>` table (receives Snowpipe loads, auto-evolving schema)
+- `STG_<OBJECT_NAME_SUFFIX>` Snowflake external stage
+- `PIPE_<OBJECT_NAME_SUFFIX>` Snowpipe pipe
+- `RAW_<OBJECT_NAME_SUFFIX>` view (deduplicated, inherits INGEST schema)
 
 No SQL files per dataset are required — the macro applies identical logic to every dataset.
+
+Manifest targets must provide `object_name_suffix` and `adls_path_prefix` explicitly. dbt owns the standard object prefixes and rejects suffixes that already include `STG_`, `PIPE_`, `INGEST_`, or `RAW_`. The stage URL is constructed as `{adls_url_root}/{adls_path_prefix}/`.
 
 ### 3. Create Presentation Views (Optional)
 Add views in `models/generated/` that reference the RAW table.
@@ -122,7 +124,7 @@ or private key) still come from environment variables/secrets.
 | **Role** | Audit trail | Source of truth |
 | **Duplicates** | Preserved | Removed |
 | **Schema** | Auto-evolves (Snowflake) | Inherits via `SELECT * EXCLUDE` |
-| **Created by** | `create_ingest_table` macro | `create_raw_dedup_table` macro |
+| **Created by** | `create_ingest_table` macro | `create_raw_dedup_view` macro |
 | **Refreshed by** | Snowpipe (automatic) | Re-running `provision_series_from_manifest` |
 | **Re-uploads** | Visible as separate rows | Deduplicated to latest version |
 | **Per-dataset SQL files** | None required | None required |

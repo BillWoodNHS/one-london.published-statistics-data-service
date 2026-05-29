@@ -41,20 +41,20 @@ def _to_iso_partition_value(raw_value: str) -> str:
 
 
 def _adls_path(
-    series_id: str,
-    sub_dataset_id: str,
+    adls_path_prefix: str,
     subject_period: str,
     publication_date: str,
     filename: str,
 ) -> str:
     """Build an ADLS path for a file.
 
-    Uses series, sub-dataset, subject period, publication date, and filename.
+    Uses the explicit adls_path_prefix from the manifest target, subject period,
+    publication date, and filename.
     """
     safe_subject_period = _to_iso_partition_value(subject_period)
     safe_pub = _to_iso_partition_value(publication_date)
     return (
-        f"{series_id}/{sub_dataset_id}/subject_period={safe_subject_period}/"
+        f"{adls_path_prefix}/subject_period={safe_subject_period}/"
         f"publication_date={safe_pub}/{filename}"
     )
 
@@ -212,10 +212,12 @@ def build_artifact(
     Includes ADLS path and metadata.
     """
     subject_period = _resolve_subject_period(file)
+    adls_path_prefix = (
+        file.adls_path_prefix or f"{file.series_id}/{file.sub_dataset_id}"
+    )
     return LoadArtifact(
         adls_path=_adls_path(
-            file.series_id,
-            file.sub_dataset_id,
+            adls_path_prefix,
             subject_period,
             file.publication_date_value,
             filename,

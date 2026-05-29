@@ -1,42 +1,44 @@
 {
-    "schema_version": "0.1",
-    "dataset_id": "physical-health-checks-for-people-with-severe-mental-illness",
-    "dataset_name": "Physical Health Checks for People with Severe Mental Illness",
-    "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/physical-health-checks-for-people-with-severe-mental-illness",
-    "source_path": "tools\\scrape_config_builder\\helper_input\\physical-health-checks-for-people-with-severe-mental-illness.json",
-    "hints": {
-        "entry_structure": "Entry page links to quarterly publication subpages (Qx-YYYY-YY).",
-        "publication_date": "Publication date appears on each subpage header and on the entry page beneath each sublink.",
-        "subject_period": "Subject period is quarterly and appears in link text (for example Q4 2025-26)."
-    },
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "physical-health-checks-for-people-with-severe-mental-illness",
+  "dataset_name": "Physical Health Checks for People with Severe Mental Illness",
+  "entry_url": "https://digital.nhs.uk/data-and-information/publications/statistical/physical-health-checks-for-people-with-severe-mental-illness",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\physical-health-checks-for-people-with-severe-mental-illness.json",
+  "hints": {
+    "entry_structure": "Entry page links to quarterly publication subpages (Qx-YYYY-YY).",
+    "publication_date": "Publication date appears on each subpage header and on the entry page beneath each sublink.",
+    "subject_period": "Subject period is quarterly and appears in link text (for example Q4 2025-26)."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "default",
+      "object_name_suffix": "PHYSICAL_HEALTH_DEFAULT",
+      "adls_path_prefix": "physical-health-checks-for-people-with-severe-mental-illness/default",
+      "sample_pages": [
         {
-            "sub_dataset_id": "default",
-            "sample_pages": [
-                {
-                    "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/physical-health-checks-for-people-with-severe-mental-illness",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://files.digital.nhs.uk/F9/0A7DCF/Physical%20Health%20Checks%20for%20Severe%20Mental%20Illness%2C%20Q4%202025-26%20CSV.csv",
-                            "notes": "Quarterly CSV file; one CSV per quarterly publication subpage."
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "csv"
-            ],
-            "preferred_link_selector": "a[href$='.csv']",
-            "preferred_text_filter": "Physical Health Checks for Severe Mental Illness",
-            "hints": {
-                "file_pattern": "Physical Health Checks for Severe Mental Illness, Q<quarter> <YYYY>-<YY> CSV.csv",
-                "subject_period_pattern": "quarter_year",
-                "fiscal_year_format": "YYYY-YY",
-                "month_extraction": "Extract quarter and fiscal year from link text",
-                "archive_pattern": "sibling_pages_by_subject_period"
+          "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/physical-health-checks-for-people-with-severe-mental-illness",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://files.digital.nhs.uk/F9/0A7DCF/Physical%20Health%20Checks%20for%20Severe%20Mental%20Illness%2C%20Q4%202025-26%20CSV.csv",
+              "notes": "Quarterly CSV file; one CSV per quarterly publication subpage."
             }
+          ]
         }
-    ]
+      ],
+      "include_extensions": [
+        "csv"
+      ],
+      "preferred_link_selector": "a[href$='.csv']",
+      "preferred_text_filter": "Physical Health Checks for Severe Mental Illness",
+      "hints": {
+        "file_pattern": "Physical Health Checks for Severe Mental Illness, Q<quarter> <YYYY>-<YY> CSV.csv",
+        "subject_period_pattern": "quarter_year",
+        "fiscal_year_format": "YYYY-YY",
+        "month_extraction": "Extract quarter and fiscal year from link text",
+        "archive_pattern": "sibling_pages_by_subject_period"
+      }
+    }
+  ]
 }

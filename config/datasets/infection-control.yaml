@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: c-difficile-infection
+  object_name_suffix: INFECTION_DIFFICILE
+  adls_path_prefix: infection-control/c-difficile-infection
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default
@@ -39,6 +41,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: e-coli-bacteraemia
+  object_name_suffix: INFECTION_ECOLI
+  adls_path_prefix: infection-control/e-coli-bacteraemia
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default
@@ -57,6 +61,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: klebsiella-spp-bacteraemia
+  object_name_suffix: INFECTION_KLEBSIELLA
+  adls_path_prefix: infection-control/klebsiella-spp-bacteraemia
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default
@@ -75,6 +81,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: mrsa-bacteraemia
+  object_name_suffix: INFECTION_MRSA
+  adls_path_prefix: infection-control/mrsa-bacteraemia
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default
@@ -93,6 +101,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: mssa-bacteraemia
+  object_name_suffix: INFECTION_MSSA
+  adls_path_prefix: infection-control/mssa-bacteraemia
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default
@@ -111,6 +121,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: p-aeruginosa
+  object_name_suffix: INFECTION_PSEUDOMONAS
+  adls_path_prefix: infection-control/p-aeruginosa
   source_pages:
   - page_url: https://www.gov.uk/government/statistics/mrsa-mssa-gram-negative-bacteraemia-and-cdi-monthly-data-2025-to-2026
     page_role: default

@@ -55,6 +55,11 @@ PATTERN_TYPES = {
     "compact_month_year",
     "month_year",
 }
+OBJECT_NAME_SUFFIX_PATTERN = re.compile(r"^[A-Z0-9_]+$")
+ADLS_PATH_PREFIX_PATTERN = re.compile(
+    r"^[a-z0-9_\-][a-z0-9_\-/]*[a-z0-9_\-]$|^[a-z0-9_\-]$"
+)
+RESERVED_OBJECT_NAME_PREFIXES = ("STG_", "PIPE_", "INGEST_", "RAW_")
 
 
 @dataclass
@@ -95,6 +100,8 @@ class DatasetHints:
 @dataclass
 class HelperTargetInput:
     sub_dataset_id: str
+    object_name_suffix: str
+    adls_path_prefix: str
     sample_pages: List[SamplePageInput]
     include_extensions: List[str]
     preferred_link_selector: str = ""
@@ -133,6 +140,62 @@ def _clean_sub_dataset_id(value: str) -> str:
     if normalized in {"", "none", "n/a", "na"}:
         return "default"
     return normalized
+
+
+def _normalize_object_name_token(value: str) -> str:
+    token = re.sub(r"[^A-Za-z0-9]+", "_", value.strip()).strip("_")
+    token = re.sub(r"_+", "_", token)
+    return token.upper() or "DEFAULT"
+
+
+def _infer_object_name_suffix(dataset_id: str, sub_dataset_id: str) -> str:
+    return (
+        f"{_normalize_object_name_token(dataset_id)}"
+        f"_{_normalize_object_name_token(sub_dataset_id)}"
+    )
+
+
+def _infer_adls_path_prefix(dataset_id: str, sub_dataset_id: str) -> str:
+    return f"{dataset_id}/{sub_dataset_id}"
+
+
+def _normalize_or_validate_object_name_suffix(
+    dataset_id: str,
+    sub_dataset_id: str,
+    explicit_suffix: str,
+) -> str:
+    suffix = explicit_suffix.strip()
+    if not suffix:
+        return _infer_object_name_suffix(dataset_id, sub_dataset_id)
+
+    if suffix != suffix.upper() or not OBJECT_NAME_SUFFIX_PATTERN.fullmatch(suffix):
+        raise ValueError(
+            "object_name_suffix must use uppercase letters, digits, and underscores only"
+        )
+    if suffix.startswith(RESERVED_OBJECT_NAME_PREFIXES):
+        raise ValueError(
+            "object_name_suffix must not include STG_, PIPE_, INGEST_, or RAW_ prefixes"
+        )
+    return suffix
+
+
+def _normalize_or_validate_adls_path_prefix(
+    dataset_id: str,
+    sub_dataset_id: str,
+    explicit_prefix: str,
+) -> str:
+    prefix = explicit_prefix.strip().strip("/")
+    if not prefix:
+        return _infer_adls_path_prefix(dataset_id, sub_dataset_id)
+
+    if ".." in prefix.split("/"):
+        raise ValueError("adls_path_prefix must not contain path traversal (..)")
+    if not ADLS_PATH_PREFIX_PATTERN.fullmatch(prefix):
+        raise ValueError(
+            "adls_path_prefix must use only lowercase letters, digits, hyphens, "
+            "underscores, and forward slashes — no leading/trailing slashes"
+        )
+    return prefix
 
 
 def _is_none_like(value: str) -> bool:
@@ -230,6 +293,16 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
 
             sub_dataset_id = _clean_sub_dataset_id(
                 str(target.get("sub_dataset_id", "default"))
+            )
+            object_name_suffix = _normalize_or_validate_object_name_suffix(
+                dataset_id,
+                sub_dataset_id,
+                str(target.get("object_name_suffix", "")),
+            )
+            adls_path_prefix = _normalize_or_validate_adls_path_prefix(
+                dataset_id,
+                sub_dataset_id,
+                str(target.get("adls_path_prefix", "")),
             )
 
             sample_pages_raw = target.get("sample_pages", [])
@@ -340,6 +413,8 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
             targets.append(
                 HelperTargetInput(
                     sub_dataset_id=sub_dataset_id,
+                    object_name_suffix=object_name_suffix,
+                    adls_path_prefix=adls_path_prefix,
                     sample_pages=sample_pages,
                     include_extensions=[
                         str(ext).strip().lower()
@@ -438,6 +513,8 @@ def _write_normalized_input_specs(
             "targets": [
                 {
                     "sub_dataset_id": target.sub_dataset_id,
+                    "object_name_suffix": target.object_name_suffix,
+                    "adls_path_prefix": target.adls_path_prefix,
                     "sample_pages": [
                         {
                             "page_url": page.page_url,
@@ -901,6 +978,8 @@ def _build_config_for_dataset(
         targets.append(
             {
                 "sub_dataset_id": _slugify(normalized_sub_dataset_id),
+                "object_name_suffix": target_input.object_name_suffix,
+                "adls_path_prefix": target_input.adls_path_prefix,
                 "source_pages": source_pages,
                 "reporting_period_columns": [],
                 "page_date_selectors": DEFAULT_PAGE_DATE_SELECTORS,
@@ -990,6 +1069,8 @@ def _validate_config_matches(config: Dict[str, object]) -> List[Dict[str, str]]:
         targets=[
             TargetConfig(
                 sub_dataset_id=str(target["sub_dataset_id"]),
+                object_name_suffix=str(target.get("object_name_suffix", "")),
+                adls_path_prefix=str(target.get("adls_path_prefix", "")),
                 scrape_steps=[
                     ScrapeStep(**step) for step in target.get("scrape_steps", [])
                 ],

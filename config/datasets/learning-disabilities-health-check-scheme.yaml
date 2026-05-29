@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: monthly-publication
+  object_name_suffix: LD_HEALTH_MONTHLY
+  adls_path_prefix: learning-disabilities-health-check-scheme/monthly-publication
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme/england-march-2026
     page_role: archive

@@ -12,6 +12,8 @@
   "targets": [
     {
       "sub_dataset_id": "performance-data-file",
+      "object_name_suffix": "MH_SERVICES_PERFORMANCE",
+      "adls_path_prefix": "mental_health_services_monthly_statistics/performance-data-file",
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
@@ -44,6 +46,8 @@
     },
     {
       "sub_dataset_id": "restrictive-interventions",
+      "object_name_suffix": "MH_SERVICES_RESTRICTIVE",
+      "adls_path_prefix": "mental_health_services_monthly_statistics/restrictive-interventions",
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",
@@ -76,6 +80,8 @@
     },
     {
       "sub_dataset_id": "out-of-area-placements",
+      "object_name_suffix": "MH_SERVICES_OOA",
+      "adls_path_prefix": "mental_health_services_monthly_statistics/out-of-area-placements",
       "sample_pages": [
         {
           "page_url": "https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026",

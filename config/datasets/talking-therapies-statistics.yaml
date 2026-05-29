@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: data-quality-report
+  object_name_suffix: TALKING_THERAPY_DATA_QUALITY
+  adls_path_prefix: talking-therapies-statistics/data-quality-report
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -39,6 +41,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: employment-advisors
+  object_name_suffix: TALKING_THERAPY_EMPLOYMENT
+  adls_path_prefix: talking-therapies-statistics/employment-advisors
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -57,6 +61,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: enter-treatment-rolling-quarter
+  object_name_suffix: TALKING_THERAPY_ENTER_TREATMENT
+  adls_path_prefix: talking-therapies-statistics/enter-treatment-rolling-quarter
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -75,6 +81,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: monthly-activity
+  object_name_suffix: TALKING_THERAPY_MONTHLY
+  adls_path_prefix: talking-therapies-statistics/monthly-activity
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -93,6 +101,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: quarterly-activity
+  object_name_suffix: TALKING_THERAPY_QUARTERLY
+  adls_path_prefix: talking-therapies-statistics/quarterly-activity
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -111,6 +121,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: quarterly-employment-advisor-data
+  object_name_suffix: TALKING_THERAPY_QUARTERLY_EMPLOYMENT
+  adls_path_prefix: talking-therapies-statistics/quarterly-employment-advisor-data
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default
@@ -129,6 +141,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: time-series-for-key-measures
+  object_name_suffix: TALKING_THERAPY_TIME_SERIES
+  adls_path_prefix: talking-therapies-statistics/time-series-for-key-measures
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
     page_role: default

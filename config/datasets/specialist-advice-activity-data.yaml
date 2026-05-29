@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: commissioner-specialist-advice-activity
+  object_name_suffix: SPECIALIST_ADVICE_COMMISSIONER
+  adls_path_prefix: specialist-advice-activity-data/commissioner-specialist-advice-activity
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/outpatient-transformation/specialist-advice/
     page_role: default
@@ -39,6 +41,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: provider-specialist-advice-activity
+  object_name_suffix: SPECIALIST_ADVICE_PROVIDER
+  adls_path_prefix: specialist-advice-activity-data/provider-specialist-advice-activity
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/outpatient-transformation/specialist-advice/
     page_role: default

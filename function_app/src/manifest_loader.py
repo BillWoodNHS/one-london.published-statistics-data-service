@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import List
 
@@ -24,11 +25,47 @@ class ManifestError(Exception):
     pass
 
 
+OBJECT_NAME_SUFFIX_PATTERN = re.compile(r"^[A-Z0-9_]+$")
+RESERVED_OBJECT_NAME_PREFIXES = ("STG_", "PIPE_", "INGEST_", "RAW_")
+ADLS_PATH_PREFIX_PATTERN = re.compile(
+    r"^[a-z0-9_\-][a-z0-9_\-/]*[a-z0-9_\-]$|^[a-z0-9_\-]$"
+)
+
+
 def _require(value, key: str):
     """Raise ManifestError if value is None or empty, otherwise return value."""
     if value is None or value == "":
         raise ManifestError(f"Missing required key: {key}")
     return value
+
+
+def _require_object_name_suffix(value, key: str) -> str:
+    suffix = str(_require(value, key)).strip().upper()
+    if not OBJECT_NAME_SUFFIX_PATTERN.fullmatch(suffix):
+        raise ManifestError(
+            f"Invalid {key}:"
+            f"must contain only uppercase letters, digits, and underscores"
+        )
+    if suffix.startswith(RESERVED_OBJECT_NAME_PREFIXES):
+        raise ManifestError(
+            f"Invalid {key}:"
+            f"do not include Snowflake object prefixes in object_name_suffix"
+        )
+    return suffix
+
+
+def _require_adls_path_prefix(value, key: str) -> str:
+    prefix = str(_require(value, key)).strip().strip("/")
+    if not prefix:
+        raise ManifestError(f"Invalid {key}: must not be empty")
+    if ".." in prefix.split("/"):
+        raise ManifestError(f"Invalid {key}: must not contain path traversal")
+    if not ADLS_PATH_PREFIX_PATTERN.fullmatch(prefix):
+        raise ManifestError(
+            f"Invalid {key}: use only lowercase letters, digits, hyphens, underscores, "
+            f"and forward slashes — no leading/trailing slashes"
+        )
+    return prefix
 
 
 def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
@@ -95,6 +132,14 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
         for idx, target in enumerate(target_entries, start=1):
             target_id = _require(
                 target.get("sub_dataset_id"), f"targets[{idx}].sub_dataset_id"
+            )
+            object_name_suffix = _require_object_name_suffix(
+                target.get("object_name_suffix"),
+                f"targets[{idx}].object_name_suffix",
+            )
+            adls_path_prefix = _require_adls_path_prefix(
+                target.get("adls_path_prefix"),
+                f"targets[{idx}].adls_path_prefix",
             )
             source_pages: List[SourcePageConfig] = []
             for p_idx, page in enumerate(target.get("source_pages", []), start=1):
@@ -186,6 +231,8 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
             targets.append(
                 TargetConfig(
                     sub_dataset_id=target_id,
+                    object_name_suffix=object_name_suffix,
+                    adls_path_prefix=adls_path_prefix,
                     scrape_steps=normalized_steps,
                     source_pages=normalized_source_pages,
                     compression=target.get("compression"),

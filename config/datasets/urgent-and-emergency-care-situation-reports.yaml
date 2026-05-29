@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: critical-care-beds
+  object_name_suffix: UEC_SITUATION_CRITICAL_CARE
+  adls_path_prefix: urgent-and-emergency-care-situation-reports/critical-care-beds
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports-2026-27/
     page_role: archive

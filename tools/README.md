@@ -30,7 +30,7 @@ tools/
 
 Automatic YAML configuration generator for the scraper-driven ingestion system.
 
-**Purpose:** Infer scraper patterns (link selectors, text filters, file extensions, subject periods) from per-dataset JSON v2 specs. Generate candidate YAML configs and validate discovery against live pages (non-download).
+**Purpose:** Infer scraper patterns (link selectors, text filters, file extensions, subject periods) from per-dataset JSON helper specs. Generate candidate YAML configs and validate discovery against live pages (non-download).
 
 **Key Outputs:**
 - Generated YAML configs under `tools/scrape_config_builder/helper_generated/<dataset_id>/run-<timestamp>/generated_configs/`
@@ -64,8 +64,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 ```
 
 See [scrape_config_builder/README.md](scrape_config_builder/README.md) for:
-- Full input modes documentation (JSON v2 + CSV converter)
+- Full input modes documentation (JSON v0.1/v2.0 + CSV converter)
 - JSON schema and field definitions
+- Explicit Snowflake naming via `targets[].object_name_suffix`
 - Subject period and publication date inference behavior
 - Migration path from CSV inventory to JSON v2 helper inputs
 
@@ -171,6 +172,8 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 
 - The scrape config builder does **not download files**; it validates discovery patterns only via HTTP fetch and regex matching.
 - Publication dates and subject periods are **inferred** from page metadata and link text and can be improved via JSON v2 hints and samples.
+- Helper JSON can optionally specify `targets[].object_name_suffix`; if omitted, the helper infers a default suffix from `dataset_id` and `sub_dataset_id`.
+- Promoted YAML manifests should keep `object_name_suffix` explicit so Snowflake object names are stable and reviewable in source control.
 - Generated YAML configs are **candidates** requiring manual review and testing before version control commit.
 - CSV inputs are handled by `generate-helper-input-from-csv.py`; the main helper accepts JSON v2 only.
 - All scripts support idempotent execution where practical.

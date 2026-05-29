@@ -68,6 +68,8 @@ class TargetConfig:
     """
 
     sub_dataset_id: str
+    object_name_suffix: str = ""
+    adls_path_prefix: str = ""
     scrape_steps: List[ScrapeStep] = field(default_factory=list)
     source_pages: List[SourcePageConfig] = field(default_factory=list)
     compression: Optional[str] = None
@@ -112,6 +114,7 @@ class DiscoveredFile:
     publication_date_value: Optional[str]
     link_text: str
     subject_period_value: Optional[str] = None
+    adls_path_prefix: str = ""
 
 
 @dataclass

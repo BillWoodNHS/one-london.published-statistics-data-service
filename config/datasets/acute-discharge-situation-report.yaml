@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: monthly-acute-discharge-situation-report
+  object_name_suffix: ACUTE_MONTHLY
+  adls_path_prefix: acute-discharge-situation-report/monthly-acute-discharge-situation-report
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/discharge-delays/acute-discharge-situation-report/
     page_role: default

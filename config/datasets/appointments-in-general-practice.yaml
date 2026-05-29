@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: actual-duration
+  object_name_suffix: GP_APPTS_ACTUAL_DURATION
+  adls_path_prefix: appointments-in-general-practice/actual-duration
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -52,6 +54,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: covid-vaccination-appointments
+  object_name_suffix: GP_APPTS_COVID_VACC
+  adls_path_prefix: appointments-in-general-practice/covid-vaccination-appointments
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -83,6 +87,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: daily-counts
+  object_name_suffix: GP_APPTS_DAILY_COUNTS
+  adls_path_prefix: appointments-in-general-practice/daily-counts
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -114,6 +120,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: national-categories
+  object_name_suffix: GP_APPTS_NAT_CATEGORIES
+  adls_path_prefix: appointments-in-general-practice/national-categories
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -145,6 +153,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: national-overview
+  object_name_suffix: GP_APPTS_NAT_OVERVIEW
+  adls_path_prefix: appointments-in-general-practice/national-overview
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -176,6 +186,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: practice-level
+  object_name_suffix: GP_APPTS_PRACTICE_LEVEL
+  adls_path_prefix: appointments-in-general-practice/practice-level
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -207,6 +219,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: regional
+  object_name_suffix: GP_APPTS_REGIONAL
+  adls_path_prefix: appointments-in-general-practice/regional
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -238,6 +252,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: sds-role-group
+  object_name_suffix: GP_APPTS_SDS_ROLE
+  adls_path_prefix: appointments-in-general-practice/sds-role-group
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -269,6 +285,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id003
 - sub_dataset_id: sub-icb-level
+  object_name_suffix: GP_APPTS_SUB_ICB
+  adls_path_prefix: appointments-in-general-practice/sub-icb-level
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive

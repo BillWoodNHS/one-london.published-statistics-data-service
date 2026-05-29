@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
+  object_name_suffix: AE_DEFAULT
+  adls_path_prefix: accident-and-emergency-attendances-and-emergency-admissions/default
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ae-attendances-and-emergency-admissions-2026-27/
     page_role: subject_period_index

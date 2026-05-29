@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: combined-provider-commissioner
+  object_name_suffix: CANCER_WAIT_COMBINED
+  adls_path_prefix: cancer-waiting-times/combined-provider-commissioner
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
     page_role: default
@@ -40,6 +42,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: commissioner-based
+  object_name_suffix: CANCER_WAIT_COMMISSIONER
+  adls_path_prefix: cancer-waiting-times/commissioner-based
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
     page_role: default
@@ -58,6 +62,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: monthly-cancer-waiting-times-statistics
+  object_name_suffix: CANCER_WAIT_MONTHLY
+  adls_path_prefix: cancer-waiting-times/monthly-cancer-waiting-times-statistics
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/2025-26-monthly-cancer-waiting-times-statistics/
     page_role: archive
@@ -76,6 +82,8 @@ targets:
   reporting_period_columns: []
   page_date_selectors: *id001
 - sub_dataset_id: provider-based
+  object_name_suffix: CANCER_WAIT_PROVIDER
+  adls_path_prefix: cancer-waiting-times/provider-based
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
     page_role: default

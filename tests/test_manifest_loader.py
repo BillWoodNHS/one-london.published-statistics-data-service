@@ -19,6 +19,8 @@ def test_manifest_loads_targets():
         t for t in mh.targets if t.sub_dataset_id == "performance-data-file"
     )
     assert perf_target.sub_dataset_id == "performance-data-file"
+    assert perf_target.object_name_suffix
+    assert perf_target.adls_path_prefix
     assert mh.subject_period is not None
     assert perf_target.page_date_selectors
     assert perf_target.source_pages

@@ -1,47 +1,49 @@
 {
-    "schema_version": "0.1",
-    "dataset_id": "referral-to-treatment-waiting-times",
-    "dataset_name": "Referral to Treatment Waiting Times",
-    "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/",
-    "source_path": "tools\\scrape_config_builder\\helper_input\\referral-to-treatment-waiting-times.json",
-    "hints": {
-        "entry_structure": "Entry page has latest year and previous financial year subpage links (rtt-data-YYYY-YY).",
-        "publication_date": "Publication month/year appears in download URL path (sites/2/YYYY/MM/) and on page headings.",
-        "subject_period": "Each year subpage contains monthly sections (for example March 2026) with a full ZIP CSV file link."
-    },
-    "targets": [
+  "schema_version": "0.1",
+  "dataset_id": "referral-to-treatment-waiting-times",
+  "dataset_name": "Referral to Treatment Waiting Times",
+  "entry_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/",
+  "source_path": "tools\\scrape_config_builder\\helper_input\\referral-to-treatment-waiting-times.json",
+  "hints": {
+    "entry_structure": "Entry page has latest year and previous financial year subpage links (rtt-data-YYYY-YY).",
+    "publication_date": "Publication month/year appears in download URL path (sites/2/YYYY/MM/) and on page headings.",
+    "subject_period": "Each year subpage contains monthly sections (for example March 2026) with a full ZIP CSV file link."
+  },
+  "targets": [
+    {
+      "sub_dataset_id": "default",
+      "object_name_suffix": "RTT_WAIT_DEFAULT",
+      "adls_path_prefix": "referral-to-treatment-waiting-times/default",
+      "sample_pages": [
         {
-            "sub_dataset_id": "default",
-            "sample_pages": [
-                {
-                    "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/",
-                    "page_role": "default",
-                    "partitioning_strategy": "subject_period",
-                    "samples": [
-                        {
-                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Full-CSV-data-file-Mar26-ZIP-4M-Dc1i9U.zip",
-                            "notes": "Latest example of monthly full ZIP CSV data file."
-                        },
-                        {
-                            "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2018/05/18wksRTT-Monthly-EXTRACTS-Oct15-revised.zip",
-                            "notes": "Legacy 2015-16 naming pattern for full ZIP CSV data file."
-                        }
-                    ]
-                }
-            ],
-            "include_extensions": [
-                "zip"
-            ],
-            "preferred_link_selector": "a[href*='Full-CSV-data-file'], a[href*='18wksRTT-Monthly-EXTRACTS']",
-            "preferred_text_filter": "Full CSV data file",
-            "hints": {
-                "file_pattern": "(Full-CSV-data-file-<MonYY>-ZIP|18wksRTT-Monthly-EXTRACTS-<MonYY>-revised).zip",
-                "subject_period_pattern": "compact_month_year",
-                "fiscal_year_format": "YYYY-YY",
-                "month_extraction": "Extract compact month-year token (for example Mar26, Oct15) from URL or link text",
-                "archive_pattern": "sibling_pages_by_subject_period",
-                "sibling_url_pattern": "rtt-data-\\d{4}-\\d{2}"
+          "page_url": "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/",
+          "page_role": "default",
+          "partitioning_strategy": "subject_period",
+          "samples": [
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/05/Full-CSV-data-file-Mar26-ZIP-4M-Dc1i9U.zip",
+              "notes": "Latest example of monthly full ZIP CSV data file."
+            },
+            {
+              "file_url": "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2018/05/18wksRTT-Monthly-EXTRACTS-Oct15-revised.zip",
+              "notes": "Legacy 2015-16 naming pattern for full ZIP CSV data file."
             }
+          ]
         }
-    ]
+      ],
+      "include_extensions": [
+        "zip"
+      ],
+      "preferred_link_selector": "a[href*='Full-CSV-data-file'], a[href*='18wksRTT-Monthly-EXTRACTS']",
+      "preferred_text_filter": "Full CSV data file",
+      "hints": {
+        "file_pattern": "(Full-CSV-data-file-<MonYY>-ZIP|18wksRTT-Monthly-EXTRACTS-<MonYY>-revised).zip",
+        "subject_period_pattern": "compact_month_year",
+        "fiscal_year_format": "YYYY-YY",
+        "month_extraction": "Extract compact month-year token (for example Mar26, Oct15) from URL or link text",
+        "archive_pattern": "sibling_pages_by_subject_period",
+        "sibling_url_pattern": "rtt-data-\\d{4}-\\d{2}"
+      }
+    }
+  ]
 }

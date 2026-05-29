@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: with-did
+  object_name_suffix: DQMI_WITH_DID
+  adls_path_prefix: data-quality-maturity-index/with-did
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality
     page_role: default
@@ -52,6 +54,8 @@ targets:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
 - sub_dataset_id: without-did
+  object_name_suffix: DQMI_WITHOUT_DID
+  adls_path_prefix: data-quality-maturity-index/without-did
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/data-tools-and-services/data-services/data-quality
     page_role: default

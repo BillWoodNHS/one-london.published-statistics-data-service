@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: integrated-urgent-care-aggregate-data-collection
+  object_name_suffix: INTEGRATED_UC_DEFAULT
+  adls_path_prefix: integrated-urgent-care-aggregate-data-collection/integrated-urgent-care-aggregate-data-collection
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/
     page_role: archive

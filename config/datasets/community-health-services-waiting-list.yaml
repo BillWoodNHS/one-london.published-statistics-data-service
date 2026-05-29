@@ -19,6 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
+  object_name_suffix: CHS_WAIT_DEFAULT
+  adls_path_prefix: community-health-services-waiting-list/default
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/community-health-services-waiting-lists/
     page_role: default
