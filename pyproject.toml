@@ -1,6 +1,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "integration: marks tests as integration tests requiring network access (deselect with '-m not integration')",
+]
 
 [tool.ruff]
 line-length = 88

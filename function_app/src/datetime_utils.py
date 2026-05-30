@@ -25,6 +25,26 @@ def normalize_datetime_value(value: str) -> Optional[str]:
     cleaned = " ".join(value.replace(",", " ").split())
     cleaned = _strip_ordinal_suffixes(cleaned)
 
+    # Check exact compact-ISO formats BEFORE any dash replacement.
+    if re.fullmatch(r"\d{8}T\d{6}", cleaned):
+        return cleaned
+
+    if re.fullmatch(r"\d{8}", cleaned):
+        parsed = dt.datetime.strptime(cleaned, "%Y%m%d")
+        return parsed.strftime("%Y%m%dT%H%M%S")
+
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", cleaned):
+        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%dT%H:%M:%S")
+        return parsed.strftime("%Y%m%dT%H%M%S")
+
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", cleaned):
+        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%dT%H:%M")
+        return parsed.strftime("%Y%m%dT%H%M%S")
+
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", cleaned):
+        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%d")
+        return parsed.strftime("%Y%m%dT%H%M%S")
+
     # Check for fiscal_year_and_month format (e.g., "2025-26_march" -> "2025 26 march")
     fiscal_match = re.match(
         r"(\d{4})\s+(\d{2})\s+(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)",
@@ -67,26 +87,8 @@ def normalize_datetime_value(value: str) -> Optional[str]:
         parsed = dt.datetime(year=calendar_year, month=month, day=1)
         return parsed.strftime("%Y%m%dT%H%M%S")
 
+    # Replace separators for the remaining human-readable format checks.
     cleaned = cleaned.replace("_", " ").replace("-", " ")
-
-    if re.fullmatch(r"\d{8}T\d{6}", cleaned):
-        return cleaned
-
-    if re.fullmatch(r"\d{8}", cleaned):
-        parsed = dt.datetime.strptime(cleaned, "%Y%m%d")
-        return parsed.strftime("%Y%m%dT%H%M%S")
-
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", cleaned):
-        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%d")
-        return parsed.strftime("%Y%m%dT%H%M%S")
-
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", cleaned):
-        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%dT%H:%M:%S")
-        return parsed.strftime("%Y%m%dT%H%M%S")
-
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", cleaned):
-        parsed = dt.datetime.strptime(cleaned, "%Y-%m-%dT%H:%M")
-        return parsed.strftime("%Y%m%dT%H%M%S")
 
     formats = [
         "%d %B %Y %H:%M:%S",

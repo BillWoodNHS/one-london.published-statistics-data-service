@@ -49,9 +49,12 @@ def _validate_object_name_suffix(value: object) -> str | None:
 
 
 def _validate_adls_path_prefix(value: object) -> str | None:
-    prefix = str(value or "").strip().strip("/")
+    prefix = str(value or "").strip()
     if not prefix:
         return "must not be empty when provided"
+    if prefix.startswith("/"):
+        return "must not be an absolute path (no leading slash)"
+    prefix = prefix.strip("/")
     if ".." in prefix.split("/"):
         return "must not contain path traversal (..)"
     if not ADLS_PATH_PREFIX_PATTERN.fullmatch(prefix):

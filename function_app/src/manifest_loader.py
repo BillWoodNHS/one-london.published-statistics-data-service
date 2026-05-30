@@ -40,7 +40,7 @@ def _require(value, key: str):
 
 
 def _require_object_name_suffix(value, key: str) -> str:
-    suffix = str(_require(value, key)).strip().upper()
+    suffix = str(_require(value, key)).strip()
     if not OBJECT_NAME_SUFFIX_PATTERN.fullmatch(suffix):
         raise ManifestError(
             f"Invalid {key}:"
@@ -55,7 +55,12 @@ def _require_object_name_suffix(value, key: str) -> str:
 
 
 def _require_adls_path_prefix(value, key: str) -> str:
-    prefix = str(_require(value, key)).strip().strip("/")
+    prefix = str(_require(value, key)).strip()
+    if prefix.startswith("/"):
+        raise ManifestError(
+            f"Invalid {key}: must not be an absolute path (no leading slash)"
+        )
+    prefix = prefix.strip("/")
     if not prefix:
         raise ManifestError(f"Invalid {key}: must not be empty")
     if ".." in prefix.split("/"):
