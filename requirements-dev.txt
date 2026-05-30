@@ -1,6 +1,7 @@
 pytest
 duckdb
 dbt-duckdb
+openpyxl
 pandas
 beautifulsoup4
 ruff
