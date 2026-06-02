@@ -63,8 +63,15 @@ def _resolve_subject_period(file: DiscoveredFile) -> str:
     if file.subject_period_value:
         return file.subject_period_value
 
-    if file.publication_date_value and len(file.publication_date_value) >= 6:
-        return file.publication_date_value[:6]
+    if file.publication_date_value:
+        raw = file.publication_date_value
+        # Strip provenance prefix added by _resolve_publication_datetime
+        for prefix in ("scraped-", "ingest-"):
+            if raw.startswith(prefix):
+                raw = raw[len(prefix) :]
+                break
+        if len(raw) >= 6:
+            return raw[:6]
 
     return "unknown"
 

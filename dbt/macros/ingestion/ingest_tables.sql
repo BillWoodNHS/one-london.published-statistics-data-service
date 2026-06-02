@@ -58,7 +58,11 @@
     The RAW view:
     - Always reflects the current state of INGEST (no lag, no refresh required)
     - Deduplicates by selecting the most recent ingestion of each unique file (_FILE_CONTENT_KEY)
-    - Inherits all columns from the INGEST table automatically via SELECT * EXCLUDE
+    - Derives _PUBLICATION_DATE and _PUBLICATION_DATE_SOURCE from _SOURCE_FILE_PATH by
+      parsing the embedded prefix written by the function app:
+        scraped-YYYYMMDDTHHMMSS  →  date scraped from the publisher page
+        ingest-YYYYMMDDTHHMMSS   →  download timestamp used as fallback
+    - Replaces the always-NULL _PUBLICATION_DATE column from INGEST with the derived value
     - Is safe to re-run: CREATE OR REPLACE is idempotent
     - Can be promoted to a Dynamic Table later if query performance requires it
 
@@ -67,14 +71,32 @@
 
     {% set sql %}
         create or replace view {{ adapter.quote(database_name) }}.{{ adapter.quote(raw_schema) }}.{{ adapter.quote(raw_view) }} as
-        with ranked as (
+        with
+        parsed as (
             select
                 row_number() over (
                     partition by _FILE_CONTENT_KEY
                     order by _INGESTED_AT desc
                 ) as _dedup_rank,
-                *
+                regexp_substr(_SOURCE_FILE_PATH, 'publication_date=([^/]+)/', 1, 1, 'e') as _pub_raw,
+                * exclude (_PUBLICATION_DATE)
             from {{ adapter.quote(database_name) }}.{{ adapter.quote(ingest_schema) }}.{{ adapter.quote(ingest_table) }}
+        ),
+        ranked as (
+            select
+                _dedup_rank,
+                case
+                    when _pub_raw like 'scraped-%' then substr(_pub_raw, 9)
+                    when _pub_raw like 'ingest-%'  then substr(_pub_raw, 8)
+                    else _pub_raw
+                end as _PUBLICATION_DATE,
+                case
+                    when _pub_raw like 'scraped-%' then 'scraped'
+                    when _pub_raw like 'ingest-%'  then 'ingest-fallback'
+                    else 'unknown'
+                end as _PUBLICATION_DATE_SOURCE,
+                * exclude (_dedup_rank, _pub_raw)
+            from parsed
         )
         select * exclude (_dedup_rank)
         from ranked

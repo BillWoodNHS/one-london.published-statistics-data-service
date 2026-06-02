@@ -22,6 +22,7 @@ from .manifest_loader import load_manifests
 from .manual_sources import discover_manual_files
 from .models import LoadArtifact
 from .scraper import discover_files
+from .settings import MIN_PLAUSIBLE_PUBLICATION_DATE
 
 CONTRACT_VERSION = "1.0.0"
 
@@ -77,6 +78,16 @@ def _audit_payload(
     source_last_modified: Optional[str] = None,
 ) -> Dict[str, str]:
     ingested_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    pub_raw = artifact.publication_date  # e.g. "scraped-20260315T000000"
+    if pub_raw.startswith("scraped-"):
+        pub_date = pub_raw[8:]
+        pub_date_source = "scraped"
+    elif pub_raw.startswith("ingest-"):
+        pub_date = pub_raw[7:]
+        pub_date_source = "ingest-fallback"
+    else:
+        pub_date = pub_raw
+        pub_date_source = "unknown"
     payload: Dict[str, str] = {
         "_CONTRACT_VERSION": CONTRACT_VERSION,
         "_INGESTED_AT": ingested_at,
@@ -84,7 +95,8 @@ def _audit_payload(
         "_SOURCE_FILE_NAME": artifact.adls_path.split("/")[-1],
         "_FILE_CONTENT_KEY": artifact.source_content_hash,
         "_SUBJECT_PERIOD": artifact.subject_period,
-        "_PUBLICATION_DATE": artifact.publication_date,
+        "_PUBLICATION_DATE": pub_date,
+        "_PUBLICATION_DATE_SOURCE": pub_date_source,
         "_ACQUISITION_METHOD": artifact.acquisition_method,
         "_FALLBACK_REASON": artifact.fallback_reason,
         "_LOAD_ID": artifact.source_content_hash[:16],
@@ -182,7 +194,16 @@ def _skip_download_from_headers(
 
 
 def _resolve_publication_datetime(value: Optional[str]) -> str:
-    return value or now_utc_compact()
+    """Return a prefixed datetime string encoding both the value and its provenance.
+
+    Scraped dates that pass the plausibility floor are prefixed ``scraped-``.
+    Missing or implausible dates fall back to the current UTC timestamp and are
+    prefixed ``ingest-``.  The RAW dedup view in Snowflake parses these prefixes
+    into ``_PUBLICATION_DATE`` (clean date) and ``_PUBLICATION_DATE_SOURCE``.
+    """
+    if value and value >= MIN_PLAUSIBLE_PUBLICATION_DATE:
+        return f"scraped-{value}"
+    return f"ingest-{now_utc_compact()}"
 
 
 def execute_ingestion() -> Dict[str, Any]:
