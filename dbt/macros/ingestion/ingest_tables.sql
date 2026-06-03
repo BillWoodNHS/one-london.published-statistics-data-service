@@ -57,7 +57,8 @@
 
     The RAW view:
     - Always reflects the current state of INGEST (no lag, no refresh required)
-    - Deduplicates by selecting the most recent ingestion of each unique file (_FILE_CONTENT_KEY)
+        - Deduplicates repeated Snowpipe ingests of the same file content by keeping the
+            latest copy of each row key (_FILE_CONTENT_KEY + _FILE_ROW_NUMBER)
     - Derives _PUBLICATION_DATE and _PUBLICATION_DATE_SOURCE from _SOURCE_FILE_PATH by
       parsing the embedded prefix written by the function app:
         scraped-YYYYMMDDTHHMMSS  →  date scraped from the publisher page
@@ -75,7 +76,7 @@
         parsed as (
             select
                 row_number() over (
-                    partition by _FILE_CONTENT_KEY
+                    partition by _FILE_CONTENT_KEY, _FILE_ROW_NUMBER
                     order by _INGESTED_AT desc
                 ) as _dedup_rank,
                 regexp_substr(_SOURCE_FILE_PATH, 'publication_date=([^/]+)/', 1, 1, 'e') as _pub_raw,
