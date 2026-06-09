@@ -1019,6 +1019,8 @@ def _build_config_for_dataset(
         "series_id": dataset.dataset_id,
         "entry_url": dataset.entry_url,
         "publication_date": {
+            # Publication date extraction rules are used for metadata enrichment in the sidecar JSON.
+            # They do NOT affect storage path partitioning; payloads are partitioned by download timestamp.
             "source": "link_text",
             "pattern": PUBLICATION_FALLBACK_PATTERN,
         },

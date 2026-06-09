@@ -8,6 +8,8 @@ fallback:
   allow_manual_acquisition: false
 targets:
   - sub_dataset_id: monthly-publication
+    object_name_suffix: TEST_CHS_WAITING_LISTS_MONTHLY
+    adls_path_prefix: test-community-health-services-waiting-lists/monthly-publication
     scrape_steps:
       - link_selector: a[href]
         text_filter: 'Community-health-services-waiting-lists-2025-26-March'

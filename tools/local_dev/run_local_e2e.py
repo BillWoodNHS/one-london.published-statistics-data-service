@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_ADLS = REPO_ROOT / ".local_adls"
 TEST_MANIFEST_ROOT = REPO_ROOT / "tests" / "fixtures" / "manifests"
 DUCKDB_FILE = LOCAL_ADLS / "local_validation.duckdb"

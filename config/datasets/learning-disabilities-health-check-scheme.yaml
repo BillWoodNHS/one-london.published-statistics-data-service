@@ -27,7 +27,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href$='.csv']
-      text_filter: learning-disabilities-health-check-scheme
+      text_filter: Learning.Disabilit
       file_extensions:
       - csv
     sibling_discovery:

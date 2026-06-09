@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $repoRoot
 
 $venvPath = Join-Path $repoRoot '.venv'
@@ -14,7 +14,25 @@ if ($RecreateVenv -and (Test-Path $venvPath)) {
 }
 
 if (-not (Test-Path $venvPath)) {
-    python -m venv $venvPath
+    # Prefer 3.12 for full dbt-duckdb compatibility; 3.14 is not yet supported by mashumaro.
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        $resolved = $null
+        foreach ($candidate in @('3.12', '3.11', '3.13')) {
+            if (py "-$candidate" --version 2>$null) {
+                $resolved = $candidate
+                break
+            }
+        }
+        if ($null -eq $resolved) {
+            Write-Warning 'Could not find Python 3.11-3.13 via py launcher; falling back to default. dbt tests may skip on 3.14+.'
+            py -3 -m venv $venvPath
+        } else {
+            Write-Host "Using Python $resolved for virtual environment."
+            py "-$resolved" -m venv $venvPath
+        }
+    } else {
+        python -m venv $venvPath
+    }
 }
 
 $pythonExe = Join-Path $venvPath 'Scripts\python.exe'

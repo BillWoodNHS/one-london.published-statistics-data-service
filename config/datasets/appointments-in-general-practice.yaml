@@ -26,7 +26,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id001
       - zip
@@ -40,7 +40,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id001
     sibling_discovery:
@@ -61,7 +61,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: Covid|Vaccine
       file_extensions: &id002
       - csv
@@ -75,7 +75,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: Covid|Vaccine
       file_extensions: *id002
     sibling_discovery:
@@ -94,7 +94,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id004
       - zip
@@ -108,7 +108,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id004
     sibling_discovery:
@@ -127,7 +127,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id005
       - zip
@@ -141,7 +141,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id005
     sibling_discovery:
@@ -160,7 +160,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id006
       - csv
@@ -174,7 +174,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id006
     sibling_discovery:
@@ -193,7 +193,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id007
       - zip
@@ -207,7 +207,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id007
     sibling_discovery:
@@ -226,7 +226,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id008
       - zip
@@ -240,7 +240,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id008
     sibling_discovery:
@@ -259,7 +259,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id009
       - zip
@@ -273,7 +273,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id009
     sibling_discovery:
@@ -292,7 +292,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: &id010
       - csv
@@ -306,7 +306,7 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href*='appointments-in-general-practice']
+    - link_selector: a[href*='files.digital.nhs.uk']
       text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
       file_extensions: *id010
     sibling_discovery:

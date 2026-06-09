@@ -1,4 +1,4 @@
-{% macro create_stage_and_pipe(database_name, schema_name, stage_name, storage_integration, url, file_format, pipe_name, target_table, target_schema, pattern='.*') %}
+{% macro create_stage_and_pipe(database_name, schema_name, stage_name, storage_integration, url, file_format, pipe_name, target_table, target_schema, pattern='.*\\.csv') %}
     {% set create_stage %}
         create stage if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(stage_name) }}
         storage_integration = {{ adapter.quote(storage_integration) }}
@@ -55,9 +55,18 @@
         file_format_name,
         pipe_name,
         ingest_table_name,
-        target_schema=ingest_schema
+        target_schema=ingest_schema,
+        pattern='.*\\.csv'
     ) %}
-    {% do one_london_psds.create_raw_dedup_view(database_name, raw_schema, raw_table_name, ingest_schema, ingest_table_name) %}
+    {% do one_london_psds.create_raw_dedup_view(
+        database_name,
+        raw_schema,
+        raw_table_name,
+        ingest_schema,
+        ingest_table_name,
+        metadata_schema=var('sidecar_metadata_schema'),
+        metadata_table=var('sidecar_metadata_table')
+    ) %}
 
     {{ return({'stage': stage_name, 'pipe': pipe_name, 'ingest_table': ingest_table_name, 'raw_view': raw_table_name, 'url': target_url}) }}
 {% endmacro %}
