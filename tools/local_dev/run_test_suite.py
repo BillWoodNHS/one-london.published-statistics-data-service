@@ -27,10 +27,16 @@ def _load_suite_config(config_path: Path) -> Dict[str, Dict[str, List[str]]]:
         return {
             "python": {
                 "include": ["tests/test_*.py"],
-                "exclude": ["tests/test_duckdb_*.py", "tests/test_web_to_duckdb_e2e.py"],
+                "exclude": [
+                    "tests/test_duckdb_*.py",
+                    "tests/test_web_to_duckdb_e2e.py",
+                ],
             },
             "duckdb": {
-                "include": ["tests/test_duckdb_*.py", "tests/test_web_to_duckdb_e2e.py"],
+                "include": [
+                    "tests/test_duckdb_*.py",
+                    "tests/test_web_to_duckdb_e2e.py",
+                ],
                 "exclude": [],
             },
         }
@@ -45,15 +51,23 @@ def _load_suite_config(config_path: Path) -> Dict[str, Dict[str, List[str]]]:
     return data
 
 
-def _expand_patterns(include_patterns: Sequence[str], exclude_patterns: Sequence[str]) -> List[str]:
+def _expand_patterns(
+    include_patterns: Sequence[str], exclude_patterns: Sequence[str]
+) -> List[str]:
     include_paths: List[Path] = []
     for pattern in include_patterns:
         include_paths.extend(REPO_ROOT.glob(pattern))
 
-    exclude_set = {p.resolve() for pattern in exclude_patterns for p in REPO_ROOT.glob(pattern)}
+    exclude_set = {
+        p.resolve() for pattern in exclude_patterns for p in REPO_ROOT.glob(pattern)
+    }
 
-    chosen = sorted({p.resolve() for p in include_paths if p.resolve() not in exclude_set})
-    return [str(p.relative_to(REPO_ROOT)).replace("\\", "/") for p in chosen if p.is_file()]
+    chosen = sorted(
+        {p.resolve() for p in include_paths if p.resolve() not in exclude_set}
+    )
+    return [
+        str(p.relative_to(REPO_ROOT)).replace("\\", "/") for p in chosen if p.is_file()
+    ]
 
 
 def _ensure_env_defaults(env: Dict[str, str]) -> None:
@@ -61,7 +75,9 @@ def _ensure_env_defaults(env: Dict[str, str]) -> None:
     env.setdefault("LOCAL_STORAGE_ROOT", str(REPO_ROOT / ".local_adls"))
     env.setdefault("MANIFEST_ROOT", str(REPO_ROOT / "tests" / "fixtures" / "manifests"))
     env.setdefault("MANUAL_INPUT_PREFIX", "manual")
-    env.setdefault("DUCKDB_FILE", str(REPO_ROOT / ".local_adls" / "suite_validation.duckdb"))
+    env.setdefault(
+        "DUCKDB_FILE", str(REPO_ROOT / ".local_adls" / "suite_validation.duckdb")
+    )
 
 
 def _module_available(module_name: str) -> bool:
@@ -117,7 +133,9 @@ def _parse_junit_xml(xml_path: Path, suite_name: str) -> List[TestCaseResult]:
             status = "skipped"
             detail = (skipped.attrib.get("message") or "").strip()
 
-        cases.append(TestCaseResult(suite=suite_name, node=node, status=status, detail=detail))
+        cases.append(
+            TestCaseResult(suite=suite_name, node=node, status=status, detail=detail)
+        )
 
     return cases
 
@@ -131,7 +149,15 @@ def _run_suite(
     env: Dict[str, str],
 ) -> tuple[int, List[TestCaseResult]]:
     xml_path = out_dir / f"{suite_name}.junit.xml"
-    cmd = [sys.executable, "-m", "pytest", "-vv", "-rA", "--tb=short", f"--junitxml={xml_path}"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-vv",
+        "-rA",
+        "--tb=short",
+        f"--junitxml={xml_path}",
+    ]
 
     if resume_last_failed:
         cmd.extend(["--lf", "--lfnf=all"])
@@ -146,7 +172,9 @@ def _run_suite(
     return rc, results
 
 
-def _print_summary(results: Sequence[TestCaseResult], suite_exit_codes: Dict[str, int]) -> int:
+def _print_summary(
+    results: Sequence[TestCaseResult], suite_exit_codes: Dict[str, int]
+) -> int:
     passed = [r for r in results if r.status == "passed"]
     failed = [r for r in results if r.status == "failed"]
     errored = [r for r in results if r.status == "error"]
@@ -157,7 +185,16 @@ def _print_summary(results: Sequence[TestCaseResult], suite_exit_codes: Dict[str
         state = "PASS" if code == 0 else "FAIL"
         print(f"- {suite_name}: {state} (exit code {code})")
 
-    print(f"\nTotals: passed={len(passed)} failed={len(failed)} errors={len(errored)} skipped={len(skipped)}")
+    passed_n, failed_n, errored_n, skipped_n = (
+        len(passed),
+        len(failed),
+        len(errored),
+        len(skipped),
+    )
+    print(
+        f"\nTotals: passed={passed_n} failed={failed_n}"
+        f" errors={errored_n} skipped={skipped_n}"
+    )
 
     if passed:
         print("\nPassed tests:")
@@ -175,12 +212,16 @@ def _print_summary(results: Sequence[TestCaseResult], suite_exit_codes: Dict[str
         for item in skipped:
             print(f"- [{item.suite}] {item.node}")
 
-    return 1 if failed or errored or any(code != 0 for code in suite_exit_codes.values()) else 0
+    return (
+        1
+        if failed or errored or any(code != 0 for code in suite_exit_codes.values())
+        else 0
+    )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run unified local test suites (python + duckdb) with summary output."
+        description="Run unified local test suites (python + duckdb)."
     )
     parser.add_argument(
         "--suite",
@@ -217,7 +258,7 @@ def parse_args() -> argparse.Namespace:
         "--extra-pytest-args",
         nargs=argparse.REMAINDER,
         default=[],
-        help="Additional args forwarded to pytest (prefix with --extra-pytest-args -- ...).",
+        help="Additional args forwarded to pytest (after --).",
     )
     return parser.parse_args()
 

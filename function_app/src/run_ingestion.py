@@ -80,8 +80,10 @@ def _audit_payload(
     ingested_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     pub_date = artifact.publication_date
     pub_date_source = "scraped" if pub_date else "none"
-    # _PAYLOAD_STAGE_PATH is the relative path within the stage (used as JOIN key with _SOURCE_FILE_PATH)
-    payload_stage_path = artifact.adls_path.replace(artifact.adls_path_prefix + "/", "", 1)
+    # _PAYLOAD_STAGE_PATH: stage-relative path used as JOIN key with _SOURCE_FILE_PATH
+    payload_stage_path = artifact.adls_path.replace(
+        artifact.adls_path_prefix + "/", "", 1
+    )
     payload: Dict[str, str] = {
         "_CONTRACT_VERSION": CONTRACT_VERSION,
         "_DOWNLOADED_AT": artifact.downloaded_at,
@@ -190,9 +192,9 @@ def _skip_download_from_headers(
 
 
 def _resolve_publication_datetime(value: Optional[str]) -> str:
-    """Return a clean publication date if it passes plausibility checks, else empty string.
+    """Return a clean publication date if it passes plausibility checks.
 
-    Dates that pass MIN_PLAUSIBLE_PUBLICATION_DATE are returned as-is.
+    Returns the date string as-is when it meets MIN_PLAUSIBLE_PUBLICATION_DATE.
     Missing or implausible dates return empty string; the sidecar metadata
     will record _PUBLICATION_DATE_SOURCE as 'none' in those cases.
     """
@@ -361,7 +363,11 @@ def execute_ingestion() -> Dict[str, Any]:
             )
             downloaded_at = now_utc_compact()
             artifact = build_artifact(
-                item, filename, content_hash, downloaded_at, acquisition_method="automated"
+                item,
+                filename,
+                content_hash,
+                downloaded_at,
+                acquisition_method="automated",
             )
             upload_bytes(artifact.adls_path, csv_payload)
             record = _write_audit_record(artifact, source_etag, source_last_modified)
