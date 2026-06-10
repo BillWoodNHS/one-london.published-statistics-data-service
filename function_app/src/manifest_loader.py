@@ -9,8 +9,8 @@ import yaml
 from .models import (
     DatasetSeriesConfig,
     FallbackConfig,
-    PeriodCoverageHint,
     PeriodCoverageFileScopeHint,
+    PeriodCoverageHint,
     PublicationDateRule,
     ScrapeStep,
     SiblingDiscoveryConfig,
@@ -282,9 +282,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                                     )
                                 ),
                             ),
-                            breakdown_granularity=target.get(
-                                "period_coverage", {}
-                            ).get("breakdown_granularity", []),
+                            breakdown_granularity=target.get("period_coverage", {}).get(
+                                "breakdown_granularity", []
+                            ),
                         )
                         if target.get("period_coverage")
                         else None

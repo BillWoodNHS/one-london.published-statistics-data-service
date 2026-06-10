@@ -96,7 +96,9 @@ def _audit_payload(
         "_SUBJECT_PERIOD_COVERAGE_TYPE": artifact.subject_period_coverage_type,
         "_SUBJECT_PERIOD_INFERENCE_METHOD": artifact.subject_period_inference_method,
         "_SUBJECT_PERIOD_INFERENCE_SOURCE": artifact.subject_period_inference_source,
-        "_SUBJECT_PERIOD_INFERENCE_CONFIDENCE": artifact.subject_period_inference_confidence,
+        "_SUBJECT_PERIOD_INFERENCE_CONFIDENCE": (
+            artifact.subject_period_inference_confidence
+        ),
         "_FILE_SCOPE_DURATION_TYPE": artifact.file_scope_duration_type,
         "_FILE_SCOPE_DURATION_VALUE": (
             str(artifact.file_scope_duration_value)

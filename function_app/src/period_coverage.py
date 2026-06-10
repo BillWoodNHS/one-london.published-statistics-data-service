@@ -260,7 +260,11 @@ def infer_period_coverage(
 
     fiscal_year_start_month = fiscal_year_start_month_hint or 4
 
-    if duration_type_hint == "rolling" and duration_value_hint == 12 and duration_unit_hint == "month":
+    if (
+        duration_type_hint == "rolling"
+        and duration_value_hint == 12
+        and duration_unit_hint == "month"
+    ):
         for source in ordered_sources:
             rolling = _infer_rolling_12_coverage(evidence_map.get(source, ""), source)
             if rolling:
@@ -274,7 +278,10 @@ def infer_period_coverage(
                 fiscal_year_start_month=fiscal_year_start_month,
             )
             if ytd:
-                if duration_type_hint == "fiscal_ytd" and ytd.coverage_type == "calendar_ytd":
+                if (
+                    duration_type_hint == "fiscal_ytd"
+                    and ytd.coverage_type == "calendar_ytd"
+                ):
                     continue
                 return ytd
 

@@ -237,7 +237,11 @@ See [docs/CI-CD.md](docs/CI-CD.md) for full details, including:
 ## Quality Gates
 
 Recommended checks before commit:
-- `python -m pre_commit run --all-files`
+- `./tools/local_dev/run_lint.ps1`
+- `./tools/local_dev/run_lint.ps1 -Fix` (optional auto-fix pass)
+- `./tools/linting/run_lint_suite.ps1` (canonical lint suite entrypoint)
+- `./tools/local_dev/install_pre_commit.ps1` (one-time hook install)
+- `python -m pre_commit run --all-files` (optional manual hook run)
 - `python -m pytest -q`
 - `RUN_WEB_E2E=true python -m pytest -q tests/test_web_to_duckdb_e2e.py`
 

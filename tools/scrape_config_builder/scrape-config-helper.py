@@ -464,7 +464,9 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                                     .get("duration_unit", "")
                                 ).strip()
                                 or None,
-                                fiscal_year_start_month=target.get("period_coverage", {})
+                                fiscal_year_start_month=target.get(
+                                    "period_coverage", {}
+                                )
                                 .get("file_scope", {})
                                 .get(
                                     "fiscal_year_start_month",
@@ -475,8 +477,9 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                             ),
                             breakdown_granularity=[
                                 str(granularity).strip()
-                                for granularity in target.get("period_coverage", {})
-                                .get("breakdown_granularity", [])
+                                for granularity in target.get(
+                                    "period_coverage", {}
+                                ).get("breakdown_granularity", [])
                                 if str(granularity).strip()
                             ],
                         )
@@ -1060,9 +1063,9 @@ def _build_config_for_dataset(
                 "period_coverage": {
                     "file_scope": {
                         "duration_type": (
-                        target_input.period_coverage.file_scope.duration_type
-                        if target_input.period_coverage
-                        else "unknown"
+                            target_input.period_coverage.file_scope.duration_type
+                            if target_input.period_coverage
+                            else "unknown"
                         ),
                         "duration_value": (
                             target_input.period_coverage.file_scope.duration_value

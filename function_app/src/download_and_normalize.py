@@ -260,7 +260,8 @@ def build_artifact(
         ),
         file_scope_duration_unit=(
             file.period_coverage_hint.file_scope.duration_unit
-            if file.period_coverage_hint and file.period_coverage_hint.file_scope.duration_unit
+            if file.period_coverage_hint
+            and file.period_coverage_hint.file_scope.duration_unit
             else ""
         ),
         file_scope_fiscal_year_start_month=(
