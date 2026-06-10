@@ -85,6 +85,7 @@
     {% set sidecar_url = adls_url_root.rstrip('/') ~ '/' %}
 
     {% do one_london_psds.create_storage_integration(storage_integration_name, adls_url_root, var('managed_identity_tenant_id')) %}
+    {% do one_london_psds.create_json_file_format(database_name, infra_schema, telemetry_file_format_name) %}
     {% do one_london_psds.create_sidecar_table(database_name, ingest_schema, 'INGEST_METADATA') %}
     {% do one_london_psds.create_sidecar_stage_and_pipe(
         database_name,
