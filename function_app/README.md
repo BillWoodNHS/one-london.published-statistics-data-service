@@ -32,3 +32,9 @@ If a new source format is needed:
 1. Extend normalization logic in `src/download_and_normalize.py`.
 2. Keep output contract as CSV bytes and deterministic metadata.
 3. Add tests in `tests/` to prove behavior.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

@@ -70,7 +70,8 @@ def discover_manual_files(
                 source_url=blob_path,
                 publication_date_value=publication_date,
                 link_text=candidate_name,
-                subject_period_value=subject_period,
+                subject_period_hint=subject_period,
+                period_coverage_hint=target.period_coverage,
             )
         )
 

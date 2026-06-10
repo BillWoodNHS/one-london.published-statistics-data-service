@@ -38,6 +38,17 @@
         "fiscal_year_format": "",
         "month_extraction": "From href: month + year. Exclude 'DID included'.",
         "archive_pattern": "none"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -87,6 +98,17 @@
         "fiscal_year_format": "",
         "month_extraction": "From href: month + year. Include 'DID included'.",
         "archive_pattern": "general_archive_subpage"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     }
   ]

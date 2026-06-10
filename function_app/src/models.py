@@ -28,6 +28,26 @@ class SubjectPeriodRule:
 
 
 @dataclass
+class PeriodCoverageFileScopeHint:
+    """Macro boundary hints for a file's temporal coverage."""
+
+    duration_type: str = "unknown"
+    duration_value: Optional[int] = None
+    duration_unit: Optional[str] = None
+    fiscal_year_start_month: Optional[int] = None
+
+
+@dataclass
+class PeriodCoverageHint:
+    """Optional period coverage hints to prioritize runtime inference."""
+
+    file_scope: PeriodCoverageFileScopeHint = field(
+        default_factory=PeriodCoverageFileScopeHint
+    )
+    breakdown_granularity: List[str] = field(default_factory=list)
+
+
+@dataclass
 class ScrapeStep:
     """Represents a single scraping step for a dataset target."""
 
@@ -78,6 +98,7 @@ class TargetConfig:
     encoding: str = "utf-8"
     reporting_period_columns: List[str] = field(default_factory=list)
     page_date_selectors: List[str] = field(default_factory=list)
+    period_coverage: Optional[PeriodCoverageHint] = None
 
 
 @dataclass
@@ -113,7 +134,9 @@ class DiscoveredFile:
     source_url: str
     publication_date_value: Optional[str]
     link_text: str
-    subject_period_value: Optional[str] = None
+    subject_period_hint: Optional[str] = None
+    page_text: str = ""
+    period_coverage_hint: Optional[PeriodCoverageHint] = None
     adls_path_prefix: str = ""
 
 
@@ -125,7 +148,17 @@ class LoadArtifact:
     source_url: str
     series_id: str
     sub_dataset_id: str
-    subject_period: str
+    subject_period_from: str
+    subject_period_to: str
+    subject_period_coverage_type: str
+    subject_period_inference_method: str
+    subject_period_inference_source: str
+    subject_period_inference_confidence: str
+    file_scope_duration_type: str
+    file_scope_duration_value: Optional[int]
+    file_scope_duration_unit: str
+    file_scope_fiscal_year_start_month: Optional[int]
+    breakdown_granularity: List[str]
     publication_date: str
     source_content_hash: str
     acquisition_method: str

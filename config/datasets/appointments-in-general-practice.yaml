@@ -50,6 +50,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: &id003
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
@@ -85,6 +94,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: daily-counts
   object_name_suffix: GP_APPTS_DAILY_COUNTS
@@ -118,6 +136,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: national-categories
   object_name_suffix: GP_APPTS_NAT_CATEGORIES
@@ -151,6 +178,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: national-overview
   object_name_suffix: GP_APPTS_NAT_OVERVIEW
@@ -184,6 +220,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: practice-level
   object_name_suffix: GP_APPTS_PRACTICE_LEVEL
@@ -217,6 +262,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: regional
   object_name_suffix: GP_APPTS_REGIONAL
@@ -250,6 +304,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: sds-role-group
   object_name_suffix: GP_APPTS_SDS_ROLE
@@ -283,6 +346,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003
 - sub_dataset_id: sub-icb-level
   object_name_suffix: GP_APPTS_SUB_ICB
@@ -316,4 +388,13 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id003

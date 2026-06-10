@@ -137,3 +137,8 @@ This pattern ensures the macro:
 - Stays in sync with INGEST auto-evolution
 - Preserves all metadata columns (`_FILE_CONTENT_KEY`, `_INGESTED_AT`, etc.)
 
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

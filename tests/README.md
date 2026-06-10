@@ -34,3 +34,9 @@ Remove-Item Env:RUN_WEB_E2E -ErrorAction SilentlyContinue
 1. Add or update manifest fixtures in `fixtures/manifests/`.
 2. Add scenario coverage in focused test files.
 3. Prefer assertions on behavior and contracts, not incidental formatting.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

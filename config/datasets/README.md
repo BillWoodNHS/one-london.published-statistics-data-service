@@ -26,6 +26,27 @@ Each entry in `targets`:
 - `scrape_steps`: ordered chain of link extraction steps
 - optional: `reporting_period_columns`
 - optional: `page_date_selectors` (regex patterns to extract page-level publication/revision date per sub-publication)
+- optional: `period_coverage` (hint block to prioritize runtime period-range detection)
+
+`period_coverage` options:
+- `file_scope.duration_type`: `unknown` | `single_period` | `rolling` | `calendar_ytd` | `fiscal_ytd` | `daily`
+- `file_scope.duration_value`: integer or `null` (for patterns like rolling N)
+- `file_scope.duration_unit`: `day` | `month` | `quarter` | `year` | `null`
+- `file_scope.fiscal_year_start_month`: integer `1`-`12` or `null`
+- `breakdown_granularity`: ordered list from `day`, `month`, `quarter`, `year`
+
+Recommended default:
+
+```yaml
+period_coverage:
+	file_scope:
+		duration_type: unknown
+		duration_value: null
+		duration_unit: null
+		fiscal_year_start_month: 4
+	breakdown_granularity:
+		- month
+```
 
 ## Authoring Rules
 
@@ -45,3 +66,9 @@ Each entry in `targets`:
 3. Confirm publication date regex matches real page text.
 4. Run local tests.
 5. Add or update fixtures in `tests/fixtures/manifests/` for coverage.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps), plus file scope and granularity diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

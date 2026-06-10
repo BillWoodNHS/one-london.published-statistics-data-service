@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-        CI wrapper for the canonical lint suite.
+    Run the shared lint suite locally.
 
 .DESCRIPTION
-        Delegates to tools/linting/run_lint_suite.ps1.
+    Wrapper around tools/linting/run_lint_suite.ps1 so local and CI use
+    identical lint logic.
 #>
 param(
     [switch]$Fix,
     [switch]$EnsureDeps,
-    [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$Targets
 )
 

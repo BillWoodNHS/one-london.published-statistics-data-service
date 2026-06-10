@@ -24,6 +24,9 @@ Thumbs.db
 *.swo
 *~
 
+# linters
+.ruff_cache/
+
 # Azure Functions local artifacts
 function_app/.python_packages/
 function_app/local.settings.json

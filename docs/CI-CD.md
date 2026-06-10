@@ -4,7 +4,7 @@ This project supports robust, secure, and environment-agnostic CI/CD for dbt/Sno
 
 ## Pipeline Overview
 
-- **Linting**: Runs pre-commit checks (ruff check + ruff format) on all branches.
+- **Linting**: Runs the shared lint suite via `tools/linting/run_lint_suite.ps1` on all branches (through CI wrapper `tools/ci/ci_lint.ps1`).
 - **Testing**: Runs the full pytest suite (unit and integration) on all branches.
 - **Deployment**: Deployment code is present but GitHub Actions deployment is disabled by default. It runs only when on `main` and repository variable `ENABLE_GITHUB_DEPLOY=true` is set.
 
@@ -34,7 +34,8 @@ The deployment supports both **password** and **key-pair** authentication for Sn
 
 ## Pipeline Scripts
 
-- `tools/ci_lint.ps1`: Runs pre-commit lint checks.
+- `tools/linting/run_lint_suite.ps1`: Canonical Ruff lint suite (single implementation point).
+- `tools/ci/ci_lint.ps1`: CI wrapper that delegates to the canonical lint suite.
 - `tools/ci_test.ps1`: Runs pytest suite (unit and integration).
 - `tools/ci_dbt_deploy.ps1`: Installs dbt dependencies, renders `profiles.yml`, runs `dbt run` and `dbt test`, and cleans up credentials.
 - `tools/ci_render_profiles_yml.ps1`: Renders a secure `profiles.yml` for dbt, supporting both key-pair and password auth.

@@ -24,6 +24,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from function_app.src.models import (  # noqa: E402
     DatasetSeriesConfig,
+    PeriodCoverageFileScopeHint,
+    PeriodCoverageHint,
     PublicationDateRule,
     ScrapeStep,
     SiblingDiscoveryConfig,
@@ -107,6 +109,7 @@ class HelperTargetInput:
     preferred_link_selector: str = ""
     preferred_text_filter: str = ""
     hints: Optional[TargetHints] = None
+    period_coverage: Optional[PeriodCoverageHint] = None
 
 
 @dataclass
@@ -438,6 +441,51 @@ def _read_json_dataset_specs(path: Path) -> List[HelperDatasetInput]:
                         ]
                     )
                     else None,
+                    period_coverage=(
+                        PeriodCoverageHint(
+                            file_scope=PeriodCoverageFileScopeHint(
+                                duration_type=str(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get(
+                                        "duration_type",
+                                        target.get("period_coverage", {}).get(
+                                            "type", "unknown"
+                                        ),
+                                    )
+                                ).strip()
+                                or "unknown",
+                                duration_value=target.get("period_coverage", {})
+                                .get("file_scope", {})
+                                .get("duration_value"),
+                                duration_unit=str(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get("duration_unit", "")
+                                ).strip()
+                                or None,
+                                fiscal_year_start_month=target.get(
+                                    "period_coverage", {}
+                                )
+                                .get("file_scope", {})
+                                .get(
+                                    "fiscal_year_start_month",
+                                    target.get("period_coverage", {}).get(
+                                        "fiscal_year_start_month"
+                                    ),
+                                ),
+                            ),
+                            breakdown_granularity=[
+                                str(granularity).strip()
+                                for granularity in target.get(
+                                    "period_coverage", {}
+                                ).get("breakdown_granularity", [])
+                                if str(granularity).strip()
+                            ],
+                        )
+                        if target.get("period_coverage")
+                        else None
+                    ),
                 )
             )
 
@@ -549,6 +597,35 @@ def _write_normalized_input_specs(
                         "archive_pattern": target.hints.archive_pattern
                         if target.hints
                         else "",
+                    },
+                    "period_coverage": {
+                        "file_scope": {
+                            "duration_type": (
+                                target.period_coverage.file_scope.duration_type
+                                if target.period_coverage
+                                else "unknown"
+                            ),
+                            "duration_value": (
+                                target.period_coverage.file_scope.duration_value
+                                if target.period_coverage
+                                else None
+                            ),
+                            "duration_unit": (
+                                target.period_coverage.file_scope.duration_unit
+                                if target.period_coverage
+                                else None
+                            ),
+                            "fiscal_year_start_month": (
+                                target.period_coverage.file_scope.fiscal_year_start_month
+                                if target.period_coverage
+                                else None
+                            ),
+                        },
+                        "breakdown_granularity": (
+                            target.period_coverage.breakdown_granularity
+                            if target.period_coverage
+                            else []
+                        ),
                     },
                 }
                 for target in spec.targets
@@ -983,6 +1060,35 @@ def _build_config_for_dataset(
                 "source_pages": source_pages,
                 "reporting_period_columns": [],
                 "page_date_selectors": DEFAULT_PAGE_DATE_SELECTORS,
+                "period_coverage": {
+                    "file_scope": {
+                        "duration_type": (
+                            target_input.period_coverage.file_scope.duration_type
+                            if target_input.period_coverage
+                            else "unknown"
+                        ),
+                        "duration_value": (
+                            target_input.period_coverage.file_scope.duration_value
+                            if target_input.period_coverage
+                            else None
+                        ),
+                        "duration_unit": (
+                            target_input.period_coverage.file_scope.duration_unit
+                            if target_input.period_coverage
+                            else None
+                        ),
+                        "fiscal_year_start_month": (
+                            target_input.period_coverage.file_scope.fiscal_year_start_month
+                            if target_input.period_coverage
+                            else None
+                        ),
+                    },
+                    "breakdown_granularity": (
+                        target_input.period_coverage.breakdown_granularity
+                        if target_input.period_coverage
+                        else []
+                    ),
+                },
             }
         )
 
@@ -1094,6 +1200,27 @@ def _validate_config_matches(config: Dict[str, object]) -> List[Dict[str, str]]:
                 ],
                 reporting_period_columns=target.get("reporting_period_columns", []),
                 page_date_selectors=target.get("page_date_selectors", []),
+                period_coverage=PeriodCoverageHint(
+                    file_scope=PeriodCoverageFileScopeHint(
+                        duration_type=target.get("period_coverage", {})
+                        .get("file_scope", {})
+                        .get("duration_type", "unknown"),
+                        duration_value=target.get("period_coverage", {})
+                        .get("file_scope", {})
+                        .get("duration_value"),
+                        duration_unit=target.get("period_coverage", {})
+                        .get("file_scope", {})
+                        .get("duration_unit"),
+                        fiscal_year_start_month=target.get("period_coverage", {})
+                        .get("file_scope", {})
+                        .get("fiscal_year_start_month"),
+                    ),
+                    breakdown_granularity=target.get("period_coverage", {}).get(
+                        "breakdown_granularity", []
+                    ),
+                )
+                if target.get("period_coverage")
+                else None,
             )
             for target in config["targets"]
         ],

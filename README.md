@@ -185,11 +185,12 @@ Treat the handoff as a versioned data contract with explicit compatibility rules
 
 Contract components:
 - Path contract:
-   - series_id/sub_dataset_id/subject_period=YYYYMM/publication_date=YYYYMMDDTHHMMSS/file.csv
+   - series_id/sub_dataset_id/download_year=YYYY/download_month=MM/downloaded_at=YYYYMMDDTHHMMSS/file.csv
 - Sidecar metadata contract (_INGEST_METADATA.json):
    - _SOURCE_FILE_PATH
    - _FILE_CONTENT_KEY
-   - _SUBJECT_PERIOD
+   - _SUBJECT_PERIOD_FROM
+   - _SUBJECT_PERIOD_TO
    - _PUBLICATION_DATE
    - _ACQUISITION_METHOD
    - _FALLBACK_REASON
@@ -236,6 +237,16 @@ See [docs/CI-CD.md](docs/CI-CD.md) for full details, including:
 ## Quality Gates
 
 Recommended checks before commit:
-- `python -m pre_commit run --all-files`
+- `./tools/local_dev/run_lint.ps1`
+- `./tools/local_dev/run_lint.ps1 -Fix` (optional auto-fix pass)
+- `./tools/linting/run_lint_suite.ps1` (canonical lint suite entrypoint)
+- `./tools/local_dev/install_pre_commit.ps1` (one-time hook install)
+- `python -m pre_commit run --all-files` (optional manual hook run)
 - `python -m pytest -q`
 - `RUN_WEB_E2E=true python -m pytest -q tests/test_web_to_duckdb_e2e.py`
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

@@ -19,8 +19,13 @@ tools/
 │   ├── ci_lint.ps1
 │   ├── ci_render_profiles_yml.ps1
 │   └── ci_test.ps1
+├── linting/                      # Canonical lint suite implementation
+│   └── run_lint_suite.ps1
+│   └── README.md
 ├── local_dev/                    # Local development utilities
 │   ├── init_dev_environment.ps1
+│   ├── install_pre_commit.ps1
+│   ├── run_lint.ps1
 │   ├── run_local_e2e.ps1
 │   └── run_local_e2e.py
 └── README.md                     # This file
@@ -80,9 +85,16 @@ See [scrape_config_builder/README.md](scrape_config_builder/README.md) for:
 Azure Pipelines and GitHub Actions helper scripts.
 
 - `ci_dbt_deploy.ps1` — Deploy dbt macros and models, render `profiles.yml`, run tests
-- `ci_lint.ps1` — Run pre-commit linting (Ruff, etc.)
+- `ci_lint.ps1` — CI wrapper for the canonical lint suite in `tools/linting`
 - `ci_render_profiles_yml.ps1` — Render secure `profiles.yml` from templates (key-pair or password auth)
 - `ci_test.ps1` — Run test suites (Pytest, etc.)
+
+## linting
+
+Canonical lint implementation.
+
+- `run_lint_suite.ps1` — Shared Ruff lint suite used by CI wrappers, local wrappers, and pre-commit
+- `README.md` — Usage examples for check, fix, dependencies, and target-path runs
 
 **Configuration:**
 Set these environment variables in CI/CD (see `docs/CI-CD.md`):
@@ -112,6 +124,8 @@ Credentials are never stored in repo; `profiles.yml` is generated at runtime and
 Local development utilities.
 
 - `init_dev_environment.ps1` — Initialize Python virtual environment, install dependencies
+- `install_pre_commit.ps1` — Install local git pre-commit hook
+- `run_lint.ps1` — Local wrapper around `tools/linting/run_lint_suite.ps1`
 - `run_local_e2e.ps1` — Run local end-to-end tests (PowerShell wrapper)
 - `run_local_e2e.py` — Python implementation of local E2E tests
 
@@ -125,6 +139,12 @@ Local development utilities.
 
 # Run E2E tests
 ./tools/local_dev/run_local_e2e.ps1
+
+# Run lint checks (same suite as CI)
+./tools/local_dev/run_lint.ps1
+
+# Install pre-commit hook (one time)
+./tools/local_dev/install_pre_commit.ps1
 ```
 
 ## Common Workflows
@@ -177,3 +197,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 - Generated YAML configs are **candidates** requiring manual review and testing before version control commit.
 - CSV inputs are handled by `generate-helper-input-from-csv.py`; the main helper accepts JSON v2 only.
 - All scripts support idempotent execution where practical.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.
