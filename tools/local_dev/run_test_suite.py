@@ -305,7 +305,7 @@ def main() -> int:
 
         if not tests:
             print(f"No tests matched for suite '{suite}'.")
-            suite_codes[suite] = 0
+            suite_codes[suite] = 1
             continue
 
         rc, results = _run_suite(
