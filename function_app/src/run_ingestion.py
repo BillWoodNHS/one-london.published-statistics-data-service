@@ -78,18 +78,15 @@ def _audit_payload(
     source_last_modified: Optional[str] = None,
 ) -> Dict[str, str]:
     ingested_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    pub_raw = artifact.publication_date  # e.g. "scraped-20260315T000000"
-    if pub_raw.startswith("scraped-"):
-        pub_date = pub_raw[8:]
-        pub_date_source = "scraped"
-    elif pub_raw.startswith("ingest-"):
-        pub_date = pub_raw[7:]
-        pub_date_source = "ingest-fallback"
-    else:
-        pub_date = pub_raw
-        pub_date_source = "unknown"
+    pub_date = artifact.publication_date
+    pub_date_source = "scraped" if pub_date else "none"
+    # _PAYLOAD_STAGE_PATH: stage-relative path used as JOIN key with _SOURCE_FILE_PATH
+    payload_stage_path = artifact.adls_path.replace(
+        artifact.adls_path_prefix + "/", "", 1
+    )
     payload: Dict[str, str] = {
         "_CONTRACT_VERSION": CONTRACT_VERSION,
+        "_DOWNLOADED_AT": artifact.downloaded_at,
         "_INGESTED_AT": ingested_at,
         "_SOURCE_FILE_PATH": artifact.source_url,
         "_SOURCE_FILE_NAME": artifact.adls_path.split("/")[-1],
@@ -103,6 +100,7 @@ def _audit_payload(
         "_SERIES_ID": artifact.series_id,
         "_SUB_DATASET_ID": artifact.sub_dataset_id,
         "_TARGET_PATH": artifact.adls_path,
+        "_PAYLOAD_STAGE_PATH": payload_stage_path,
     }
     if source_etag:
         payload["_SOURCE_ETAG"] = source_etag
@@ -194,16 +192,15 @@ def _skip_download_from_headers(
 
 
 def _resolve_publication_datetime(value: Optional[str]) -> str:
-    """Return a prefixed datetime string encoding both the value and its provenance.
+    """Return a clean publication date if it passes plausibility checks.
 
-    Scraped dates that pass the plausibility floor are prefixed ``scraped-``.
-    Missing or implausible dates fall back to the current UTC timestamp and are
-    prefixed ``ingest-``.  The RAW dedup view in Snowflake parses these prefixes
-    into ``_PUBLICATION_DATE`` (clean date) and ``_PUBLICATION_DATE_SOURCE``.
+    Returns the date string as-is when it meets MIN_PLAUSIBLE_PUBLICATION_DATE.
+    Missing or implausible dates return empty string; the sidecar metadata
+    will record _PUBLICATION_DATE_SOURCE as 'none' in those cases.
     """
     if value and value >= MIN_PLAUSIBLE_PUBLICATION_DATE:
-        return f"scraped-{value}"
-    return f"ingest-{now_utc_compact()}"
+        return value
+    return ""
 
 
 def execute_ingestion() -> Dict[str, Any]:
@@ -364,8 +361,13 @@ def execute_ingestion() -> Dict[str, Any]:
             item.publication_date_value = _resolve_publication_datetime(
                 item.publication_date_value
             )
+            downloaded_at = now_utc_compact()
             artifact = build_artifact(
-                item, filename, content_hash, acquisition_method="automated"
+                item,
+                filename,
+                content_hash,
+                downloaded_at,
+                acquisition_method="automated",
             )
             upload_bytes(artifact.adls_path, csv_payload)
             record = _write_audit_record(artifact, source_etag, source_last_modified)
@@ -446,10 +448,12 @@ def execute_ingestion() -> Dict[str, Any]:
                 candidate.publication_date_value = _resolve_publication_datetime(
                     candidate.publication_date_value
                 )
+                downloaded_at = now_utc_compact()
                 artifact = build_artifact(
                     candidate,
                     filename,
                     content_hash,
+                    downloaded_at,
                     acquisition_method="manual",
                     fallback_reason="auto_discovery_empty",
                 )

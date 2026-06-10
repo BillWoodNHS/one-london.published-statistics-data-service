@@ -43,19 +43,19 @@ def _to_iso_partition_value(raw_value: str) -> str:
 def _adls_path(
     adls_path_prefix: str,
     subject_period: str,
-    publication_date: str,
+    downloaded_at: str,
     filename: str,
 ) -> str:
     """Build an ADLS path for a file.
 
     Uses the explicit adls_path_prefix from the manifest target, subject period,
-    publication date, and filename.
+    download timestamp, and filename.
     """
     safe_subject_period = _to_iso_partition_value(subject_period)
-    safe_pub = _to_iso_partition_value(publication_date)
+    safe_ts = _to_iso_partition_value(downloaded_at)
     return (
         f"{adls_path_prefix}/subject_period={safe_subject_period}/"
-        f"publication_date={safe_pub}/{filename}"
+        f"downloaded_at={safe_ts}/{filename}"
     )
 
 
@@ -63,15 +63,8 @@ def _resolve_subject_period(file: DiscoveredFile) -> str:
     if file.subject_period_value:
         return file.subject_period_value
 
-    if file.publication_date_value:
-        raw = file.publication_date_value
-        # Strip provenance prefix added by _resolve_publication_datetime
-        for prefix in ("scraped-", "ingest-"):
-            if raw.startswith(prefix):
-                raw = raw[len(prefix) :]
-                break
-        if len(raw) >= 6:
-            return raw[:6]
+    if file.publication_date_value and len(file.publication_date_value) >= 6:
+        return file.publication_date_value[:6]
 
     return "unknown"
 
@@ -211,6 +204,7 @@ def build_artifact(
     file: DiscoveredFile,
     filename: str,
     content_hash: str,
+    downloaded_at: str,
     acquisition_method: str = "automated",
     fallback_reason: str = "",
 ) -> LoadArtifact:
@@ -226,17 +220,19 @@ def build_artifact(
         adls_path=_adls_path(
             adls_path_prefix,
             subject_period,
-            file.publication_date_value,
+            downloaded_at,
             filename,
         ),
         source_url=file.source_url,
         series_id=file.series_id,
         sub_dataset_id=file.sub_dataset_id,
         subject_period=subject_period,
-        publication_date=file.publication_date_value,
+        publication_date=file.publication_date_value or "",
         source_content_hash=content_hash,
         acquisition_method=acquisition_method,
         fallback_reason=fallback_reason,
+        downloaded_at=downloaded_at,
+        adls_path_prefix=adls_path_prefix,
     )
 
 

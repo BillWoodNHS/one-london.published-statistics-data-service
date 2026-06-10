@@ -1,0 +1,18 @@
+{
+  "python": {
+    "include": [
+      "tests/test_*.py"
+    ],
+    "exclude": [
+      "tests/test_duckdb_*.py",
+      "tests/test_web_to_duckdb_e2e.py"
+    ]
+  },
+  "duckdb": {
+    "include": [
+      "tests/test_duckdb_*.py",
+      "tests/test_web_to_duckdb_e2e.py"
+    ],
+    "exclude": []
+  }
+}

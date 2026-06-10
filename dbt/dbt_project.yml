@@ -26,10 +26,13 @@ vars:
   file_format_name: PSDS_CSV_FORMAT
   telemetry_file_format_name: PSDS_JSON_FORMAT
   telemetry_prefix: _telemetry/function_app_events
+  sidecar_metadata_schema: INGEST
+  sidecar_metadata_table: INGEST_METADATA
   managed_identity_tenant_id: ""
   local_duckdb_validate: false
   metadata_columns:
     - _CONTRACT_VERSION
+    - _DOWNLOADED_AT
     - _INGESTED_AT
     - _SOURCE_FILE_PATH
     - _SOURCE_FILE_NAME
@@ -37,6 +40,7 @@ vars:
     - _FILE_CONTENT_KEY
     - _SUBJECT_PERIOD
     - _PUBLICATION_DATE
+    - _PUBLICATION_DATE_SOURCE
     - _ACQUISITION_METHOD
     - _FALLBACK_REASON
     - _LOAD_ID

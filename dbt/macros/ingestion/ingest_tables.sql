@@ -32,7 +32,6 @@
             _SOURCE_FILE_NAME varchar,
             _FILE_ROW_NUMBER number,
             _FILE_CONTENT_KEY varchar,
-            _PUBLICATION_DATE varchar,
             _ACQUISITION_METHOD varchar default 'automated',
             _FALLBACK_REASON varchar default '',
             _LOAD_ID varchar
@@ -51,19 +50,17 @@
 {% endmacro %}
 
 
-{% macro create_raw_dedup_view(database_name, raw_schema, raw_view, ingest_schema, ingest_table) %}
+{% macro create_raw_dedup_view(database_name, raw_schema, raw_view, ingest_schema, ingest_table, metadata_schema=var('sidecar_metadata_schema'), metadata_table=var('sidecar_metadata_table')) %}
     {#
     Create or replace a RAW deduplication view over an INGEST table.
 
     The RAW view:
     - Always reflects the current state of INGEST (no lag, no refresh required)
-        - Deduplicates repeated Snowpipe ingests of the same file content by keeping the
-            latest copy of each row key (_FILE_CONTENT_KEY + _FILE_ROW_NUMBER)
-    - Derives _PUBLICATION_DATE and _PUBLICATION_DATE_SOURCE from _SOURCE_FILE_PATH by
-      parsing the embedded prefix written by the function app:
-        scraped-YYYYMMDDTHHMMSS  →  date scraped from the publisher page
-        ingest-YYYYMMDDTHHMMSS   →  download timestamp used as fallback
-    - Replaces the always-NULL _PUBLICATION_DATE column from INGEST with the derived value
+    - Deduplicates repeated Snowpipe ingests of the same file content by keeping the
+        latest copy of each row key (_FILE_CONTENT_KEY + _FILE_ROW_NUMBER)
+    - LEFT JOINs to INGEST_METADATA table to pull publication date metadata
+      via _SOURCE_FILE_PATH = _PAYLOAD_STAGE_PATH match
+    - Replaces null publication date columns with values from sidecar metadata
     - Is safe to re-run: CREATE OR REPLACE is idempotent
     - Can be promoted to a Dynamic Table later if query performance requires it
 
@@ -79,28 +76,20 @@
                     partition by _FILE_CONTENT_KEY, _FILE_ROW_NUMBER
                     order by _INGESTED_AT desc
                 ) as _dedup_rank,
-                regexp_substr(_SOURCE_FILE_PATH, 'publication_date=([^/]+)/', 1, 1, 'e') as _pub_raw,
-                * exclude (_PUBLICATION_DATE)
+                *
             from {{ adapter.quote(database_name) }}.{{ adapter.quote(ingest_schema) }}.{{ adapter.quote(ingest_table) }}
         ),
-        ranked as (
+        with_metadata as (
             select
-                _dedup_rank,
-                case
-                    when _pub_raw like 'scraped-%' then substr(_pub_raw, 9)
-                    when _pub_raw like 'ingest-%'  then substr(_pub_raw, 8)
-                    else _pub_raw
-                end as _PUBLICATION_DATE,
-                case
-                    when _pub_raw like 'scraped-%' then 'scraped'
-                    when _pub_raw like 'ingest-%'  then 'ingest-fallback'
-                    else 'unknown'
-                end as _PUBLICATION_DATE_SOURCE,
-                * exclude (_dedup_rank, _pub_raw)
-            from parsed
+                p.*,
+                coalesce(m._PUBLICATION_DATE, '') as _PUBLICATION_DATE,
+                coalesce(m._PUBLICATION_DATE_SOURCE, 'unknown') as _PUBLICATION_DATE_SOURCE
+            from parsed p
+            left join {{ adapter.quote(database_name) }}.{{ adapter.quote(metadata_schema) }}.{{ adapter.quote(metadata_table) }} m
+              on p._SOURCE_FILE_PATH = m._PAYLOAD_STAGE_PATH
         )
         select * exclude (_dedup_rank)
-        from ranked
+        from with_metadata
         where _dedup_rank = 1
     {% endset %}
 

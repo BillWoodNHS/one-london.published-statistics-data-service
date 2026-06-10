@@ -44,7 +44,7 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     csv_files = [
         path
         for path in local_root.rglob("*.csv")
-        if "publication_date=" in path.as_posix()
+        if "downloaded_at=" in path.as_posix()
     ]
     assert csv_files, "Expected at least one landed CSV file"
 
@@ -53,6 +53,7 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     assert metadata_path.exists(), "Expected metadata sidecar file"
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert "_DOWNLOADED_AT" in metadata, "Expected _DOWNLOADED_AT in sidecar metadata"
     con = duckdb.connect(str(query_duckdb_path))
 
     con.execute("drop table if exists raw_data")

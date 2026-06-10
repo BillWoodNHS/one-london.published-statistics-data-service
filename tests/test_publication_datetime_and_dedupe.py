@@ -123,13 +123,14 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
 
     metadata_path = (
         "mental-health-services-monthly-statistics/restrictive-interventions/"
-        "subject_period=202605/"
-        "publication_date=ingest-20260521T101900/_INGEST_METADATA.json"
+        "subject_period=unknown/"
+        "downloaded_at=20260521T101900/_INGEST_METADATA.json"
     )
     assert metadata_path in storage
     metadata = json.loads(storage[metadata_path].decode("utf-8"))
     assert metadata["_CONTRACT_VERSION"] == CONTRACT_VERSION
     assert metadata["_SOURCE_ETAG"] == "etag-1"
+    assert metadata["_DOWNLOADED_AT"] == "20260521T101900"
 
     telemetry_path = "_telemetry/function_app_events/event_date="
     telemetry_paths = [
@@ -157,30 +158,22 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
 
 
 class TestResolvePublicationDatetime:
-    def test_valid_scraped_date_gets_scraped_prefix(self):
+    def test_valid_scraped_date_returns_clean_date(self):
         result = _resolve_publication_datetime("20260315T000000")
-        assert result == "scraped-20260315T000000"
+        assert result == "20260315T000000"
 
-    def test_none_input_returns_ingest_fallback(self, monkeypatch):
-        monkeypatch.setattr(
-            "function_app.src.run_ingestion.now_utc_compact",
-            lambda: "20260530T120000",
-        )
+    def test_none_input_returns_empty_string(self):
         result = _resolve_publication_datetime(None)
-        assert result == "ingest-20260530T120000"
+        assert result == ""
 
-    def test_date_below_minimum_returns_ingest_fallback(self, monkeypatch):
-        monkeypatch.setattr(
-            "function_app.src.run_ingestion.now_utc_compact",
-            lambda: "20260530T120000",
-        )
+    def test_date_below_minimum_returns_empty_string(self):
         result = _resolve_publication_datetime("20091231T000000")
-        assert result == "ingest-20260530T120000"
+        assert result == ""
 
-    def test_date_equal_to_minimum_gets_scraped_prefix(self):
+    def test_date_equal_to_minimum_returns_clean_date(self):
         result = _resolve_publication_datetime("20100101T000000")
-        assert result == "scraped-20100101T000000"
+        assert result == "20100101T000000"
 
-    def test_date_just_above_minimum_gets_scraped_prefix(self):
+    def test_date_just_above_minimum_returns_clean_date(self):
         result = _resolve_publication_datetime("20100102T000000")
-        assert result == "scraped-20100102T000000"
+        assert result == "20100102T000000"

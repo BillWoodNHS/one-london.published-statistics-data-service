@@ -8,6 +8,8 @@ fallback:
   allow_manual_acquisition: false
 targets:
   - sub_dataset_id: restrictive-interventions
+    object_name_suffix: TEST_MH_RESTRICTIVE_INTERVENTIONS
+    adls_path_prefix: test-mental-health-services-monthly-statistics/restrictive-interventions
     scrape_steps:
       - link_selector: a[href]
         text_filter: 'Restrictive Interventions ZIP'

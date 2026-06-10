@@ -130,3 +130,5 @@ class LoadArtifact:
     source_content_hash: str
     acquisition_method: str
     fallback_reason: str
+    downloaded_at: str = ""
+    adls_path_prefix: str = ""

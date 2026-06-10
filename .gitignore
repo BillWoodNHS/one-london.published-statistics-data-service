@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 .env
 .pytest_cache/
+.pytest-suite-results/
 .mypy_cache/
 .DS_Store
 
@@ -10,6 +11,7 @@ __pycache__/
 Thumbs.db
 
 # Local ADLS test artifacts
+.local_adls/
 .local_adls_test/
 .local_adls_test_full/
 
