@@ -35,6 +35,17 @@
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -65,6 +76,17 @@
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -96,6 +118,17 @@
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -127,6 +160,17 @@
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year token from file name",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -158,6 +202,17 @@
         "fiscal_year_format": "YY-YY",
         "month_extraction": "Extract quarter and fiscal year from filename",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -189,6 +244,17 @@
         "fiscal_year_format": "YY-YY",
         "month_extraction": "Extract quarter and fiscal year from filename",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -220,6 +286,17 @@
         "fiscal_year_format": "",
         "month_extraction": "Extract month and year from filename",
         "archive_pattern": "sibling_pages_by_subject_period"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     }
   ]

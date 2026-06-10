@@ -49,6 +49,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -90,6 +101,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -131,6 +153,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -172,6 +205,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -213,6 +257,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -254,6 +309,17 @@
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Infer from page context when filename is static"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -295,6 +361,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -336,6 +413,17 @@
         "subject_period_pattern": "month_year",
         "fiscal_year_format": "",
         "month_extraction": "Infer from page context when filename is static"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     },
     {
@@ -377,6 +465,17 @@
         "subject_period_pattern": "compact_month_year",
         "fiscal_year_format": "",
         "month_extraction": "Use month-year suffix in filename"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     }
   ]

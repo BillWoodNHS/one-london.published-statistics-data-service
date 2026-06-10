@@ -42,6 +42,17 @@
         "fiscal_year_format": "YYYY-YY",
         "month_extraction": "Month name before fiscal year token at end of filename",
         "archive_pattern": "none"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     }
   ]

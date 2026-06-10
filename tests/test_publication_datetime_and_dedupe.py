@@ -123,7 +123,8 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
 
     metadata_path = (
         "mental-health-services-monthly-statistics/restrictive-interventions/"
-        "subject_period=unknown/"
+        "download_year=2026/"
+        "download_month=05/"
         "downloaded_at=20260521T101900/_INGEST_METADATA.json"
     )
     assert metadata_path in storage
@@ -131,6 +132,9 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     assert metadata["_CONTRACT_VERSION"] == CONTRACT_VERSION
     assert metadata["_SOURCE_ETAG"] == "etag-1"
     assert metadata["_DOWNLOADED_AT"] == "20260521T101900"
+    assert metadata["_SUBJECT_PERIOD_FROM"] == ""
+    assert metadata["_SUBJECT_PERIOD_TO"] == ""
+    assert metadata["_SUBJECT_PERIOD_COVERAGE_TYPE"] == "unknown"
 
     telemetry_path = "_telemetry/function_app_events/event_date="
     telemetry_paths = [

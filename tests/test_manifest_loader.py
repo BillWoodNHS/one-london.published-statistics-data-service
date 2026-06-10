@@ -25,3 +25,7 @@ def test_manifest_loads_targets():
     assert perf_target.page_date_selectors
     assert perf_target.source_pages
     assert perf_target.source_pages[0].page_role == "default"
+    assert perf_target.period_coverage is not None
+    assert perf_target.period_coverage.file_scope.duration_type == "unknown"
+    assert perf_target.period_coverage.file_scope.fiscal_year_start_month == 4
+    assert perf_target.period_coverage.breakdown_granularity == ["month"]

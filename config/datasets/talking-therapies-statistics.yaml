@@ -37,6 +37,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
@@ -59,6 +68,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001
 - sub_dataset_id: enter-treatment-rolling-quarter
   object_name_suffix: TALKING_THERAPY_ENTER_TREATMENT
@@ -79,6 +97,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001
 - sub_dataset_id: monthly-activity
   object_name_suffix: TALKING_THERAPY_MONTHLY
@@ -99,6 +126,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001
 - sub_dataset_id: quarterly-activity
   object_name_suffix: TALKING_THERAPY_QUARTERLY
@@ -119,6 +155,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001
 - sub_dataset_id: quarterly-employment-advisor-data
   object_name_suffix: TALKING_THERAPY_QUARTERLY_EMPLOYMENT
@@ -139,6 +184,15 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001
 - sub_dataset_id: time-series-for-key-measures
   object_name_suffix: TALKING_THERAPY_TIME_SERIES
@@ -159,4 +213,13 @@ targets:
       text_pattern: null
       max_pages: 100
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id001

@@ -15,3 +15,9 @@ This folder contains ingestion configuration for supplier datasets.
 5. Use only the suffix in YAML, not full object names. dbt applies the standard prefixes: `STG_`, `PIPE_`, `INGEST_`, and `RAW_`.
 6. Set `targets[].adls_path_prefix` explicitly so the ADLS storage path remains stable even if dataset IDs change later. Use a relative path such as `series-id/sub-dataset-id` — no leading/trailing slashes, no `..`.
 7. Validate with tests after adding the file.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

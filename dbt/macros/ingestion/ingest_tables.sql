@@ -58,9 +58,9 @@
     - Always reflects the current state of INGEST (no lag, no refresh required)
     - Deduplicates repeated Snowpipe ingests of the same file content by keeping the
         latest copy of each row key (_FILE_CONTENT_KEY + _FILE_ROW_NUMBER)
-    - LEFT JOINs to INGEST_METADATA table to pull publication date metadata
+        - LEFT JOINs to INGEST_METADATA table to pull publication and period metadata
       via _SOURCE_FILE_PATH = _PAYLOAD_STAGE_PATH match
-    - Replaces null publication date columns with values from sidecar metadata
+        - Replaces null metadata columns with deterministic defaults from sidecar metadata
     - Is safe to re-run: CREATE OR REPLACE is idempotent
     - Can be promoted to a Dynamic Table later if query performance requires it
 
@@ -82,6 +82,18 @@
         with_metadata as (
             select
                 p.*,
+                coalesce(m._DOWNLOADED_AT, '') as _DOWNLOADED_AT,
+                coalesce(m._SUBJECT_PERIOD_FROM, '') as _SUBJECT_PERIOD_FROM,
+                coalesce(m._SUBJECT_PERIOD_TO, '') as _SUBJECT_PERIOD_TO,
+                coalesce(m._SUBJECT_PERIOD_COVERAGE_TYPE, 'unknown') as _SUBJECT_PERIOD_COVERAGE_TYPE,
+                coalesce(m._SUBJECT_PERIOD_INFERENCE_METHOD, 'not_inferred') as _SUBJECT_PERIOD_INFERENCE_METHOD,
+                coalesce(m._SUBJECT_PERIOD_INFERENCE_SOURCE, 'none') as _SUBJECT_PERIOD_INFERENCE_SOURCE,
+                coalesce(m._SUBJECT_PERIOD_INFERENCE_CONFIDENCE, 'low') as _SUBJECT_PERIOD_INFERENCE_CONFIDENCE,
+                coalesce(m._FILE_SCOPE_DURATION_TYPE, 'unknown') as _FILE_SCOPE_DURATION_TYPE,
+                m._FILE_SCOPE_DURATION_VALUE as _FILE_SCOPE_DURATION_VALUE,
+                coalesce(m._FILE_SCOPE_DURATION_UNIT, '') as _FILE_SCOPE_DURATION_UNIT,
+                m._FILE_SCOPE_FISCAL_YEAR_START_MONTH as _FILE_SCOPE_FISCAL_YEAR_START_MONTH,
+                coalesce(m._BREAKDOWN_GRANULARITY, '') as _BREAKDOWN_GRANULARITY,
                 coalesce(m._PUBLICATION_DATE, '') as _PUBLICATION_DATE,
                 coalesce(m._PUBLICATION_DATE_SOURCE, 'unknown') as _PUBLICATION_DATE_SOURCE
             from parsed p

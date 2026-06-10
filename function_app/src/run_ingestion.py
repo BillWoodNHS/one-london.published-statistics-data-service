@@ -24,7 +24,7 @@ from .models import LoadArtifact
 from .scraper import discover_files
 from .settings import MIN_PLAUSIBLE_PUBLICATION_DATE
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.2.0"
 
 
 def _manifest_root() -> Path:
@@ -76,7 +76,7 @@ def _audit_payload(
     artifact: LoadArtifact,
     source_etag: Optional[str] = None,
     source_last_modified: Optional[str] = None,
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     ingested_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     pub_date = artifact.publication_date
     pub_date_source = "scraped" if pub_date else "none"
@@ -84,14 +84,41 @@ def _audit_payload(
     payload_stage_path = artifact.adls_path.replace(
         artifact.adls_path_prefix + "/", "", 1
     )
-    payload: Dict[str, str] = {
+    payload: Dict[str, Any] = {
         "_CONTRACT_VERSION": CONTRACT_VERSION,
         "_DOWNLOADED_AT": artifact.downloaded_at,
         "_INGESTED_AT": ingested_at,
         "_SOURCE_FILE_PATH": artifact.source_url,
         "_SOURCE_FILE_NAME": artifact.adls_path.split("/")[-1],
         "_FILE_CONTENT_KEY": artifact.source_content_hash,
-        "_SUBJECT_PERIOD": artifact.subject_period,
+        "_SUBJECT_PERIOD_FROM": artifact.subject_period_from,
+        "_SUBJECT_PERIOD_TO": artifact.subject_period_to,
+        "_SUBJECT_PERIOD_COVERAGE_TYPE": artifact.subject_period_coverage_type,
+        "_SUBJECT_PERIOD_INFERENCE_METHOD": artifact.subject_period_inference_method,
+        "_SUBJECT_PERIOD_INFERENCE_SOURCE": artifact.subject_period_inference_source,
+        "_SUBJECT_PERIOD_INFERENCE_CONFIDENCE": artifact.subject_period_inference_confidence,
+        "_FILE_SCOPE_DURATION_TYPE": artifact.file_scope_duration_type,
+        "_FILE_SCOPE_DURATION_VALUE": (
+            str(artifact.file_scope_duration_value)
+            if artifact.file_scope_duration_value is not None
+            else ""
+        ),
+        "_FILE_SCOPE_DURATION_UNIT": artifact.file_scope_duration_unit,
+        "_FILE_SCOPE_FISCAL_YEAR_START_MONTH": (
+            str(artifact.file_scope_fiscal_year_start_month)
+            if artifact.file_scope_fiscal_year_start_month is not None
+            else ""
+        ),
+        "_BREAKDOWN_GRANULARITY": ",".join(artifact.breakdown_granularity),
+        "period_coverage": {
+            "file_scope": {
+                "duration_type": artifact.file_scope_duration_type,
+                "duration_value": artifact.file_scope_duration_value,
+                "duration_unit": artifact.file_scope_duration_unit,
+                "fiscal_year_start_month": artifact.file_scope_fiscal_year_start_month,
+            },
+            "breakdown_granularity": artifact.breakdown_granularity,
+        },
         "_PUBLICATION_DATE": pub_date,
         "_PUBLICATION_DATE_SOURCE": pub_date_source,
         "_ACQUISITION_METHOD": artifact.acquisition_method,
@@ -113,7 +140,7 @@ def _write_audit_record(
     artifact: LoadArtifact,
     source_etag: Optional[str] = None,
     source_last_modified: Optional[str] = None,
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     audit_path = artifact.adls_path.rsplit("/", 1)[0] + "/_INGEST_METADATA.json"
     record = _audit_payload(artifact, source_etag, source_last_modified)
     payload = json.dumps(record, indent=2).encode("utf-8")
@@ -122,7 +149,7 @@ def _write_audit_record(
     return record
 
 
-def _load_sidecar_records(series_id: str, sub_dataset_id: str) -> List[Dict[str, str]]:
+def _load_sidecar_records(series_id: str, sub_dataset_id: str) -> List[Dict[str, Any]]:
     prefix = f"{series_id}/{sub_dataset_id}/"
     metadata_paths = [
         path
@@ -130,7 +157,7 @@ def _load_sidecar_records(series_id: str, sub_dataset_id: str) -> List[Dict[str,
         if path.endswith("/_INGEST_METADATA.json")
     ]
 
-    records: List[Dict[str, str]] = []
+    records: List[Dict[str, Any]] = []
     for metadata_path in metadata_paths:
         try:
             payload = download_blob_bytes(metadata_path)
@@ -144,8 +171,8 @@ def _load_sidecar_records(series_id: str, sub_dataset_id: str) -> List[Dict[str,
 
 
 def _latest_record_for_source(
-    records: List[Dict[str, str]], source_url: str
-) -> Optional[Dict[str, str]]:
+    records: List[Dict[str, Any]], source_url: str
+) -> Optional[Dict[str, Any]]:
     matches = [
         record for record in records if record.get("_SOURCE_FILE_PATH") == source_url
     ]
@@ -169,7 +196,7 @@ def _get_source_headers(source_url: str) -> Tuple[Optional[str], Optional[str]]:
 
 
 def _skip_download_from_headers(
-    latest_record: Optional[Dict[str, str]],
+    latest_record: Optional[Dict[str, Any]],
     source_etag: Optional[str],
     source_last_modified: Optional[str],
 ) -> bool:
@@ -212,9 +239,9 @@ def execute_ingestion() -> Dict[str, Any]:
     uploaded_paths: List[str] = []
 
     for config in configs:
-        sidecar_cache: Dict[Tuple[str, str], List[Dict[str, str]]] = {}
+        sidecar_cache: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
 
-        def _records_for(series_id: str, sub_dataset_id: str) -> List[Dict[str, str]]:
+        def _records_for(series_id: str, sub_dataset_id: str) -> List[Dict[str, Any]]:
             key = (series_id, sub_dataset_id)
             if key not in sidecar_cache:
                 sidecar_cache[key] = _load_sidecar_records(series_id, sub_dataset_id)

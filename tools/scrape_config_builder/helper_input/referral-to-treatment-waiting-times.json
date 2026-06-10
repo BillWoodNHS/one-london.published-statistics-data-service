@@ -43,6 +43,17 @@
         "month_extraction": "Extract compact month-year token (for example Mar26, Oct15) from URL or link text",
         "archive_pattern": "sibling_pages_by_subject_period",
         "sibling_url_pattern": "rtt-data-\\d{4}-\\d{2}"
+      },
+      "period_coverage": {
+        "file_scope": {
+          "duration_type": "unknown",
+          "duration_value": null,
+          "duration_unit": null,
+          "fiscal_year_start_month": 4
+        },
+        "breakdown_granularity": [
+          "month"
+        ]
       }
     }
   ]

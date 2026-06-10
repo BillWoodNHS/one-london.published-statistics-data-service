@@ -13,6 +13,7 @@ import pandas as pd
 import requests
 
 from .models import DiscoveredFile, LoadArtifact
+from .period_coverage import infer_period_coverage
 
 
 def _count_csv_rows(payload: bytes) -> int | None:
@@ -42,31 +43,22 @@ def _to_iso_partition_value(raw_value: str) -> str:
 
 def _adls_path(
     adls_path_prefix: str,
-    subject_period: str,
     downloaded_at: str,
     filename: str,
 ) -> str:
     """Build an ADLS path for a file.
 
-    Uses the explicit adls_path_prefix from the manifest target, subject period,
-    download timestamp, and filename.
+    Uses the explicit adls_path_prefix from the manifest target, download
+    timestamp partitions, and filename.
     """
-    safe_subject_period = _to_iso_partition_value(subject_period)
     safe_ts = _to_iso_partition_value(downloaded_at)
+    safe_year = safe_ts[:4] if len(safe_ts) >= 4 else "unknown"
+    safe_month = safe_ts[4:6] if len(safe_ts) >= 6 else "unknown"
     return (
-        f"{adls_path_prefix}/subject_period={safe_subject_period}/"
+        f"{adls_path_prefix}/download_year={safe_year}/"
+        f"download_month={safe_month}/"
         f"downloaded_at={safe_ts}/{filename}"
     )
-
-
-def _resolve_subject_period(file: DiscoveredFile) -> str:
-    if file.subject_period_value:
-        return file.subject_period_value
-
-    if file.publication_date_value and len(file.publication_date_value) >= 6:
-        return file.publication_date_value[:6]
-
-    return "unknown"
 
 
 def _download(url: str) -> bytes:
@@ -212,21 +204,75 @@ def build_artifact(
 
     Includes ADLS path and metadata.
     """
-    subject_period = _resolve_subject_period(file)
+    coverage = infer_period_coverage(
+        subject_period_hint=file.subject_period_hint,
+        link_text=file.link_text,
+        source_url=file.source_url,
+        page_text=file.page_text,
+        duration_type_hint=(
+            file.period_coverage_hint.file_scope.duration_type
+            if file.period_coverage_hint
+            else "unknown"
+        ),
+        duration_value_hint=(
+            file.period_coverage_hint.file_scope.duration_value
+            if file.period_coverage_hint
+            else None
+        ),
+        duration_unit_hint=(
+            file.period_coverage_hint.file_scope.duration_unit
+            if file.period_coverage_hint
+            else None
+        ),
+        fiscal_year_start_month_hint=(
+            file.period_coverage_hint.file_scope.fiscal_year_start_month
+            if file.period_coverage_hint
+            else None
+        ),
+    )
     adls_path_prefix = (
         file.adls_path_prefix or f"{file.series_id}/{file.sub_dataset_id}"
     )
     return LoadArtifact(
         adls_path=_adls_path(
             adls_path_prefix,
-            subject_period,
             downloaded_at,
             filename,
         ),
         source_url=file.source_url,
         series_id=file.series_id,
         sub_dataset_id=file.sub_dataset_id,
-        subject_period=subject_period,
+        subject_period_from=coverage.subject_period_from,
+        subject_period_to=coverage.subject_period_to,
+        subject_period_coverage_type=coverage.coverage_type,
+        subject_period_inference_method=coverage.inference_method,
+        subject_period_inference_source=coverage.inference_source,
+        subject_period_inference_confidence=coverage.confidence,
+        file_scope_duration_type=(
+            file.period_coverage_hint.file_scope.duration_type
+            if file.period_coverage_hint
+            else "unknown"
+        ),
+        file_scope_duration_value=(
+            file.period_coverage_hint.file_scope.duration_value
+            if file.period_coverage_hint
+            else None
+        ),
+        file_scope_duration_unit=(
+            file.period_coverage_hint.file_scope.duration_unit
+            if file.period_coverage_hint and file.period_coverage_hint.file_scope.duration_unit
+            else ""
+        ),
+        file_scope_fiscal_year_start_month=(
+            file.period_coverage_hint.file_scope.fiscal_year_start_month
+            if file.period_coverage_hint
+            else None
+        ),
+        breakdown_granularity=(
+            file.period_coverage_hint.breakdown_granularity
+            if file.period_coverage_hint
+            else []
+        ),
         publication_date=file.publication_date_value or "",
         source_content_hash=content_hash,
         acquisition_method=acquisition_method,

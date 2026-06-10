@@ -9,6 +9,8 @@ import yaml
 from .models import (
     DatasetSeriesConfig,
     FallbackConfig,
+    PeriodCoverageHint,
+    PeriodCoverageFileScopeHint,
     PublicationDateRule,
     ScrapeStep,
     SiblingDiscoveryConfig,
@@ -246,6 +248,47 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                     encoding=target.get("encoding", "utf-8"),
                     reporting_period_columns=target.get("reporting_period_columns", []),
                     page_date_selectors=target.get("page_date_selectors", []),
+                    period_coverage=(
+                        PeriodCoverageHint(
+                            file_scope=PeriodCoverageFileScopeHint(
+                                duration_type=(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get(
+                                        "duration_type",
+                                        target.get("period_coverage", {}).get(
+                                            "type", "unknown"
+                                        ),
+                                    )
+                                ),
+                                duration_value=(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get("duration_value")
+                                ),
+                                duration_unit=(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get("duration_unit")
+                                ),
+                                fiscal_year_start_month=(
+                                    target.get("period_coverage", {})
+                                    .get("file_scope", {})
+                                    .get(
+                                        "fiscal_year_start_month",
+                                        target.get("period_coverage", {}).get(
+                                            "fiscal_year_start_month"
+                                        ),
+                                    )
+                                ),
+                            ),
+                            breakdown_granularity=target.get(
+                                "period_coverage", {}
+                            ).get("breakdown_granularity", []),
+                        )
+                        if target.get("period_coverage")
+                        else None
+                    ),
                 )
             )
 

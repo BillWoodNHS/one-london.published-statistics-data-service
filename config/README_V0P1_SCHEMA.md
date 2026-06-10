@@ -317,3 +317,9 @@ Follow [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md) for 
 **Release Date**: May 25, 2026  
 **Stability**: Stable / Production Ready  
 **Backward Compatible**: Yes (v2.0 still supported)
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

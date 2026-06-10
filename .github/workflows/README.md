@@ -37,3 +37,9 @@ if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_GITHUB_DEPLOY == 'true' }
 
 - Deployment code remains in source control and can be enabled without code changes.
 - Required Snowflake secrets must be configured before enabling deployment.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

@@ -177,3 +177,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 - Generated YAML configs are **candidates** requiring manual review and testing before version control commit.
 - CSV inputs are handled by `generate-helper-input-from-csv.py`; the main helper accepts JSON v2 only.
 - All scripts support idempotent execution where practical.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

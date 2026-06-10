@@ -55,6 +55,26 @@ Per `sample_page`:
 - `include_extensions` — Optional but strongly recommended file types (otherwise inferred from samples)
 - `preferred_link_selector`, `preferred_text_filter` — Optional CSS/regex overrides
 
+Optional `period_coverage` hints (per target):
+- `file_scope.duration_type`: `unknown` | `single_period` | `rolling` | `calendar_ytd` | `fiscal_ytd` | `daily`
+- `file_scope.duration_value`: integer or `null`
+- `file_scope.duration_unit`: `day` | `month` | `quarter` | `year` | `null`
+- `file_scope.fiscal_year_start_month`: integer `1`-`12` or `null`
+- `breakdown_granularity`: ordered list from `day`, `month`, `quarter`, `year`
+
+Recommended default:
+```json
+"period_coverage": {
+  "file_scope": {
+    "duration_type": "unknown",
+    "duration_value": null,
+    "duration_unit": null,
+    "fiscal_year_start_month": 4
+  },
+  "breakdown_granularity": ["month"]
+}
+```
+
 **Example v0.1**: [helper_input/data-quality-maturity-index.json](helper_input/data-quality-maturity-index.json)
 
 ### Schema v2.0 (Legacy Single-Page)
@@ -190,6 +210,7 @@ Any other archive hint strings are currently treated as unsupported/no-op for v0
 | `targets[].preferred_text_filter` | `targets[].source_pages[].scrape_steps[].text_filter` | Regex filter on link text |
 | `targets[].include_extensions` | `targets[].source_pages[].scrape_steps[].file_extensions` | Extension filter for candidate URLs |
 | `targets[].hints.archive_pattern` | `targets[].source_pages[].sibling_discovery.enabled` (+ defaults) | Enables sibling-page expansion when set to `sibling_pages_by_subject_period` and partitioning is `subject_period`/`mixed` |
+| `targets[].period_coverage` | `targets[].period_coverage` | Hint used to declare file-scope duration and ordered internal breakdown granularities; runtime evidence from file/url/link/page remains authoritative |
 | Helper-generated sibling defaults | `sibling_discovery.link_selector/url_pattern/text_pattern/max_pages` | `link_selector` used to collect sibling links; patterns optional; `max_pages` caps sibling traversal |
 
 ### How Function App Uses v0.1 YAML
@@ -287,6 +308,7 @@ targets:
 - `preferred_link_selector` — Optional CSS selector override
 - `preferred_text_filter` — Optional regex filter override
 - `hints` — Optional target hints
+- `period_coverage` — Optional hint block with the same enum/options as v0.1 target controls
 
 ### Per-Dataset Hints (v2.0)
 
@@ -667,3 +689,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 ```
 
 Output: Generates `helper_input/appointments-in-general-practice.json` with v2.0 schema extracted from CSV rows.
+
+## June 2026 Contract Update
+
+- Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
+- Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
+- Target configs may include optional `period_coverage` hints to prioritize runtime period inference.

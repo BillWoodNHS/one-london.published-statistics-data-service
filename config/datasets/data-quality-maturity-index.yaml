@@ -50,6 +50,15 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: &id002
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
@@ -72,4 +81,13 @@ targets:
       text_pattern: null
       max_pages: 25
   reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
   page_date_selectors: *id002
