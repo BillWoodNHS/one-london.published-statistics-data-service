@@ -42,6 +42,11 @@ def _parse_args() -> argparse.Namespace:
         help="Use tests/fixtures/manifests for pytest (implies --pytest-only).",
     )
     parser.add_argument(
+        "--skip-duckdb-load",
+        action="store_true",
+        help="Skip loading downloaded CSVs to DuckDB (ingestion only).",
+    )
+    parser.add_argument(
         "--execution-mode",
         choices=["full", "scrape-only", "load-only"],
         default="full",
@@ -138,6 +143,23 @@ def _run_ingestion() -> int:
         return 1
 
 
+def _load_csvs_to_duckdb() -> int:
+    """Load downloaded CSVs to DuckDB for inspection.
+
+    Returns:
+        0 on success (or duckdb not available), non-zero on failure.
+    """
+    command = [
+        sys.executable,
+        "tools/local_dev/load_csvs_to_duckdb.py",
+        "--local-root",
+        str(LOCAL_ADLS),
+        "--duckdb-file",
+        os.environ["DUCKDB_FILE"],
+    ]
+    return subprocess.call(command, cwd=REPO_ROOT)
+
+
 def _run_verification(args: argparse.Namespace) -> int:
     report_dir = (
         args.verification_report_dir
@@ -194,6 +216,11 @@ def main() -> int:
     else:
         print("\nRunning direct ingestion simulation (full end-to-end)...")
         code = _run_ingestion()
+        if code == 0 and not args.skip_duckdb_load:
+            print("\nLoading downloaded CSVs to DuckDB...")
+            load_code = _load_csvs_to_duckdb()
+            if load_code != 0:
+                print("⚠ Warning: DuckDB load failed (verification may be incomplete)")
 
     if code != 0:
         return code

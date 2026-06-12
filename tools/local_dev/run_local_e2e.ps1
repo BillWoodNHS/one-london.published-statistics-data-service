@@ -1,5 +1,6 @@
 param(
 	[switch]$UseFixtures,
+	[switch]$SkipDuckdbLoad,
 	[ValidateSet('full', 'scrape-only', 'load-only')]
 	[string]$ExecutionMode = 'full',
 	[string]$DatasetProfileFile = '',
@@ -38,6 +39,9 @@ $argsList = @(
 
 if ($UseFixtures) {
 	$argsList += '--use-fixtures'
+}
+if ($SkipDuckdbLoad) {
+	$argsList += '--skip-duckdb-load'
 }
 if ($DatasetProfileFile) {
 	$argsList += '--dataset-profile-file'
