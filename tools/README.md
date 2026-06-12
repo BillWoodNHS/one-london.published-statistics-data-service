@@ -128,6 +128,7 @@ Local development utilities.
 - `run_lint.ps1` — Local wrapper around `tools/linting/run_lint_suite.ps1`
 - `run_local_e2e.ps1` — Run local end-to-end tests (PowerShell wrapper)
 - `run_local_e2e.py` — Python implementation of local E2E tests
+- `verify_local_run.py` — Post-run local artifact and DuckDB verification report utility
 
 **Usage:**
 ```powershell
@@ -145,6 +146,12 @@ Local development utilities.
 
 # Run with execution mode and local download caps
 ./tools/local_dev/run_local_e2e.ps1 -ExecutionMode full -MaxFilesPerTarget 3 -MaxTotalFiles 50
+
+# Skip verification report generation
+./tools/local_dev/run_local_e2e.ps1 -SkipVerification
+
+# Choose a custom verification report output directory
+./tools/local_dev/run_local_e2e.ps1 -VerificationReportDir ./.local_adls/reports
 
 # Run lint checks (same suite as CI)
 ./tools/local_dev/run_lint.ps1
@@ -195,6 +202,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 
 # Run quick smoke E2E against fixture manifests
 ./tools/local_dev/run_local_e2e.ps1 -UseFixtures
+
+# Generate verification evidence without rerunning pytest
+python tools/local_dev/verify_local_run.py --report-dir ./.local_adls/reports
 ```
 
 ## Implementation Notes

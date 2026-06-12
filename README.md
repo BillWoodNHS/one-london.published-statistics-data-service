@@ -84,6 +84,17 @@ Use execution mode and local download caps:
 ./tools/local_dev/run_local_e2e.ps1 -ExecutionMode full -MaxFilesPerTarget 3 -MaxTotalFiles 50
 ```
 
+By default, local runs now generate verification evidence reports after pytest:
+
+- `.local_adls/reports/local_run_summary.json`
+- `.local_adls/reports/local_run_summary.md`
+
+Run the verification utility directly:
+
+```powershell
+python tools/local_dev/verify_local_run.py --report-dir ./.local_adls/reports --report-prefix local_run_summary
+```
+
 ## Ingestion Runtime Configuration
 
 Primary environment variables:

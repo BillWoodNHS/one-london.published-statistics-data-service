@@ -3,8 +3,8 @@
 Automatic YAML configuration generator for the scraper-driven ingestion system. Converts JSON dataset specifications into YAML configs that drive file discovery. The helper validates discovery patterns against live web pages without downloading files.
 
 **Schema Support:**
-- **v0.1** (recommended): Multi-page contexts with archive/sibling discovery (`source_pages`, `page_role`, `sibling_discovery`)
-- **v2.0** (legacy): Single-page mode with optional subpage navigation (`samples`, `sample_subpage_url`)
+- **v0.1** (active standard): Multi-page contexts with archive/sibling discovery (`source_pages`, `page_role`, `sibling_discovery`)
+- **v2.0** (legacy compatibility only): Single-page mode with optional subpage navigation (`samples`, `sample_subpage_url`)
 
 ## Quick Start
 
@@ -77,8 +77,8 @@ Recommended default:
 
 **Example v0.1**: [helper_input/data-quality-maturity-index.json](helper_input/data-quality-maturity-index.json)
 
-### Schema v2.0 (Legacy Single-Page)
-**Purpose**: Original schema; still supported for backward compatibility.
+### Schema v2.0 (Legacy Compatibility)
+**Purpose**: Historical schema retained for compatibility with older helper inputs.
 
 **Supports**:
 - Single dataset object or `datasets: [...]` array

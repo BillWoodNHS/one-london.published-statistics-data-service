@@ -5,7 +5,10 @@ param(
 	[string]$DatasetProfileFile = '',
 	[int]$MaxFilesPerDataset = 0,
 	[int]$MaxFilesPerTarget = 0,
-	[int]$MaxTotalFiles = 0
+	[int]$MaxTotalFiles = 0,
+	[switch]$SkipVerification,
+	[string]$VerificationReportDir = '',
+	[string]$VerificationReportPrefix = 'local_run_summary'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,6 +42,17 @@ if ($UseFixtures) {
 if ($DatasetProfileFile) {
 	$argsList += '--dataset-profile-file'
 	$argsList += $DatasetProfileFile
+}
+if ($SkipVerification) {
+	$argsList += '--skip-verification'
+}
+if ($VerificationReportDir) {
+	$argsList += '--verification-report-dir'
+	$argsList += $VerificationReportDir
+}
+if ($VerificationReportPrefix) {
+	$argsList += '--verification-report-prefix'
+	$argsList += $VerificationReportPrefix
 }
 
 python @argsList

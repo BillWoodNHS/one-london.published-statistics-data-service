@@ -13,6 +13,8 @@
     "LOCAL_MAX_FILES_PER_TARGET": "0",
     "LOCAL_MAX_FILES_PER_DATASET": "0",
     "LOCAL_MAX_TOTAL_FILES": "0",
+    "LOCAL_VERIFY_REPORT_DIR": "../.local_adls/reports",
+    "LOCAL_VERIFY_REPORT_PREFIX": "local_run_summary",
     "LOCAL_STORAGE_MODE": "false",
     "LOCAL_STORAGE_ROOT": "../.local_adls",
     "ADLS_ACCOUNT_URL": "https://<storage-account>.blob.core.windows.net",

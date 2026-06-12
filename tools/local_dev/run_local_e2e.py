@@ -12,6 +12,7 @@ LOCAL_ADLS = REPO_ROOT / ".local_adls"
 FULL_MANIFEST_ROOT = REPO_ROOT / "config" / "datasets"
 TEST_MANIFEST_ROOT = REPO_ROOT / "tests" / "fixtures" / "manifests"
 DUCKDB_FILE = LOCAL_ADLS / "local_validation.duckdb"
+DEFAULT_REPORT_DIR = LOCAL_ADLS / "reports"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -55,6 +56,24 @@ def _parse_args() -> argparse.Namespace:
         default=0,
         help="LOCAL_MAX_TOTAL_FILES limit (0 disables limit).",
     )
+    parser.add_argument(
+        "--skip-verification",
+        action="store_true",
+        help="Skip post-run local verification and summary report generation.",
+    )
+    parser.add_argument(
+        "--verification-report-dir",
+        default="",
+        help=(
+            "Directory where verification json/markdown reports are written. "
+            "Defaults to .local_adls/reports."
+        ),
+    )
+    parser.add_argument(
+        "--verification-report-prefix",
+        default="local_run_summary",
+        help="Filename prefix used for verification report artifacts.",
+    )
     return parser.parse_args()
 
 
@@ -80,6 +99,32 @@ def _run_pytest() -> int:
     return subprocess.call([sys.executable, "-m", "pytest", "-q"], cwd=REPO_ROOT)
 
 
+def _run_verification(args: argparse.Namespace) -> int:
+    report_dir = (
+        args.verification_report_dir
+        or os.environ.get("LOCAL_VERIFY_REPORT_DIR", "")
+        or str(DEFAULT_REPORT_DIR)
+    )
+    report_prefix = (
+        args.verification_report_prefix
+        or os.environ.get("LOCAL_VERIFY_REPORT_PREFIX", "")
+        or "local_run_summary"
+    )
+    command = [
+        sys.executable,
+        "tools/local_dev/verify_local_run.py",
+        "--local-root",
+        str(LOCAL_ADLS),
+        "--duckdb-file",
+        os.environ["DUCKDB_FILE"],
+        "--report-dir",
+        report_dir,
+        "--report-prefix",
+        report_prefix,
+    ]
+    return subprocess.call(command, cwd=REPO_ROOT)
+
+
 def main() -> int:
     args = _parse_args()
     _set_local_env(args)
@@ -100,6 +145,11 @@ def main() -> int:
     code = _run_pytest()
     if code != 0:
         return code
+
+    if not args.skip_verification:
+        verify_code = _run_verification(args)
+        if verify_code != 0:
+            return verify_code
 
     print("Local e2e run completed successfully.")
     return 0
