@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import os
 import shutil
 import subprocess
@@ -8,17 +9,71 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_ADLS = REPO_ROOT / ".local_adls"
+FULL_MANIFEST_ROOT = REPO_ROOT / "config" / "datasets"
 TEST_MANIFEST_ROOT = REPO_ROOT / "tests" / "fixtures" / "manifests"
 DUCKDB_FILE = LOCAL_ADLS / "local_validation.duckdb"
 
 
-def _set_local_env() -> None:
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run local end-to-end pytest flow with local storage emulation."
+    )
+    parser.add_argument(
+        "--use-fixtures",
+        action="store_true",
+        help="Use tests/fixtures/manifests instead of full config/datasets.",
+    )
+    parser.add_argument(
+        "--execution-mode",
+        choices=["full", "scrape-only", "load-only"],
+        default="full",
+        help="INGEST_EXECUTION_MODE for function app runs during tests.",
+    )
+    parser.add_argument(
+        "--dataset-profile-file",
+        default="",
+        help=(
+            "Optional profile file path with INCLUDE_DATASET_IDS/"
+            "EXCLUDE_DATASET_IDS entries."
+        ),
+    )
+    parser.add_argument(
+        "--max-files-per-dataset",
+        type=int,
+        default=0,
+        help="LOCAL_MAX_FILES_PER_DATASET limit (0 disables limit).",
+    )
+    parser.add_argument(
+        "--max-files-per-target",
+        type=int,
+        default=0,
+        help="LOCAL_MAX_FILES_PER_TARGET limit (0 disables limit).",
+    )
+    parser.add_argument(
+        "--max-total-files",
+        type=int,
+        default=0,
+        help="LOCAL_MAX_TOTAL_FILES limit (0 disables limit).",
+    )
+    return parser.parse_args()
+
+
+def _set_local_env(args: argparse.Namespace) -> None:
     os.environ["LOCAL_STORAGE_MODE"] = "true"
     os.environ["LOCAL_STORAGE_ROOT"] = str(LOCAL_ADLS)
-    os.environ.setdefault("MANIFEST_ROOT", str(TEST_MANIFEST_ROOT))
+    manifest_root = TEST_MANIFEST_ROOT if args.use_fixtures else FULL_MANIFEST_ROOT
+    os.environ["MANIFEST_ROOT"] = str(manifest_root)
     os.environ.setdefault("MANUAL_INPUT_PREFIX", "manual")
     os.environ.setdefault("RUN_WEB_E2E", "true")
     os.environ.setdefault("DUCKDB_FILE", str(DUCKDB_FILE))
+    os.environ["INGEST_EXECUTION_MODE"] = args.execution_mode
+
+    if args.dataset_profile_file:
+        os.environ["LOCAL_DATASET_PROFILE_FILE"] = args.dataset_profile_file
+
+    os.environ["LOCAL_MAX_FILES_PER_DATASET"] = str(max(0, args.max_files_per_dataset))
+    os.environ["LOCAL_MAX_FILES_PER_TARGET"] = str(max(0, args.max_files_per_target))
+    os.environ["LOCAL_MAX_TOTAL_FILES"] = str(max(0, args.max_total_files))
 
 
 def _run_pytest() -> int:
@@ -26,7 +81,8 @@ def _run_pytest() -> int:
 
 
 def main() -> int:
-    _set_local_env()
+    args = _parse_args()
+    _set_local_env(args)
 
     if LOCAL_ADLS.exists():
         shutil.rmtree(LOCAL_ADLS)
@@ -34,6 +90,12 @@ def main() -> int:
     print(f"Local storage path: {LOCAL_ADLS}")
     print(f"Manifest root: {os.environ['MANIFEST_ROOT']}")
     print(f"DuckDB file: {os.environ['DUCKDB_FILE']}")
+    print(f"Execution mode: {os.environ['INGEST_EXECUTION_MODE']}")
+    if os.environ.get("LOCAL_DATASET_PROFILE_FILE"):
+        print(f"Dataset profile: {os.environ['LOCAL_DATASET_PROFILE_FILE']}")
+    print(f"Max files per dataset: {os.environ['LOCAL_MAX_FILES_PER_DATASET']}")
+    print(f"Max files per target: {os.environ['LOCAL_MAX_FILES_PER_TARGET']}")
+    print(f"Max total files: {os.environ['LOCAL_MAX_TOTAL_FILES']}")
 
     code = _run_pytest()
     if code != 0:

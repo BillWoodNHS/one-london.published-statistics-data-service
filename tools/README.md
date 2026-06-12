@@ -140,6 +140,12 @@ Local development utilities.
 # Run E2E tests
 ./tools/local_dev/run_local_e2e.ps1
 
+# Run E2E tests against fixture manifests (faster smoke mode)
+./tools/local_dev/run_local_e2e.ps1 -UseFixtures
+
+# Run with execution mode and local download caps
+./tools/local_dev/run_local_e2e.ps1 -ExecutionMode full -MaxFilesPerTarget 3 -MaxTotalFiles 50
+
 # Run lint checks (same suite as CI)
 ./tools/local_dev/run_lint.ps1
 
@@ -186,6 +192,9 @@ python tools/scrape_config_builder/generate-helper-input-from-csv.py \
 
 # Run E2E tests with local storage
 ./tools/local_dev/run_local_e2e.ps1
+
+# Run quick smoke E2E against fixture manifests
+./tools/local_dev/run_local_e2e.ps1 -UseFixtures
 ```
 
 ## Implementation Notes

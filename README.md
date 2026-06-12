@@ -43,7 +43,7 @@ See folder-level README files for details.
 1. Initialize local developer environment:
 
 ```powershell
-./tools/init_dev_environment.ps1
+./tools/local_dev/init_dev_environment.ps1
 ```
 
 2. Run the full test suite:
@@ -65,10 +65,24 @@ Remove-Item Env:RUN_WEB_E2E -ErrorAction SilentlyContinue
 Use the local orchestration script:
 
 ```powershell
-./tools/run_local_e2e.ps1
+./tools/local_dev/run_local_e2e.ps1
 ```
 
-This sets local storage emulation and runs pytest using fixture manifests.
+This sets local storage emulation and runs pytest with `MANIFEST_ROOT` defaulting to
+`config/datasets` for full local simulation.
+
+Use fixture manifests for faster smoke runs:
+
+```powershell
+./tools/local_dev/run_local_e2e.ps1 -UseFixtures
+```
+
+Use execution mode and local download caps:
+
+```powershell
+# full (default), scrape-only, or load-only
+./tools/local_dev/run_local_e2e.ps1 -ExecutionMode full -MaxFilesPerTarget 3 -MaxTotalFiles 50
+```
 
 ## Ingestion Runtime Configuration
 
@@ -78,6 +92,13 @@ Primary environment variables:
 - `LOCAL_STORAGE_ROOT`: local root path when `LOCAL_STORAGE_MODE=true`.
 - `MANUAL_INPUT_PREFIX`: ADLS/manual prefix for fallback files.
 - `TELEMETRY_PREFIX`: ADLS prefix for ingestion telemetry JSONL events.
+- `INGEST_EXECUTION_MODE`: `full` (default), `scrape-only`, or `load-only`.
+- `LOCAL_DATASET_PROFILE_FILE`: optional file path with `INCLUDE_DATASET_IDS=` and
+   `EXCLUDE_DATASET_IDS=` entries.
+- `INCLUDE_DATASET_IDS` / `EXCLUDE_DATASET_IDS`: optional comma-separated filters.
+- `LOCAL_MAX_FILES_PER_TARGET`: optional per-target cap in local mode.
+- `LOCAL_MAX_FILES_PER_DATASET`: optional per-dataset cap in local mode.
+- `LOCAL_MAX_TOTAL_FILES`: optional global cap in local mode.
 - `ADLS_ACCOUNT_URL`, `ADLS_CONTAINER`, `ADLS_PREFIX`: production storage settings.
 
 Sample local settings are provided at `function_app/local.settings.sample.json`.

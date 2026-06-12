@@ -6,8 +6,9 @@ import logging
 import os
 import time
 import uuid
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import requests
 
@@ -20,11 +21,12 @@ from .download_and_normalize import (
 )
 from .manifest_loader import load_manifests
 from .manual_sources import discover_manual_files
-from .models import LoadArtifact
+from .models import DatasetSeriesConfig, DiscoveredFile, LoadArtifact
 from .scraper import discover_files
 from .settings import MIN_PLAUSIBLE_PUBLICATION_DATE
 
 CONTRACT_VERSION = "1.2.0"
+_EXECUTION_MODES = {"full", "scrape-only", "load-only"}
 
 
 def _manifest_root() -> Path:
@@ -232,16 +234,179 @@ def _resolve_publication_datetime(value: Optional[str]) -> str:
     return ""
 
 
+def _execution_mode() -> str:
+    configured = os.environ.get("INGEST_EXECUTION_MODE", "full").strip().lower()
+    if configured in _EXECUTION_MODES:
+        return configured
+    logging.warning(
+        "Invalid INGEST_EXECUTION_MODE=%r; defaulting to 'full'", configured
+    )
+    return "full"
+
+
+def _parse_non_negative_int_env(name: str) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return 0
+    try:
+        value = int(raw)
+    except ValueError:
+        logging.warning("Invalid %s=%r; defaulting to 0", name, raw)
+        return 0
+    if value < 0:
+        logging.warning("Negative %s=%r; defaulting to 0", name, raw)
+        return 0
+    return value
+
+
+def _parse_id_list(raw: str) -> Set[str]:
+    return {part.strip() for part in raw.split(",") if part.strip()}
+
+
+def _dataset_filter_sets() -> Tuple[Set[str], Set[str]]:
+    include: Set[str] = set()
+    exclude: Set[str] = set()
+
+    profile_path_raw = os.environ.get("LOCAL_DATASET_PROFILE_FILE", "").strip()
+    if profile_path_raw:
+        profile_path = Path(profile_path_raw)
+        if not profile_path.is_absolute():
+            profile_path = (
+                Path(__file__).resolve().parents[2] / profile_path
+            ).resolve()
+        if profile_path.exists():
+            for line in profile_path.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                key, sep, value = stripped.partition("=")
+                if not sep:
+                    continue
+                normalized_key = key.strip().upper()
+                if normalized_key == "INCLUDE_DATASET_IDS":
+                    include.update(_parse_id_list(value))
+                elif normalized_key == "EXCLUDE_DATASET_IDS":
+                    exclude.update(_parse_id_list(value))
+        else:
+            logging.warning(
+                "LOCAL_DATASET_PROFILE_FILE not found: %s (ignoring)",
+                profile_path,
+            )
+
+    include.update(_parse_id_list(os.environ.get("INCLUDE_DATASET_IDS", "")))
+    exclude.update(_parse_id_list(os.environ.get("EXCLUDE_DATASET_IDS", "")))
+    return include, exclude
+
+
+def _filter_configs(configs: List[DatasetSeriesConfig]) -> List[DatasetSeriesConfig]:
+    include_ids, exclude_ids = _dataset_filter_sets()
+    if not include_ids and not exclude_ids:
+        return configs
+
+    filtered: List[DatasetSeriesConfig] = []
+    for config in configs:
+        if include_ids and config.dataset_id not in include_ids:
+            continue
+        if config.dataset_id in exclude_ids:
+            continue
+        filtered.append(config)
+
+    logging.info(
+        "Dataset filter applied: include=%s exclude=%s selected=%d/%d",
+        sorted(include_ids),
+        sorted(exclude_ids),
+        len(filtered),
+        len(configs),
+    )
+    return filtered
+
+
+def _is_local_mode() -> bool:
+    return os.environ.get("LOCAL_STORAGE_MODE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _apply_discovery_limits(
+    discovered: List[DiscoveredFile],
+    dataset_limit: int,
+    target_limit: int,
+    total_remaining: Optional[int],
+) -> List[DiscoveredFile]:
+    if not discovered:
+        return discovered
+
+    ordered = sorted(
+        discovered,
+        key=lambda item: (
+            item.publication_date_value or "",
+            item.source_url,
+        ),
+        reverse=True,
+    )
+
+    selected: List[DiscoveredFile] = []
+    per_target_counts: Dict[str, int] = defaultdict(int)
+    for item in ordered:
+        if dataset_limit > 0 and len(selected) >= dataset_limit:
+            break
+        if total_remaining is not None and len(selected) >= total_remaining:
+            break
+        if target_limit > 0 and per_target_counts[item.sub_dataset_id] >= target_limit:
+            continue
+
+        per_target_counts[item.sub_dataset_id] += 1
+        selected.append(item)
+
+    return selected
+
+
 def execute_ingestion() -> Dict[str, Any]:
     manifest_root = _manifest_root()
     manual_prefix = _manual_prefix()
+    execution_mode = _execution_mode()
     run_id = _new_run_id()
     telemetry_events: List[Dict[str, Any]] = []
-    configs = load_manifests(manifest_root)
+    configs = _filter_configs(load_manifests(manifest_root))
     uploaded_paths: List[str] = []
+    dataset_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_FILES_PER_DATASET")
+        if _is_local_mode()
+        else 0
+    )
+    target_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_FILES_PER_TARGET")
+        if _is_local_mode()
+        else 0
+    )
+    total_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_TOTAL_FILES") if _is_local_mode() else 0
+    )
+    total_remaining: Optional[int] = (
+        total_download_limit if total_download_limit > 0 else None
+    )
+
+    _emit_event(
+        telemetry_events,
+        run_id=run_id,
+        stage="CONTROL",
+        status="CONFIGURED",
+        attempt_number=1,
+        execution_mode=execution_mode,
+        manifest_root=str(manifest_root),
+        config_count=len(configs),
+        local_max_files_per_dataset=dataset_download_limit,
+        local_max_files_per_target=target_download_limit,
+        local_max_total_files=total_download_limit,
+    )
 
     for config in configs:
         sidecar_cache: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+        dataset_remaining: Optional[int] = (
+            dataset_download_limit if dataset_download_limit > 0 else None
+        )
 
         def _records_for(series_id: str, sub_dataset_id: str) -> List[Dict[str, Any]]:
             key = (series_id, sub_dataset_id)
@@ -254,31 +419,57 @@ def execute_ingestion() -> Dict[str, Any]:
             if config.fallback.manual_drop_path
             else manual_prefix
         )
-        _emit_event(
-            telemetry_events,
-            run_id=run_id,
-            stage="SCAN",
-            status="STARTED",
-            attempt_number=1,
-            series_id=config.series_id,
-            sub_dataset_id=None,
-            source_url=config.entry_url,
-        )
-        scan_started = time.perf_counter()
-        discovered = discover_files(config)
-        _emit_event(
-            telemetry_events,
-            run_id=run_id,
-            stage="SCAN",
-            status="SUCCEEDED",
-            attempt_number=1,
-            series_id=config.series_id,
-            sub_dataset_id=None,
-            source_url=config.entry_url,
-            discovered_file_count=len(discovered),
-            duration_ms=int((time.perf_counter() - scan_started) * 1000),
-        )
-        discovered_targets = {item.sub_dataset_id for item in discovered}
+        discovered: List[DiscoveredFile] = []
+        discovered_targets: Set[str] = set()
+        if execution_mode != "load-only":
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="SCAN",
+                status="STARTED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+            )
+            scan_started = time.perf_counter()
+            discovered = discover_files(config)
+            discovered = _apply_discovery_limits(
+                discovered,
+                dataset_limit=dataset_download_limit,
+                target_limit=target_download_limit,
+                total_remaining=total_remaining,
+            )
+            if total_remaining is not None:
+                total_remaining = max(0, total_remaining - len(discovered))
+
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="SCAN",
+                status="SUCCEEDED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+                discovered_file_count=len(discovered),
+                duration_ms=int((time.perf_counter() - scan_started) * 1000),
+            )
+            discovered_targets = {item.sub_dataset_id for item in discovered}
+
+        if execution_mode == "scrape-only":
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="DOWNLOAD",
+                status="SKIPPED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+                skip_reason="scrape_only_mode",
+            )
+            continue
 
         for item in discovered:
             records = _records_for(item.series_id, item.sub_dataset_id)
@@ -427,9 +618,30 @@ def execute_ingestion() -> Dict[str, Any]:
             if target.sub_dataset_id in discovered_targets:
                 continue
 
+            if execution_mode == "load-only" and total_remaining is not None:
+                if total_remaining <= 0:
+                    break
+            if execution_mode == "load-only" and dataset_remaining is not None:
+                if dataset_remaining <= 0:
+                    break
+
             manual_candidates = discover_manual_files(
                 config, target, effective_manual_prefix
             )
+            if execution_mode == "load-only":
+                manual_candidates = _apply_discovery_limits(
+                    manual_candidates,
+                    dataset_limit=dataset_remaining or 0,
+                    target_limit=target_download_limit,
+                    total_remaining=total_remaining,
+                )
+                if dataset_remaining is not None:
+                    dataset_remaining = max(
+                        0, dataset_remaining - len(manual_candidates)
+                    )
+                if total_remaining is not None:
+                    total_remaining = max(0, total_remaining - len(manual_candidates))
+
             for candidate in manual_candidates:
                 records = _records_for(candidate.series_id, candidate.sub_dataset_id)
                 latest = _latest_record_for_source(records, candidate.source_url)
