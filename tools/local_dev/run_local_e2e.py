@@ -8,6 +8,13 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Add REPO_ROOT to sys.path for function_app imports
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from function_app.src.run_ingestion import execute_ingestion  # noqa: E402
+
 LOCAL_ADLS = REPO_ROOT / ".local_adls"
 FULL_MANIFEST_ROOT = REPO_ROOT / "config" / "datasets"
 TEST_MANIFEST_ROOT = REPO_ROOT / "tests" / "fixtures" / "manifests"
@@ -17,12 +24,22 @@ DEFAULT_REPORT_DIR = LOCAL_ADLS / "reports"
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run local end-to-end pytest flow with local storage emulation."
+        description=(
+            "Run local end-to-end ingestion simulation with local storage emulation. "
+            "By default, iterates through all manifests in MANIFEST_ROOT, "
+            "executes ingestion for each, and verifies local artifacts. "
+            "Use --pytest-only to run pytest test suite instead."
+        )
+    )
+    parser.add_argument(
+        "--pytest-only",
+        action="store_true",
+        help="Skip ingestion; only run pytest test suite.",
     )
     parser.add_argument(
         "--use-fixtures",
         action="store_true",
-        help="Use tests/fixtures/manifests instead of full config/datasets.",
+        help="Use tests/fixtures/manifests for pytest (implies --pytest-only).",
     )
     parser.add_argument(
         "--execution-mode",
@@ -99,6 +116,28 @@ def _run_pytest() -> int:
     return subprocess.call([sys.executable, "-m", "pytest", "-q"], cwd=REPO_ROOT)
 
 
+def _run_ingestion() -> int:
+    """Execute ingestion for all manifests in MANIFEST_ROOT.
+
+    The execute_ingestion() function loads and processes all manifests
+    from MANIFEST_ROOT internally, applying all configured filters and caps.
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    try:
+        result = execute_ingestion()
+        if result.get("uploaded"):
+            print("✓ Ingestion completed successfully")
+            return 0
+        else:
+            print("⚠ Ingestion completed but no files were uploaded")
+            return 0
+    except Exception as e:
+        print(f"✗ Error during ingestion: {e}")
+        return 1
+
+
 def _run_verification(args: argparse.Namespace) -> int:
     report_dir = (
         args.verification_report_dir
@@ -127,11 +166,17 @@ def _run_verification(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = _parse_args()
+
+    # --use-fixtures implies --pytest-only
+    if args.use_fixtures:
+        args.pytest_only = True
+
     _set_local_env(args)
 
     if LOCAL_ADLS.exists():
         shutil.rmtree(LOCAL_ADLS)
     LOCAL_ADLS.mkdir(parents=True, exist_ok=True)
+
     print(f"Local storage path: {LOCAL_ADLS}")
     print(f"Manifest root: {os.environ['MANIFEST_ROOT']}")
     print(f"DuckDB file: {os.environ['DUCKDB_FILE']}")
@@ -142,16 +187,25 @@ def main() -> int:
     print(f"Max files per target: {os.environ['LOCAL_MAX_FILES_PER_TARGET']}")
     print(f"Max total files: {os.environ['LOCAL_MAX_TOTAL_FILES']}")
 
-    code = _run_pytest()
+    # Choose execution mode
+    if args.pytest_only:
+        print("\nRunning pytest test suite only (ingestion skipped)...")
+        code = _run_pytest()
+    else:
+        print("\nRunning direct ingestion simulation (full end-to-end)...")
+        code = _run_ingestion()
+
     if code != 0:
         return code
 
+    # Run verification unless skipped
     if not args.skip_verification:
         verify_code = _run_verification(args)
         if verify_code != 0:
             return verify_code
 
-    print("Local e2e run completed successfully.")
+    mode_label = "pytest" if args.pytest_only else "ingestion"
+    print(f"\nLocal e2e {mode_label} run completed successfully.")
     return 0
 
 
