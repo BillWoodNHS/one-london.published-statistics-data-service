@@ -8,12 +8,14 @@ import io
 import zipfile
 
 import openpyxl
+import pandas as pd
 import pytest
 
 from function_app.src.download_and_normalize import (
     _count_csv_rows,
     _excel_to_csv,
     _first_csv_from_zip,
+    _ods_to_csv,
     normalize_payload_to_csv,
 )
 
@@ -40,6 +42,15 @@ def _make_xlsx(headers: list[str], rows: list[list]) -> bytes:
         ws.append(row)
     buf = io.BytesIO()
     wb.save(buf)
+    return buf.getvalue()
+
+
+def _make_ods(headers: list[str], rows: list[list]) -> bytes:
+    """Build an in-memory .ods workbook."""
+    frame = pd.DataFrame(rows, columns=headers)
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="odf") as writer:
+        frame.to_excel(writer, index=False)
     return buf.getvalue()
 
 
@@ -113,6 +124,16 @@ class TestFirstCsvFromZip:
         with pytest.raises(ValueError, match="ZIP did not contain"):
             _first_csv_from_zip(payload)
 
+    def test_converts_ods_when_no_csv_or_excel_in_zip(self):
+        ods_payload = _make_ods(["x", "y"], [[10, 20], [30, 40]])
+        payload = _make_zip(("report.ods", ods_payload))
+        name, content, metrics = _first_csv_from_zip(payload)
+        assert name == "report.csv"
+        assert metrics["converted_to_csv"] is True
+        assert metrics["source_file_type"] == "zip"
+        assert metrics["extracted_from_archive"] is True
+        assert metrics["raw_row_count"] == 2
+
 
 # ---------------------------------------------------------------------------
 # _excel_to_csv
@@ -138,6 +159,33 @@ class TestExcelToCsv:
         _, content, metrics = _excel_to_csv("data", xlsx, ".xlsx")
         assert metrics["raw_row_count"] == 5
         assert _count_csv_rows(content) == 5
+
+
+class TestOdsToCsv:
+    def test_converts_ods_to_csv(self):
+        ods = _make_ods(["name", "score"], [["alice", 95], ["bob", 87]])
+        name, content, metrics = _ods_to_csv("my_report", ods, ".ods")
+        assert name == "my_report.csv"
+        decoded = content.decode("utf-8")
+        assert "name,score" in decoded
+        assert "alice" in decoded
+        assert metrics["converted_to_csv"] is True
+        assert metrics["source_file_type"] == "ods"
+        assert metrics["raw_row_count"] == 2
+        assert metrics["normalized_row_count"] == 2
+        assert metrics["extracted_from_archive"] is False
+
+    def test_converted_ods_has_correct_row_count(self):
+        ods = _make_ods(["a"], [[1], [2], [3], [4], [5]])
+        _, content, metrics = _ods_to_csv("data", ods, ".ods")
+        assert metrics["raw_row_count"] == 5
+        assert _count_csv_rows(content) == 5
+
+    def test_empty_ods_returns_zero_rows(self):
+        ods = _make_ods(["header"], [])
+        _, content, metrics = _ods_to_csv("empty", ods, ".ods")
+        assert metrics["raw_row_count"] == 0
+        assert _count_csv_rows(content) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +232,22 @@ class TestNormalizePayloadToCsv:
         xlsx = _make_xlsx(["x"], [[1]])
         name, content, h, metrics = normalize_payload_to_csv("old.xls", xlsx)
         assert name == "old.csv"
+
+    def test_bare_ods(self):
+        ods = _make_ods(["col"], [["val1"], ["val2"]])
+        name, content, h, metrics = normalize_payload_to_csv("report.ods", ods)
+        assert name == "report.csv"
+        assert metrics["source_file_type"] == "ods"
+        assert metrics["converted_to_csv"] is True
+        assert metrics["raw_row_count"] == 2
+
+    def test_zip_containing_ods(self):
+        ods = _make_ods(["a", "b"], [[1, 2]])
+        zip_payload = _make_zip(("report.ods", ods))
+        name, content, h, metrics = normalize_payload_to_csv("archive.zip", zip_payload)
+        assert name == "report.csv"
+        assert metrics["converted_to_csv"] is True
+        assert metrics["source_file_type"] == "zip"
 
     def test_unsupported_extension_raises(self):
         with pytest.raises(ValueError, match="Unsupported file type"):

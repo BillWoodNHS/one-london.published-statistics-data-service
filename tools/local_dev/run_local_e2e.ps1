@@ -1,6 +1,7 @@
 param(
 	[switch]$UseFixtures,
 	[switch]$SkipDuckdbLoad,
+	[switch]$SkipDbtRun,
 	[ValidateSet('full', 'scrape-only', 'load-only')]
 	[string]$ExecutionMode = 'full',
 	[string]$DatasetProfileFile = '',
@@ -15,6 +16,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$env:PYTHONPATH = $repoRoot
 Set-Location $repoRoot
 
 $env:LOCAL_STORAGE_MODE = 'true'
@@ -42,6 +44,9 @@ if ($UseFixtures) {
 }
 if ($SkipDuckdbLoad) {
 	$argsList += '--skip-duckdb-load'
+}
+if ($SkipDbtRun) {
+	$argsList += '--skip-dbt-run'
 }
 if ($DatasetProfileFile) {
 	$argsList += '--dataset-profile-file'

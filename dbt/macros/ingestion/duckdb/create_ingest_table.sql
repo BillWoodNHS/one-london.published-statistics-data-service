@@ -1,0 +1,1 @@
+{# DuckDB adapter - uses generic macro implementation from parent #}

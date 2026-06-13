@@ -74,9 +74,9 @@ def _sha256(data: bytes) -> str:
 
 
 def _first_csv_from_zip(payload: bytes) -> Tuple[str, bytes, Dict[str, Any]]:
-    """Extract the first CSV or Excel file from a ZIP payload.
+    """Extract the first CSV, Excel, or ODS file from a ZIP payload.
 
-    Converts Excel to CSV if no CSV is found.
+    Converts spreadsheet files to CSV if no CSV is found.
     """
     with zipfile.ZipFile(io.BytesIO(payload)) as zf:
         for name in zf.namelist():
@@ -104,7 +104,17 @@ def _first_csv_from_zip(payload: bytes) -> Tuple[str, bytes, Dict[str, Any]]:
                 metrics["archive_member_name"] = Path(name).name
                 return csv_name, csv_payload, metrics
 
-    raise ValueError("ZIP did not contain CSV or Excel files")
+        for name in zf.namelist():
+            if name.lower().endswith(".ods"):
+                data = zf.read(name)
+                ext = Path(name).suffix.lower() or ".ods"
+                csv_name, csv_payload, metrics = _ods_to_csv(Path(name).stem, data, ext)
+                metrics["source_file_type"] = "zip"
+                metrics["extracted_from_archive"] = True
+                metrics["archive_member_name"] = Path(name).name
+                return csv_name, csv_payload, metrics
+
+    raise ValueError("ZIP did not contain CSV, Excel, or ODS files")
 
 
 def _excel_to_csv(
@@ -139,6 +149,38 @@ def _excel_to_csv(
         os.unlink(tmp_path)
 
 
+def _ods_to_csv(
+    base_name: str, payload: bytes, extension: str = ".ods"
+) -> Tuple[str, bytes, Dict[str, Any]]:
+    """Convert an ODS file payload to CSV bytes.
+
+    Returns the new filename and content.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
+        tmp.write(payload)
+        tmp_path = tmp.name
+
+    try:
+        df = pd.read_excel(tmp_path, engine="odf")
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(df.columns.tolist())
+        writer.writerows(df.values.tolist())
+        csv_payload = buffer.getvalue().encode("utf-8")
+        row_count = int(len(df.index))
+        metrics: Dict[str, Any] = {
+            "source_file_type": "ods",
+            "extracted_from_archive": False,
+            "converted_to_csv": True,
+            "archive_member_name": None,
+            "raw_row_count": row_count,
+            "normalized_row_count": row_count,
+        }
+        return f"{base_name}.csv", csv_payload, metrics
+    finally:
+        os.unlink(tmp_path)
+
+
 def normalize_to_csv(file_url: str) -> Tuple[str, bytes, str, Dict[str, Any]]:
     """Download and normalize a file from a URL to CSV.
 
@@ -156,7 +198,7 @@ def normalize_to_csv(file_url: str) -> Tuple[str, bytes, str, Dict[str, Any]]:
 def normalize_payload_to_csv(
     source_name: str, payload: bytes
 ) -> Tuple[str, bytes, str, Dict[str, Any]]:
-    """Normalize a file payload (CSV, ZIP, or Excel) to CSV.
+    """Normalize a file payload (CSV, ZIP, Excel, or ODS) to CSV.
 
     Returns filename, content bytes, SHA-256 hash, and telemetry metrics.
     """
@@ -185,6 +227,13 @@ def normalize_payload_to_csv(
     if lowered.endswith(".xlsx") or lowered.endswith(".xls"):
         ext = Path(source_name).suffix.lower() or ".xlsx"
         name, csv_payload, metrics = _excel_to_csv(Path(source_name).stem, payload, ext)
+        metrics["source_bytes"] = len(payload)
+        metrics["normalized_bytes"] = len(csv_payload)
+        return name, csv_payload, content_hash, metrics
+
+    if lowered.endswith(".ods"):
+        ext = Path(source_name).suffix.lower() or ".ods"
+        name, csv_payload, metrics = _ods_to_csv(Path(source_name).stem, payload, ext)
         metrics["source_bytes"] = len(payload)
         metrics["normalized_bytes"] = len(csv_payload)
         return name, csv_payload, content_hash, metrics

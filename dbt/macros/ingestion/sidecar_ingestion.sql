@@ -1,36 +1,72 @@
 {% macro create_sidecar_table(database_name, schema_name, table_name) %}
-    {% set sql %}
-        create table if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(table_name) }} (
-            _CONTRACT_VERSION varchar,
-            _DOWNLOADED_AT varchar,
-            _INGESTED_AT varchar,
-            _SOURCE_FILE_PATH varchar,
-            _SOURCE_FILE_NAME varchar,
-            _FILE_CONTENT_KEY varchar,
-            _SUBJECT_PERIOD_FROM varchar,
-            _SUBJECT_PERIOD_TO varchar,
-            _SUBJECT_PERIOD_COVERAGE_TYPE varchar,
-            _SUBJECT_PERIOD_INFERENCE_METHOD varchar,
-            _SUBJECT_PERIOD_INFERENCE_SOURCE varchar,
-            _SUBJECT_PERIOD_INFERENCE_CONFIDENCE varchar,
-            _FILE_SCOPE_DURATION_TYPE varchar,
-            _FILE_SCOPE_DURATION_VALUE number,
-            _FILE_SCOPE_DURATION_UNIT varchar,
-            _FILE_SCOPE_FISCAL_YEAR_START_MONTH number,
-            _BREAKDOWN_GRANULARITY varchar,
-            _PUBLICATION_DATE varchar,
-            _PUBLICATION_DATE_SOURCE varchar,
-            _ACQUISITION_METHOD varchar,
-            _FALLBACK_REASON varchar,
-            _LOAD_ID varchar,
-            _SERIES_ID varchar,
-            _SUB_DATASET_ID varchar,
-            _TARGET_PATH varchar,
-            _PAYLOAD_STAGE_PATH varchar,
-            _SOURCE_ETAG varchar,
-            _SOURCE_LAST_MODIFIED varchar
-        )
-    {% endset %}
+    {% if target.type == 'duckdb' %}
+        {% set sql %}
+            create schema if not exists {{ adapter.quote(schema_name) }};
+            create table if not exists {{ adapter.quote(schema_name) }}.{{ adapter.quote(table_name) }} (
+                _CONTRACT_VERSION varchar,
+                _DOWNLOADED_AT varchar,
+                _INGESTED_AT varchar,
+                _SOURCE_FILE_PATH varchar,
+                _SOURCE_FILE_NAME varchar,
+                _FILE_CONTENT_KEY varchar,
+                _SUBJECT_PERIOD_FROM varchar,
+                _SUBJECT_PERIOD_TO varchar,
+                _SUBJECT_PERIOD_COVERAGE_TYPE varchar,
+                _SUBJECT_PERIOD_INFERENCE_METHOD varchar,
+                _SUBJECT_PERIOD_INFERENCE_SOURCE varchar,
+                _SUBJECT_PERIOD_INFERENCE_CONFIDENCE varchar,
+                _FILE_SCOPE_DURATION_TYPE varchar,
+                _FILE_SCOPE_DURATION_VALUE bigint,
+                _FILE_SCOPE_DURATION_UNIT varchar,
+                _FILE_SCOPE_FISCAL_YEAR_START_MONTH bigint,
+                _BREAKDOWN_GRANULARITY varchar,
+                _PUBLICATION_DATE varchar,
+                _PUBLICATION_DATE_SOURCE varchar,
+                _ACQUISITION_METHOD varchar,
+                _FALLBACK_REASON varchar,
+                _LOAD_ID varchar,
+                _SERIES_ID varchar,
+                _SUB_DATASET_ID varchar,
+                _TARGET_PATH varchar,
+                _PAYLOAD_STAGE_PATH varchar,
+                _SOURCE_ETAG varchar,
+                _SOURCE_LAST_MODIFIED varchar
+            )
+        {% endset %}
+    {% else %}
+        {% set sql %}
+            create table if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(table_name) }} (
+                _CONTRACT_VERSION varchar,
+                _DOWNLOADED_AT varchar,
+                _INGESTED_AT varchar,
+                _SOURCE_FILE_PATH varchar,
+                _SOURCE_FILE_NAME varchar,
+                _FILE_CONTENT_KEY varchar,
+                _SUBJECT_PERIOD_FROM varchar,
+                _SUBJECT_PERIOD_TO varchar,
+                _SUBJECT_PERIOD_COVERAGE_TYPE varchar,
+                _SUBJECT_PERIOD_INFERENCE_METHOD varchar,
+                _SUBJECT_PERIOD_INFERENCE_SOURCE varchar,
+                _SUBJECT_PERIOD_INFERENCE_CONFIDENCE varchar,
+                _FILE_SCOPE_DURATION_TYPE varchar,
+                _FILE_SCOPE_DURATION_VALUE number,
+                _FILE_SCOPE_DURATION_UNIT varchar,
+                _FILE_SCOPE_FISCAL_YEAR_START_MONTH number,
+                _BREAKDOWN_GRANULARITY varchar,
+                _PUBLICATION_DATE varchar,
+                _PUBLICATION_DATE_SOURCE varchar,
+                _ACQUISITION_METHOD varchar,
+                _FALLBACK_REASON varchar,
+                _LOAD_ID varchar,
+                _SERIES_ID varchar,
+                _SUB_DATASET_ID varchar,
+                _TARGET_PATH varchar,
+                _PAYLOAD_STAGE_PATH varchar,
+                _SOURCE_ETAG varchar,
+                _SOURCE_LAST_MODIFIED varchar
+            )
+        {% endset %}
+    {% endif %}
 
     {% do run_query(sql) %}
     {{ return('created sidecar metadata table ' ~ schema_name ~ '.' ~ table_name) }}
@@ -38,6 +74,10 @@
 
 
 {% macro create_sidecar_stage_and_pipe(database_name, infra_schema, stage_name, storage_integration, url, file_format, pipe_name, target_table, target_schema) %}
+    {% if target.type != 'snowflake' %}
+        {{ return('skipped sidecar stage/pipe for adapter ' ~ target.type) }}
+    {% endif %}
+
     {% set create_stage %}
         create stage if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(infra_schema) }}.{{ adapter.quote(stage_name) }}
         storage_integration = {{ adapter.quote(storage_integration) }}
@@ -98,26 +138,29 @@
     {% set storage_integration_name = var('storage_integration_name') %}
     {% set telemetry_file_format_name = var('telemetry_file_format_name') %}
 
-    {% if adls_url_root == '' %}
+    {% if adls_url_root == '' and target.type == 'snowflake' %}
         {{ exceptions.raise_compiler_error('adls_url_root var is required for sidecar provisioning.') }}
     {% endif %}
 
-    {% set sidecar_url = adls_url_root.rstrip('/') ~ '/' %}
+    {% set sidecar_url = adls_url_root.rstrip('/') ~ '/' if adls_url_root != '' else '' %}
 
-    {% do one_london_psds.create_storage_integration(storage_integration_name, adls_url_root, var('managed_identity_tenant_id')) %}
-    {% do one_london_psds.create_json_file_format(database_name, infra_schema, telemetry_file_format_name) %}
     {% do one_london_psds.create_sidecar_table(database_name, ingest_schema, 'INGEST_METADATA') %}
-    {% do one_london_psds.create_sidecar_stage_and_pipe(
-        database_name,
-        infra_schema,
-        'STG_SIDECAR',
-        storage_integration_name,
-        sidecar_url,
-        telemetry_file_format_name,
-        'PIPE_SIDECAR',
-        'INGEST_METADATA',
-        target_schema=ingest_schema
-    ) %}
+
+    {% if target.type == 'snowflake' %}
+        {% do one_london_psds.create_storage_integration(storage_integration_name, adls_url_root, var('managed_identity_tenant_id')) %}
+        {% do one_london_psds.create_json_file_format(database_name, infra_schema, telemetry_file_format_name) %}
+        {% do one_london_psds.create_sidecar_stage_and_pipe(
+            database_name,
+            infra_schema,
+            'STG_SIDECAR',
+            storage_integration_name,
+            sidecar_url,
+            telemetry_file_format_name,
+            'PIPE_SIDECAR',
+            'INGEST_METADATA',
+            target_schema=ingest_schema
+        ) %}
+    {% endif %}
 
     {{ return({'sidecar_url': sidecar_url}) }}
 {% endmacro %}

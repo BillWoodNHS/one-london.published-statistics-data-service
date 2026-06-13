@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -44,7 +45,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-duckdb-load",
         action="store_true",
-        help="Skip loading downloaded CSVs to DuckDB (ingestion only).",
+        help=(
+            "Skip loading local artifacts to DuckDB and skip dbt execution "
+            "(ingestion-only run)."
+        ),
+    )
+    parser.add_argument(
+        "--skip-dbt-run",
+        action="store_true",
+        help=(
+            "Skip dbt provisioning/model execution after local artifacts are "
+            "loaded to DuckDB."
+        ),
     )
     parser.add_argument(
         "--execution-mode",
@@ -121,6 +133,112 @@ def _run_pytest() -> int:
     return subprocess.call([sys.executable, "-m", "pytest", "-q"], cwd=REPO_ROOT)
 
 
+def _dbt_command(*args: str) -> list[str]:
+    return [sys.executable, "-m", "dbt.cli.main", *args]
+
+
+def _dbt_available() -> bool:
+    result = subprocess.run(
+        _dbt_command("--version"),
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _run_dbt_local() -> int:
+    if not _dbt_available():
+        print("✗ dbt is not available in this Python environment.")
+        print("  Install dbt-duckdb in your selected interpreter and retry.")
+        return 1
+
+    project_dir = str(REPO_ROOT / "dbt")
+    profiles_dir = str(REPO_ROOT / "tests" / "fixtures" / "dbt")
+    manifest_root = Path(os.environ["MANIFEST_ROOT"])
+    manifests = sorted(
+        list(manifest_root.glob("*.yml")) + list(manifest_root.glob("*.yaml"))
+    )
+
+    print("\nRunning dbt deps...")
+    deps_code = subprocess.call(
+        _dbt_command(
+            "deps",
+            "--target",
+            "test",
+            "--project-dir",
+            project_dir,
+            "--profiles-dir",
+            profiles_dir,
+        ),
+        cwd=REPO_ROOT,
+    )
+    if deps_code != 0:
+        return deps_code
+
+    print("\nProvisioning sidecar and telemetry pipelines...")
+    for operation in ("provision_sidecar_pipeline", "provision_telemetry_pipeline"):
+        code = subprocess.call(
+            _dbt_command(
+                "run-operation",
+                operation,
+                "--target",
+                "test",
+                "--args",
+                "{}",
+                "--project-dir",
+                project_dir,
+                "--profiles-dir",
+                profiles_dir,
+            ),
+            cwd=REPO_ROOT,
+        )
+        if code != 0:
+            return code
+
+    print(f"\nProvisioning dataset objects for {len(manifests)} manifest(s)...")
+    for manifest_path in manifests:
+        args_json = json.dumps({"manifest_path": str(manifest_path)})
+        for operation in (
+            "provision_series_from_manifest",
+            "provision_presentation_from_manifest",
+        ):
+            code = subprocess.call(
+                _dbt_command(
+                    "run-operation",
+                    operation,
+                    "--target",
+                    "test",
+                    "--args",
+                    args_json,
+                    "--project-dir",
+                    project_dir,
+                    "--profiles-dir",
+                    profiles_dir,
+                ),
+                cwd=REPO_ROOT,
+            )
+            if code != 0:
+                return code
+
+    print("\nRunning dbt telemetry models...")
+    return subprocess.call(
+        _dbt_command(
+            "run",
+            "--target",
+            "test",
+            "--select",
+            "telemetry",
+            "--project-dir",
+            project_dir,
+            "--profiles-dir",
+            profiles_dir,
+        ),
+        cwd=REPO_ROOT,
+    )
+
+
 def _run_ingestion() -> int:
     """Execute ingestion for all manifests in MANIFEST_ROOT.
 
@@ -143,8 +261,8 @@ def _run_ingestion() -> int:
         return 1
 
 
-def _load_csvs_to_duckdb() -> int:
-    """Load downloaded CSVs to DuckDB for inspection.
+def _load_local_artifacts_to_duckdb() -> int:
+    """Load downloaded artifacts into dbt-compatible ingest DuckDB tables.
 
     Returns:
         0 on success (or duckdb not available), non-zero on failure.
@@ -154,6 +272,8 @@ def _load_csvs_to_duckdb() -> int:
         "tools/local_dev/load_csvs_to_duckdb.py",
         "--local-root",
         str(LOCAL_ADLS),
+        "--manifest-root",
+        os.environ["MANIFEST_ROOT"],
         "--duckdb-file",
         os.environ["DUCKDB_FILE"],
     ]
@@ -217,10 +337,19 @@ def main() -> int:
         print("\nRunning direct ingestion simulation (full end-to-end)...")
         code = _run_ingestion()
         if code == 0 and not args.skip_duckdb_load:
-            print("\nLoading downloaded CSVs to DuckDB...")
-            load_code = _load_csvs_to_duckdb()
+            print("\nLoading local artifacts to DuckDB ingest tables...")
+            load_code = _load_local_artifacts_to_duckdb()
             if load_code != 0:
-                print("⚠ Warning: DuckDB load failed (verification may be incomplete)")
+                print("✗ DuckDB artifact load failed.")
+                return load_code
+            if not args.skip_dbt_run:
+                print("\nRunning dbt provisioning and telemetry models...")
+                dbt_code = _run_dbt_local()
+                if dbt_code != 0:
+                    print("✗ dbt execution failed.")
+                    return dbt_code
+        elif args.skip_duckdb_load:
+            print("\nSkipping DuckDB artifact load and dbt execution.")
 
     if code != 0:
         return code
