@@ -139,7 +139,7 @@ def _run_pytest() -> int:
 
 
 def _dbt_command(*args: str) -> list[str]:
-    #return [sys.executable, "-m", "dbt.cli.main", *args]
+    # return [sys.executable, "-m", "dbt.cli.main", *args]
     return ["dbt", *args]
 
 

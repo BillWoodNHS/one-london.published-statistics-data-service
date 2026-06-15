@@ -119,7 +119,7 @@ def _all_csvs_from_zip(payload: bytes) -> List[Tuple[str, bytes, Dict[str, Any]]
 
     if not results:
         raise ValueError("ZIP did not contain CSV, Excel, or ODS files")
-        
+
     return results
 
 
@@ -226,7 +226,8 @@ def normalize_payload_to_csv(
 ) -> List[Tuple[str, bytes, str, Dict[str, Any]]]:
     ## Normalize a file payload (CSV, ZIP, Excel, or ODS) to CSV.
     ## Returns a list of filenames, content bytes, SHA-256 hash, and telemetry metrics.
-    ## List is used to account for ZIP files that may contain multiple CSVs or extractable files.
+    ## List is used to account for ZIP files that may contain multiple CSVs
+    ## or extractable files.
 
     content_hash = _sha256(payload)
     lowered = source_name.lower()
@@ -247,16 +248,18 @@ def normalize_payload_to_csv(
     if lowered.endswith(".zip"):
         outputs = []
         for name, csv_payload, metrics in _all_csvs_from_zip(payload):
-            outputs.append((
-                name,
-                csv_payload,
-                _sha256(csv_payload), # per-file hash for uniqueness
-                {
-                    **metrics,
-                    "source_bytes": len(payload),
-                    "normalized_bytes": len(csv_payload),
-                }
-            ))
+            outputs.append(
+                (
+                    name,
+                    csv_payload,
+                    _sha256(csv_payload),  # per-file hash for uniqueness
+                    {
+                        **metrics,
+                        "source_bytes": len(payload),
+                        "normalized_bytes": len(csv_payload),
+                    },
+                )
+            )
         return outputs
 
     if lowered.endswith(".xlsx") or lowered.endswith(".xls"):

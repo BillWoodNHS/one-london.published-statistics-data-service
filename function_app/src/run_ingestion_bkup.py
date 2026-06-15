@@ -21,7 +21,7 @@ from .download_and_normalize import (
 )
 from .manifest_loader import load_manifests
 from .manual_sources import discover_manual_files
-from .models import DatasetSeriesConfig, DiscoveredFile, LoadArtifact, NormalizedFile
+from .models import DatasetSeriesConfig, DiscoveredFile, LoadArtifact
 from .scraper import discover_files
 from .settings import MIN_PLAUSIBLE_PUBLICATION_DATE
 
@@ -178,7 +178,8 @@ def _latest_record_for_source(
     records: List[Dict[str, Any]], source_url: str, filename: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     matches = [
-        record for record in records 
+        record
+        for record in records
         if record.get("_SOURCE_FILE_PATH") == source_url
         and (filename is None or record.get("_SOURCE_FILE_NAME") == filename)
     ]
@@ -536,9 +537,7 @@ def execute_ingestion() -> Dict[str, Any]:
             downloaded_at = now_utc_compact()
             for normalised_file in results:
                 latest = _latest_record_for_source(
-                    records,
-                    normalised_file.source_url,
-                    normalised_file.filename
+                    records, normalised_file.source_url, normalised_file.filename
                 )
 
                 if normalised_file.metrics.get("extracted_from_archive"):
@@ -565,11 +564,14 @@ def execute_ingestion() -> Dict[str, Any]:
                     source_url=normalised_file.source_url,
                     file_name=normalised_file.filename,
                     raw_row_count=normalised_file.metrics.get("raw_row_count"),
-                    normalized_row_count=normalised_file.metrics.get("normalized_row_count"),
+                    normalized_row_count=normalised_file.metrics.get(
+                        "normalized_row_count"
+                    ),
                     normalized_bytes=normalised_file.metrics.get("normalized_bytes"),
                 )
 
-                if latest and latest.get("_FILE_CONTENT_KEY") == normalised_file.content_hash:
+                content_key = normalised_file.content_hash
+                if latest and latest.get("_FILE_CONTENT_KEY") == content_key:
                     _emit_event(
                         telemetry_events,
                         run_id=run_id,
@@ -582,13 +584,16 @@ def execute_ingestion() -> Dict[str, Any]:
                         source_content_hash=normalised_file.content_hash,
                         skip_reason="content_unchanged",
                     )
-                    logging.info("Skipped upload (content unchanged): %s", normalised_file.source_url)
+                    logging.info(
+                        "Skipped upload (content unchanged): %s",
+                        normalised_file.source_url,
+                    )
                     continue
 
                 item.publication_date_value = _resolve_publication_datetime(
                     item.publication_date_value
                 )
-                #downloaded_at = now_utc_compact()
+                # downloaded_at = now_utc_compact()
                 artifact = build_artifact(
                     normalised_file,
                     normalised_file.filename,
@@ -598,7 +603,9 @@ def execute_ingestion() -> Dict[str, Any]:
                 )
 
                 upload_bytes(artifact.adls_path, normalised_file.payload)
-                record = _write_audit_record(artifact, source_etag, source_last_modified)
+                record = _write_audit_record(
+                    artifact, source_etag, source_last_modified
+                )
                 _emit_event(
                     telemetry_events,
                     run_id=run_id,
@@ -612,7 +619,9 @@ def execute_ingestion() -> Dict[str, Any]:
                     source_content_hash=normalised_file.content_hash,
                     load_id=artifact.source_content_hash[:16],
                     raw_row_count=normalised_file.metrics.get("raw_row_count"),
-                    normalized_row_count=normalised_file.metrics.get("normalized_row_count"),
+                    normalized_row_count=normalised_file.metrics.get(
+                        "normalized_row_count"
+                    ),
                     uploaded_path=artifact.adls_path,
                 )
                 uploaded_paths.append(artifact.adls_path)
@@ -669,7 +678,9 @@ def execute_ingestion() -> Dict[str, Any]:
                         source_url=candidate.source_url,
                         file_name=filename,
                         raw_row_count=normalize_metrics.get("raw_row_count"),
-                        normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                        normalized_row_count=normalize_metrics.get(
+                            "normalized_row_count"
+                        ),
                         normalized_bytes=normalize_metrics.get("normalized_bytes"),
                         source_bytes=normalize_metrics.get("source_bytes"),
                         acquisition_method="manual",
@@ -721,7 +732,9 @@ def execute_ingestion() -> Dict[str, Any]:
                         source_content_hash=content_hash,
                         load_id=artifact.source_content_hash[:16],
                         raw_row_count=normalize_metrics.get("raw_row_count"),
-                        normalized_row_count=normalize_metrics.get("normalized_row_count"),
+                        normalized_row_count=normalize_metrics.get(
+                            "normalized_row_count"
+                        ),
                         uploaded_path=artifact.adls_path,
                         acquisition_method="manual",
                     )
