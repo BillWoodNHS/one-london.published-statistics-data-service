@@ -38,6 +38,41 @@ def _fq(schema: str, table: str) -> str:
     return f"{_qident(schema)}.{_qident(table)}"
 
 
+def _execute_with_encoding_retry(con, sql, params, csv_path: Path):
+    encodings = [
+        "utf-8",    # default encoding
+        "cp1252",   # Windows-1252 encoding
+        "latin-1",  # ISO-8859-1 encoding
+        "ascii",    # ASCII encoding
+        "utf-16",   # UTF-16 encoding
+        "utf-16le", # UTF-16 Little Endian encoding
+        "utf-16be", # UTF-16 Big Endian encoding
+        "utf-32",   # UTF-32 encoding
+        "utf-32le", # UTF-32 Little Endian encoding
+        "utf-32be", # UTF-32 Big Endian encoding
+    ]
+
+    last_error = None
+    for encoding in encodings:
+        try:
+            logger.info("Attempting to execute SQL with encoding %s for file %s", encoding, csv_path)
+            con.execute(sql, params + [encoding])
+            logger.info("Successfully executed SQL with encoding %s for file %s", encoding, csv_path)
+            return encoding
+        
+        except Exception as ex:
+            last_error = ex
+            logger.warning(
+                "Error executing SQL with encoding %s for file %s: %s. Retrying with next encoding.",
+                encoding,
+                csv_path,
+                str(ex)[:200],  # Limit error message length
+            )
+    
+    raise RuntimeError(
+        "Failed to execute SQL with all attempted encodings for file {}. Last error: {}".format(csv_path, str(last_error)[:200])
+    )
+
 def _create_schemas(con: duckdb.DuckDBPyConnection) -> None:
     for schema in ("INGEST", "RAW", "PRESENTATION"):
         con.execute(f"create schema if not exists {_qident(schema)}")
@@ -84,7 +119,7 @@ def _ensure_ingest_table_from_csv(
             cast(null as varchar) as _FALLBACK_REASON,
             cast(null as varchar) as _LOAD_ID,
             *
-        from read_csv_auto(?, header=true, all_varchar=true, encoding='UTF-16')
+        from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8')
         limit 0
         """,
         [str(csv_path)],
@@ -107,11 +142,12 @@ def _insert_csv_rows(
     load_id = sidecar.get("_LOAD_ID") or file_content_key[:16]
     row_count = int(
         con.execute(
-            "select count(*) from read_csv_auto(?, header=true, all_varchar=true, encoding='UTF-16')",
+            "select count(*) from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8')",
             [str(csv_path)],
         ).fetchone()[0]
     )
-    con.execute(
+    _execute_with_encoding_retry(
+        con,
         f"""
         insert into {relation}
         select
@@ -124,7 +160,7 @@ def _insert_csv_rows(
             ? as _FALLBACK_REASON,
             ? as _LOAD_ID,
             *
-        from read_csv_auto(?, header=true, all_varchar=true, encoding='UTF-16')
+        from read_csv_auto(?, header=true, all_varchar=true, encoding=?)
         """,
         [
             ingested_at,
@@ -135,7 +171,9 @@ def _insert_csv_rows(
             fallback_reason,
             load_id,
             str(csv_path),
+            # encoding appended by _execute_with_encoding_retry
         ],
+        csv_path
     )
     return row_count
 
@@ -358,7 +396,8 @@ def _load_artifacts(local_root: Path, manifest_root: Path, duckdb_path: Path) ->
         _create_schemas(con)
         ingest_rows = _load_ingest_tables(con, local_root, manifest_root)
         sidecar_rows = _load_sidecar_table(con, local_root)
-        telemetry_rows = _load_telemetry_table(con, local_root)
+        #telemetry_rows = _load_telemetry_table(con, local_root) #TODO: mimic the ingestion telemetry table load
+        telemetry_rows = 0 # TODO: mimic the ingestion telemetry table load
         logger.info(
             "Loaded ingest_rows=%d sidecar_rows=%d telemetry_rows=%d",
             ingest_rows,

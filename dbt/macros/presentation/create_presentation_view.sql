@@ -8,7 +8,7 @@
         create or replace view {{ adapter.quote(presentation_schema) }}.{{ adapter.quote(view_name) }} as
         select
             *,
-            current_timestamp() as _LOADED_AT
+            current_timestamp as _LOADED_AT
         from {{ adapter.quote(raw_schema) }}.{{ adapter.quote(raw_table) }}
         where _SUBJECT_PERIOD_FROM is not null
             and _SUBJECT_PERIOD_TO is not null

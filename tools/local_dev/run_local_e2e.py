@@ -14,7 +14,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from function_app.src.run_ingestion import execute_ingestion  # noqa: E402
+import yaml  # noqa: E402
+
+from function_app.src.run_ingestion import (  # noqa: E402
+    _dataset_filter_sets,
+    execute_ingestion,
+)
 
 LOCAL_ADLS = REPO_ROOT / ".local_adls"
 FULL_MANIFEST_ROOT = REPO_ROOT / "config" / "datasets"
@@ -134,7 +139,8 @@ def _run_pytest() -> int:
 
 
 def _dbt_command(*args: str) -> list[str]:
-    return [sys.executable, "-m", "dbt.cli.main", *args]
+    #return [sys.executable, "-m", "dbt.cli.main", *args]
+    return ["dbt", *args]
 
 
 def _dbt_available() -> bool:
@@ -160,6 +166,24 @@ def _run_dbt_local() -> int:
     manifests = sorted(
         list(manifest_root.glob("*.yml")) + list(manifest_root.glob("*.yaml"))
     )
+
+    include_ids, exclude_ids = _dataset_filter_sets()
+    if include_ids or exclude_ids:
+        filtered_manifests = []
+        for manifest_path in manifests:
+            raw = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+            dataset_id = raw.get("dataset_id", "")
+            if include_ids and dataset_id not in include_ids:
+                continue
+            if dataset_id in exclude_ids:
+                continue
+            filtered_manifests.append(manifest_path)
+        print(
+            f"Dataset filter applied to dbt provisioning: "
+            f"include={sorted(include_ids)} exclude={sorted(exclude_ids)} "
+            f"selected={len(filtered_manifests)}/{len(manifests)}"
+        )
+        manifests = filtered_manifests
 
     print("\nRunning dbt deps...")
     deps_code = subprocess.call(

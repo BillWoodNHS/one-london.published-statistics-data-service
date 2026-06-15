@@ -17,6 +17,7 @@ models:
       +schema: PRESENTATION
 
 vars:
+  database_name: ""
   ingest_schema: INGEST
   raw_schema: RAW
   presentation_schema: PRESENTATION
@@ -28,6 +29,9 @@ vars:
   telemetry_prefix: _telemetry/function_app_events
   sidecar_metadata_schema: INGEST
   sidecar_metadata_table: INGEST_METADATA
+  sidecar_metadata_blob_url: ""
+  telemetry_blob_url: ""
+  telemetry_raw_table: INGEST_FUNCTION_APP_EVENTS
   managed_identity_tenant_id: ""
   local_duckdb_validate: false
   metadata_columns:

@@ -1,4 +1,4 @@
-{% macro snowflake__create_telemetry_stage_and_pipe(database_name, infra_schema, stage_name, storage_integration, url, file_format, pipe_name, target_table) %}
+{% macro snowflake__create_telemetry_stage_and_pipe(database_name, infra_schema, stage_name, storage_integration, url, file_format, pipe_name, target_table, target_schema) %}
     {% set create_stage %}
         create stage if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(infra_schema) }}.{{ adapter.quote(stage_name) }}
         storage_integration = {{ adapter.quote(storage_integration) }}
@@ -10,7 +10,7 @@
         create pipe if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(infra_schema) }}.{{ adapter.quote(pipe_name) }}
         auto_ingest = true
         as
-        copy into {{ adapter.quote(database_name) }}.{{ adapter.quote(var('raw_schema')) }}.{{ adapter.quote(target_table) }}
+        copy into {{ adapter.quote(database_name) }}.{{ adapter.quote(target_schema) }}.{{ adapter.quote(target_table) }}
         from (
             select
                 to_timestamp_ntz($1:event_timestamp_utc::string) as EVENT_TIMESTAMP_UTC,

@@ -533,7 +533,7 @@ def execute_ingestion() -> Dict[str, Any]:
                 source_bytes=None,
                 duration_ms=int((time.perf_counter() - download_started) * 1000),
             )
-
+            downloaded_at = now_utc_compact()
             for normalised_file in results:
                 latest = _latest_record_for_source(
                     records,
@@ -588,7 +588,7 @@ def execute_ingestion() -> Dict[str, Any]:
                 item.publication_date_value = _resolve_publication_datetime(
                     item.publication_date_value
                 )
-                downloaded_at = now_utc_compact()
+                #downloaded_at = now_utc_compact()
                 artifact = build_artifact(
                     normalised_file,
                     normalised_file.filename,

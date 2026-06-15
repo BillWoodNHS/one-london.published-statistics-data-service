@@ -1,4 +1,4 @@
-"""Tests for normalize_payload_to_csv, _first_csv_from_zip, _excel_to_csv,
+"""Tests for normalize_payload_to_csv, _all_csvs_from_zip, _excel_to_csv,
 _count_csv_rows, and build_artifact in function_app/src/download_and_normalize.py.
 """
 
@@ -12,9 +12,9 @@ import pandas as pd
 import pytest
 
 from function_app.src.download_and_normalize import (
+    _all_csvs_from_zip,
     _count_csv_rows,
     _excel_to_csv,
-    _first_csv_from_zip,
     _ods_to_csv,
     normalize_payload_to_csv,
 )
@@ -84,14 +84,14 @@ class TestCountCsvRows:
 
 
 # ---------------------------------------------------------------------------
-# _first_csv_from_zip
+# _all_csvs_from_zip
 # ---------------------------------------------------------------------------
 
 
-class TestFirstCsvFromZip:
+class TestAllCsvsFromZip:
     def test_extracts_csv_from_zip(self):
         payload = _make_zip(("data.csv", CSV_SIMPLE))
-        name, content, metrics = _first_csv_from_zip(payload)
+        (name, content, metrics), = _all_csvs_from_zip(payload)
         assert name == "data.csv"
         assert content == CSV_SIMPLE
         assert metrics["source_file_type"] == "zip"
@@ -99,20 +99,24 @@ class TestFirstCsvFromZip:
         assert metrics["converted_to_csv"] is False
         assert metrics["raw_row_count"] == 3
 
-    def test_prefers_csv_over_xlsx_in_zip(self):
+    def test_extracts_all_files_from_zip(self):
         xlsx_payload = _make_xlsx(["a", "b"], [[1, 2]])
         payload = _make_zip(
             ("spreadsheet.xlsx", xlsx_payload),
             ("data.csv", CSV_SIMPLE),
         )
-        name, content, metrics = _first_csv_from_zip(payload)
-        assert name == "data.csv"
-        assert metrics["converted_to_csv"] is False
+        results = _all_csvs_from_zip(payload)
+        names = {name for name, _, _ in results}
+        assert names == {"spreadsheet.csv", "data.csv"}
+
+        by_name = {name: metrics for name, _, metrics in results}
+        assert by_name["spreadsheet.csv"]["converted_to_csv"] is True
+        assert by_name["data.csv"]["converted_to_csv"] is False
 
     def test_converts_xlsx_when_no_csv_in_zip(self):
         xlsx_payload = _make_xlsx(["x", "y"], [[10, 20], [30, 40]])
         payload = _make_zip(("report.xlsx", xlsx_payload))
-        name, content, metrics = _first_csv_from_zip(payload)
+        (name, content, metrics), = _all_csvs_from_zip(payload)
         assert name == "report.csv"
         assert metrics["converted_to_csv"] is True
         assert metrics["source_file_type"] == "zip"
@@ -122,12 +126,12 @@ class TestFirstCsvFromZip:
     def test_raises_when_zip_contains_no_usable_file(self):
         payload = _make_zip(("readme.txt", b"some text"))
         with pytest.raises(ValueError, match="ZIP did not contain"):
-            _first_csv_from_zip(payload)
+            _all_csvs_from_zip(payload)
 
     def test_converts_ods_when_no_csv_or_excel_in_zip(self):
         ods_payload = _make_ods(["x", "y"], [[10, 20], [30, 40]])
         payload = _make_zip(("report.ods", ods_payload))
-        name, content, metrics = _first_csv_from_zip(payload)
+        (name, content, metrics), = _all_csvs_from_zip(payload)
         assert name == "report.csv"
         assert metrics["converted_to_csv"] is True
         assert metrics["source_file_type"] == "zip"
@@ -195,7 +199,7 @@ class TestOdsToCsv:
 
 class TestNormalizePayloadToCsv:
     def test_csv_passthrough(self):
-        name, content, h, metrics = normalize_payload_to_csv("data.csv", CSV_SIMPLE)
+        (name, content, h, metrics), = normalize_payload_to_csv("data.csv", CSV_SIMPLE)
         assert name == "data.csv"
         assert content == CSV_SIMPLE
         assert metrics["source_file_type"] == "csv"
@@ -205,23 +209,33 @@ class TestNormalizePayloadToCsv:
 
     def test_zip_containing_csv(self):
         zip_payload = _make_zip(("result.csv", CSV_SIMPLE))
-        name, content, h, metrics = normalize_payload_to_csv("archive.zip", zip_payload)
+        (name, content, h, metrics), = normalize_payload_to_csv("archive.zip", zip_payload)
         assert name == "result.csv"
         assert metrics["source_file_type"] == "zip"
         assert metrics["extracted_from_archive"] is True
         assert metrics["converted_to_csv"] is False
 
+    def test_zip_containing_multiple_files(self):
+        xlsx = _make_xlsx(["a", "b"], [[1, 2]])
+        zip_payload = _make_zip(
+            ("report.xlsx", xlsx),
+            ("data.csv", CSV_SIMPLE),
+        )
+        results = normalize_payload_to_csv("archive.zip", zip_payload)
+        names = {name for name, _, _, _ in results}
+        assert names == {"report.csv", "data.csv"}
+
     def test_zip_containing_xlsx(self):
         xlsx = _make_xlsx(["a", "b"], [[1, 2]])
         zip_payload = _make_zip(("report.xlsx", xlsx))
-        name, content, h, metrics = normalize_payload_to_csv("archive.zip", zip_payload)
+        (name, content, h, metrics), = normalize_payload_to_csv("archive.zip", zip_payload)
         assert name == "report.csv"
         assert metrics["converted_to_csv"] is True
         assert metrics["source_file_type"] == "zip"
 
     def test_bare_xlsx(self):
         xlsx = _make_xlsx(["col"], [["val1"], ["val2"]])
-        name, content, h, metrics = normalize_payload_to_csv("report.xlsx", xlsx)
+        (name, content, h, metrics), = normalize_payload_to_csv("report.xlsx", xlsx)
         assert name == "report.csv"
         assert metrics["source_file_type"] == "excel"
         assert metrics["converted_to_csv"] is True
@@ -230,12 +244,12 @@ class TestNormalizePayloadToCsv:
     def test_bare_xls_extension_handled(self):
         # Build a valid xlsx and lie about the extension
         xlsx = _make_xlsx(["x"], [[1]])
-        name, content, h, metrics = normalize_payload_to_csv("old.xls", xlsx)
+        (name, content, h, metrics), = normalize_payload_to_csv("old.xls", xlsx)
         assert name == "old.csv"
 
     def test_bare_ods(self):
         ods = _make_ods(["col"], [["val1"], ["val2"]])
-        name, content, h, metrics = normalize_payload_to_csv("report.ods", ods)
+        (name, content, h, metrics), = normalize_payload_to_csv("report.ods", ods)
         assert name == "report.csv"
         assert metrics["source_file_type"] == "ods"
         assert metrics["converted_to_csv"] is True
@@ -244,7 +258,7 @@ class TestNormalizePayloadToCsv:
     def test_zip_containing_ods(self):
         ods = _make_ods(["a", "b"], [[1, 2]])
         zip_payload = _make_zip(("report.ods", ods))
-        name, content, h, metrics = normalize_payload_to_csv("archive.zip", zip_payload)
+        (name, content, h, metrics), = normalize_payload_to_csv("archive.zip", zip_payload)
         assert name == "report.csv"
         assert metrics["converted_to_csv"] is True
         assert metrics["source_file_type"] == "zip"
@@ -253,21 +267,20 @@ class TestNormalizePayloadToCsv:
         with pytest.raises(ValueError, match="Unsupported file type"):
             normalize_payload_to_csv("report.pdf", b"%PDF-1.4")
 
-    def test_content_hash_is_of_original_payload(self):
+    def test_zip_member_content_hash_is_of_extracted_content(self):
         import hashlib
 
         zip_payload = _make_zip(("x.csv", CSV_SIMPLE))
-        _, _, h, _ = normalize_payload_to_csv("archive.zip", zip_payload)
-        expected = hashlib.sha256(zip_payload).hexdigest()
-        assert h == expected
+        (_, content, h, _), = normalize_payload_to_csv("archive.zip", zip_payload)
+        assert h == hashlib.sha256(content).hexdigest()
 
     def test_source_and_normalized_bytes_in_metrics(self):
         zip_payload = _make_zip(("x.csv", CSV_SIMPLE))
-        _, content, _, metrics = normalize_payload_to_csv("archive.zip", zip_payload)
+        (_, content, _, metrics), = normalize_payload_to_csv("archive.zip", zip_payload)
         assert metrics["source_bytes"] == len(zip_payload)
         assert metrics["normalized_bytes"] == len(content)
 
     def test_csv_filename_preserved_with_directory_stripped(self):
-        name, _, _, _ = normalize_payload_to_csv("subdir/data.csv", CSV_SIMPLE)
+        (name, _, _, _), = normalize_payload_to_csv("subdir/data.csv", CSV_SIMPLE)
         # Should preserve original source_name
         assert "data.csv" in name

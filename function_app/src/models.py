@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -164,4 +164,25 @@ class LoadArtifact:
     acquisition_method: str
     fallback_reason: str
     downloaded_at: str = ""
+    adls_path_prefix: str = ""
+
+
+@dataclass
+class NormalizedFile:
+    """Represents a normalized file ready for loading, with all required metadata."""
+
+    filename: str
+    payload: bytes
+    content_hash: str
+    metrics: Dict[str, Any]
+    # per-file metadata
+    dataset_id: str
+    sub_dataset_id: str
+    series_id: str
+    source_url: str
+    publication_date_value: Optional[str]
+    link_text: str
+    subject_period_hint: Optional[str] = None
+    page_text: str = ""
+    period_coverage_hint: Optional[PeriodCoverageHint] = None
     adls_path_prefix: str = ""

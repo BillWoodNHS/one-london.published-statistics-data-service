@@ -20,27 +20,25 @@
 
         {% do one_london_psds.create_presentation_view(
             database_name,
+            presentation_schema,
+            presentation_view,
             raw_schema,
             raw_view,
-            presentation_schema,
-            presentation_view
+            reporting_columns
         ) %}
 
         {% do one_london_psds.create_max_publication_view(
             database_name,
             presentation_schema,
-            presentation_view,
             max_pub_view,
-            reporting_columns
+            presentation_view
         ) %}
 
         {% do one_london_psds.create_current_revision_view(
             database_name,
             presentation_schema,
-            presentation_view,
-            max_pub_view,
             current_revision_view,
-            reporting_columns
+            max_pub_view
         ) %}
 
         {% do outputs.append({'presentation_view': presentation_view, 'max_publication_view': max_pub_view, 'current_revision_view': current_revision_view}) %}

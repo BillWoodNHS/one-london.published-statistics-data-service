@@ -11,6 +11,7 @@ from function_app.src.models import (
     DatasetSeriesConfig,
     DiscoveredFile,
     FallbackConfig,
+    NormalizedFile,
     PublicationDateRule,
     ScrapeStep,
     TargetConfig,
@@ -73,21 +74,33 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     def fake_download_blob_bytes(blob_path: str) -> bytes:
         return storage[blob_path]
 
-    def fake_normalize_to_csv(file_url: str):
+    def fake_normalize_to_csv(item: DiscoveredFile):
         normalize_call_count["count"] += 1
-        return (
-            "restrictive.csv",
-            b"A,B\n1,2\n",
-            "hash-123",
-            {
-                "source_bytes": 8,
-                "normalized_bytes": 8,
-                "raw_row_count": 1,
-                "normalized_row_count": 1,
-                "extracted_from_archive": False,
-                "archive_member_name": None,
-            },
-        )
+        return [
+            NormalizedFile(
+                filename="restrictive.csv",
+                payload=b"A,B\n1,2\n",
+                content_hash="hash-123",
+                metrics={
+                    "source_bytes": 8,
+                    "normalized_bytes": 8,
+                    "raw_row_count": 1,
+                    "normalized_row_count": 1,
+                    "extracted_from_archive": False,
+                    "archive_member_name": None,
+                },
+                dataset_id=item.dataset_id,
+                sub_dataset_id=item.sub_dataset_id,
+                series_id=item.series_id,
+                source_url=item.source_url,
+                publication_date_value=item.publication_date_value,
+                link_text=item.link_text,
+                subject_period_hint=item.subject_period_hint,
+                page_text=item.page_text,
+                period_coverage_hint=item.period_coverage_hint,
+                adls_path_prefix=item.adls_path_prefix,
+            )
+        ]
 
     monkeypatch.setattr(
         "function_app.src.run_ingestion.load_manifests", lambda _: [config]

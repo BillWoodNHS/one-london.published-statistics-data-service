@@ -7,14 +7,14 @@
     #}
     {{ log('Provisioning telemetry pipeline...', info=true) }}
 
-    {% set database = var('database_name') %}
+    {% set database = target.database %}
     {% set infra_schema = var('infra_schema') %}
-    {% set raw_schema = var('raw_schema') %}
+    {% set ingest_schema = var('ingest_schema') %}
     {% set telemetry_table = var('telemetry_raw_table') %}
-    {% set storage_integration = var('managed_identity_storage_integration') %}
+    {% set storage_integration = var('storage_integration_name') %}
     {% set telemetry_url = var('telemetry_blob_url') %}
 
-    {{ create_telemetry_raw_table(database, raw_schema, telemetry_table) }}
+    {{ create_telemetry_raw_table(database, ingest_schema, telemetry_table) }}
 
     {% if target.type == 'snowflake' %}
         {% if telemetry_url == '' %}
@@ -26,7 +26,7 @@
 
         {% set stage_name = 'TELEMETRY_STAGE' %}
         {% set pipe_name = 'TELEMETRY_PIPE' %}
-        {{ create_telemetry_stage_and_pipe(database, infra_schema, stage_name, storage_integration, telemetry_url, json_format, pipe_name, telemetry_table) }}
+        {{ create_telemetry_stage_and_pipe(database, infra_schema, stage_name, storage_integration, telemetry_url, json_format, pipe_name, telemetry_table, ingest_schema) }}
 
         {{ log('✓ Telemetry pipeline provisioned for Snowflake', info=true) }}
     {% elif target.type == 'duckdb' %}
