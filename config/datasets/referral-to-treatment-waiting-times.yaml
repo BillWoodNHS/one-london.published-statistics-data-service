@@ -36,12 +36,12 @@ targets:
       url_pattern: rtt-data-\d{4}-\d{2}
       text_pattern: null
       max_pages: 200
-  reporting_period_columns: []
+  reporting_period_columns: [Period]
   period_coverage:
     file_scope:
-      duration_type: unknown
-      duration_value: null
-      duration_unit: null
+      duration_type: single_period
+      duration_value: 1
+      duration_unit: month
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
