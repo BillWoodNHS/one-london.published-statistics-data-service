@@ -19,7 +19,6 @@ name: CI
 
 on:
   push:
-    branches: [main, "feature/**", "fix/**", "bill/**"]
   pull_request:
     branches: [main]
 

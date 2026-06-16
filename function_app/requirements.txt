@@ -3,6 +3,7 @@ azure-identity
 azure-storage-blob
 beautifulsoup4
 openpyxl
+odfpy
 pandas
 pyyaml
 requests

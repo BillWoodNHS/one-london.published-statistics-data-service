@@ -1,7 +1,7 @@
-# V0.1 Schema Documentation: Complete Overview
+# Current Schema Standard: v0.1
 
 **Last Updated**: May 25, 2026  
-**Status**: ✅ Stable — All 11 datasets validated; backward compatible with v2.0
+**Status**: ✅ Active baseline (pre-live) — legacy v2.0 guidance archived
 
 ---
 
@@ -45,7 +45,7 @@ Introduces:
 
 **Read this when**: Setting up new datasets or updating helper input JSON
 
-### 2. **Schema Migration Guide** — [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md)
+### 2. **Schema Migration Guide (Archived)** — [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md)
 **What it covers**:
 - Why upgrade from v2.0 to v0.1 (with DQMI example)
 - Schema structural changes in detail
@@ -58,7 +58,7 @@ Introduces:
 - Troubleshooting common issues
 - Rollback procedure
 
-**Read this when**: Migrating a dataset from v2.0 to v0.1
+**Read this when**: Reviewing historical migration context
 
 ### 3. **YAML Execution Guide** — [config/YAML_V0P1_EXECUTION_GUIDE.md](config/YAML_V0P1_EXECUTION_GUIDE.md)
 **What it covers**:
@@ -263,7 +263,7 @@ Introduces:
 
 ### For Existing V2.0 Datasets (Optional Upgrade)
 
-Follow [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md) for step-by-step migration.
+Follow [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md) for historical migration context.
 
 ---
 
@@ -271,7 +271,7 @@ Follow [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md) for 
 
 ### Documentation
 - ✅ Updated: [tools/scrape_config_builder/README.md](tools/scrape_config_builder/README.md) — Comprehensive helper documentation with both schemas
-- ✅ Created: [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md) — Migration guide from v2.0 to v0.1
+- ✅ Archived: [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md) — Migration guide from v2.0 to v0.1
 - ✅ Created: [config/YAML_V0P1_EXECUTION_GUIDE.md](config/YAML_V0P1_EXECUTION_GUIDE.md) — Function app YAML interpretation
 
 ### Code (Previously Completed)
@@ -307,7 +307,7 @@ Follow [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md) for 
 
 **For questions about**:
 - **Helper input JSON format**: See [tools/scrape_config_builder/README.md](tools/scrape_config_builder/README.md) → "V0.1 Schema Details"
-- **Migrating datasets**: See [config/SCHEMA_MIGRATION_GUIDE.md](config/SCHEMA_MIGRATION_GUIDE.md)
+- **Migrating datasets (historical)**: See [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md)
 - **How scraper executes YAML**: See [config/YAML_V0P1_EXECUTION_GUIDE.md](config/YAML_V0P1_EXECUTION_GUIDE.md)
 - **Specific dataset issues**: Check `logs/*/matches_found.csv` for discovery errors
 

@@ -324,9 +324,9 @@ Deduplicated (by canonical URL): 17 total files
 
 ---
 
-## Backward Compatibility: v2.0 YAML Support
+## Legacy Support: v2.0 YAML
 
-The scraper maintains full backward compatibility with v2.0 YAML (single `scrape_steps` without `source_pages`):
+The scraper maintains backward compatibility with v2.0 YAML (single `scrape_steps` without `source_pages`):
 
 ```yaml
 # v2.0 (legacy)
@@ -344,7 +344,7 @@ targets:
 - Set `partitioning_strategy: none`
 - Set `sibling_discovery.enabled: false`
 
-**Result**: v2.0 configs continue to work without changes, but cannot benefit from multi-page discovery.
+**Result**: v2.0 configs still load, but v0.1 remains the active authoring standard.
 
 ---
 
@@ -398,7 +398,7 @@ export LOG_LEVEL=DEBUG
 ## Related Documentation
 
 - **Helper README**: [tools/scrape_config_builder/README.md](../../tools/scrape_config_builder/README.md)
-- **Schema Migration Guide**: [config/SCHEMA_MIGRATION_GUIDE.md](SCHEMA_MIGRATION_GUIDE.md)
+- **Schema Migration Guide (Archived)**: [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md)
 - **Scraper Implementation**: [function_app/src/scraper.py](../../function_app/src/scraper.py)
 - **Manifest Loader**: [function_app/src/manifest_loader.py](../../function_app/src/manifest_loader.py)
 - **Data Models**: [function_app/src/models.py](../../function_app/src/models.py)

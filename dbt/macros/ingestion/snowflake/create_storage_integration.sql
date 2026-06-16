@@ -1,10 +1,4 @@
-{% macro normalize_identifier(value) %}
-    {% set cleaned = value | replace('-', '_') | replace(' ', '_') | replace('/', '_') %}
-    {{ return(cleaned | upper) }}
-{% endmacro %}
-
-
-{% macro create_storage_integration(storage_integration_name, allowed_location, tenant_id) %}
+{% macro snowflake__create_storage_integration(storage_integration_name, allowed_location, tenant_id) %}
     {% set sql %}
         create storage integration if not exists {{ adapter.quote(storage_integration_name) }}
         type = external_stage

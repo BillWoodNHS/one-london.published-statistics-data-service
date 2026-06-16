@@ -6,8 +6,9 @@ import logging
 import os
 import time
 import uuid
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import requests
 
@@ -20,11 +21,12 @@ from .download_and_normalize import (
 )
 from .manifest_loader import load_manifests
 from .manual_sources import discover_manual_files
-from .models import LoadArtifact
+from .models import DatasetSeriesConfig, DiscoveredFile, LoadArtifact
 from .scraper import discover_files
 from .settings import MIN_PLAUSIBLE_PUBLICATION_DATE
 
 CONTRACT_VERSION = "1.2.0"
+_EXECUTION_MODES = {"full", "scrape-only", "load-only"}
 
 
 def _manifest_root() -> Path:
@@ -173,10 +175,13 @@ def _load_sidecar_records(series_id: str, sub_dataset_id: str) -> List[Dict[str,
 
 
 def _latest_record_for_source(
-    records: List[Dict[str, Any]], source_url: str
+    records: List[Dict[str, Any]], source_url: str, filename: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     matches = [
-        record for record in records if record.get("_SOURCE_FILE_PATH") == source_url
+        record
+        for record in records
+        if record.get("_SOURCE_FILE_PATH") == source_url
+        and (filename is None or record.get("_SOURCE_FILE_NAME") == filename)
     ]
     if not matches:
         return None
@@ -232,16 +237,179 @@ def _resolve_publication_datetime(value: Optional[str]) -> str:
     return ""
 
 
+def _execution_mode() -> str:
+    configured = os.environ.get("INGEST_EXECUTION_MODE", "full").strip().lower()
+    if configured in _EXECUTION_MODES:
+        return configured
+    logging.warning(
+        "Invalid INGEST_EXECUTION_MODE=%r; defaulting to 'full'", configured
+    )
+    return "full"
+
+
+def _parse_non_negative_int_env(name: str) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return 0
+    try:
+        value = int(raw)
+    except ValueError:
+        logging.warning("Invalid %s=%r; defaulting to 0", name, raw)
+        return 0
+    if value < 0:
+        logging.warning("Negative %s=%r; defaulting to 0", name, raw)
+        return 0
+    return value
+
+
+def _parse_id_list(raw: str) -> Set[str]:
+    return {part.strip() for part in raw.split(",") if part.strip()}
+
+
+def _dataset_filter_sets() -> Tuple[Set[str], Set[str]]:
+    include: Set[str] = set()
+    exclude: Set[str] = set()
+
+    profile_path_raw = os.environ.get("LOCAL_DATASET_PROFILE_FILE", "").strip()
+    if profile_path_raw:
+        profile_path = Path(profile_path_raw)
+        if not profile_path.is_absolute():
+            profile_path = (
+                Path(__file__).resolve().parents[2] / profile_path
+            ).resolve()
+        if profile_path.exists():
+            for line in profile_path.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                key, sep, value = stripped.partition("=")
+                if not sep:
+                    continue
+                normalized_key = key.strip().upper()
+                if normalized_key == "INCLUDE_DATASET_IDS":
+                    include.update(_parse_id_list(value))
+                elif normalized_key == "EXCLUDE_DATASET_IDS":
+                    exclude.update(_parse_id_list(value))
+        else:
+            logging.warning(
+                "LOCAL_DATASET_PROFILE_FILE not found: %s (ignoring)",
+                profile_path,
+            )
+
+    include.update(_parse_id_list(os.environ.get("INCLUDE_DATASET_IDS", "")))
+    exclude.update(_parse_id_list(os.environ.get("EXCLUDE_DATASET_IDS", "")))
+    return include, exclude
+
+
+def _filter_configs(configs: List[DatasetSeriesConfig]) -> List[DatasetSeriesConfig]:
+    include_ids, exclude_ids = _dataset_filter_sets()
+    if not include_ids and not exclude_ids:
+        return configs
+
+    filtered: List[DatasetSeriesConfig] = []
+    for config in configs:
+        if include_ids and config.dataset_id not in include_ids:
+            continue
+        if config.dataset_id in exclude_ids:
+            continue
+        filtered.append(config)
+
+    logging.info(
+        "Dataset filter applied: include=%s exclude=%s selected=%d/%d",
+        sorted(include_ids),
+        sorted(exclude_ids),
+        len(filtered),
+        len(configs),
+    )
+    return filtered
+
+
+def _is_local_mode() -> bool:
+    return os.environ.get("LOCAL_STORAGE_MODE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _apply_discovery_limits(
+    discovered: List[DiscoveredFile],
+    dataset_limit: int,
+    target_limit: int,
+    total_remaining: Optional[int],
+) -> List[DiscoveredFile]:
+    if not discovered:
+        return discovered
+
+    ordered = sorted(
+        discovered,
+        key=lambda item: (
+            item.publication_date_value or "",
+            item.source_url,
+        ),
+        reverse=True,
+    )
+
+    selected: List[DiscoveredFile] = []
+    per_target_counts: Dict[str, int] = defaultdict(int)
+    for item in ordered:
+        if dataset_limit > 0 and len(selected) >= dataset_limit:
+            break
+        if total_remaining is not None and len(selected) >= total_remaining:
+            break
+        if target_limit > 0 and per_target_counts[item.sub_dataset_id] >= target_limit:
+            continue
+
+        per_target_counts[item.sub_dataset_id] += 1
+        selected.append(item)
+
+    return selected
+
+
 def execute_ingestion() -> Dict[str, Any]:
     manifest_root = _manifest_root()
     manual_prefix = _manual_prefix()
+    execution_mode = _execution_mode()
     run_id = _new_run_id()
     telemetry_events: List[Dict[str, Any]] = []
-    configs = load_manifests(manifest_root)
+    configs = _filter_configs(load_manifests(manifest_root))
     uploaded_paths: List[str] = []
+    dataset_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_FILES_PER_DATASET")
+        if _is_local_mode()
+        else 0
+    )
+    target_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_FILES_PER_TARGET")
+        if _is_local_mode()
+        else 0
+    )
+    total_download_limit = (
+        _parse_non_negative_int_env("LOCAL_MAX_TOTAL_FILES") if _is_local_mode() else 0
+    )
+    total_remaining: Optional[int] = (
+        total_download_limit if total_download_limit > 0 else None
+    )
+
+    _emit_event(
+        telemetry_events,
+        run_id=run_id,
+        stage="CONTROL",
+        status="CONFIGURED",
+        attempt_number=1,
+        execution_mode=execution_mode,
+        manifest_root=str(manifest_root),
+        config_count=len(configs),
+        local_max_files_per_dataset=dataset_download_limit,
+        local_max_files_per_target=target_download_limit,
+        local_max_total_files=total_download_limit,
+    )
 
     for config in configs:
         sidecar_cache: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+        dataset_remaining: Optional[int] = (
+            dataset_download_limit if dataset_download_limit > 0 else None
+        )
 
         def _records_for(series_id: str, sub_dataset_id: str) -> List[Dict[str, Any]]:
             key = (series_id, sub_dataset_id)
@@ -254,31 +422,57 @@ def execute_ingestion() -> Dict[str, Any]:
             if config.fallback.manual_drop_path
             else manual_prefix
         )
-        _emit_event(
-            telemetry_events,
-            run_id=run_id,
-            stage="SCAN",
-            status="STARTED",
-            attempt_number=1,
-            series_id=config.series_id,
-            sub_dataset_id=None,
-            source_url=config.entry_url,
-        )
-        scan_started = time.perf_counter()
-        discovered = discover_files(config)
-        _emit_event(
-            telemetry_events,
-            run_id=run_id,
-            stage="SCAN",
-            status="SUCCEEDED",
-            attempt_number=1,
-            series_id=config.series_id,
-            sub_dataset_id=None,
-            source_url=config.entry_url,
-            discovered_file_count=len(discovered),
-            duration_ms=int((time.perf_counter() - scan_started) * 1000),
-        )
-        discovered_targets = {item.sub_dataset_id for item in discovered}
+        discovered: List[DiscoveredFile] = []
+        discovered_targets: Set[str] = set()
+        if execution_mode != "load-only":
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="SCAN",
+                status="STARTED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+            )
+            scan_started = time.perf_counter()
+            discovered = discover_files(config)
+            discovered = _apply_discovery_limits(
+                discovered,
+                dataset_limit=dataset_download_limit,
+                target_limit=target_download_limit,
+                total_remaining=total_remaining,
+            )
+            if total_remaining is not None:
+                total_remaining = max(0, total_remaining - len(discovered))
+
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="SCAN",
+                status="SUCCEEDED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+                discovered_file_count=len(discovered),
+                duration_ms=int((time.perf_counter() - scan_started) * 1000),
+            )
+            discovered_targets = {item.sub_dataset_id for item in discovered}
+
+        if execution_mode == "scrape-only":
+            _emit_event(
+                telemetry_events,
+                run_id=run_id,
+                stage="DOWNLOAD",
+                status="SKIPPED",
+                attempt_number=1,
+                series_id=config.series_id,
+                sub_dataset_id=None,
+                source_url=config.entry_url,
+                skip_reason="scrape_only_mode",
+            )
+            continue
 
         for item in discovered:
             records = _records_for(item.series_id, item.sub_dataset_id)
@@ -311,9 +505,7 @@ def execute_ingestion() -> Dict[str, Any]:
             )
             download_started = time.perf_counter()
             try:
-                filename, csv_payload, content_hash, normalize_metrics = (
-                    normalize_to_csv(item.source_url)
-                )
+                results = normalize_to_csv(item)
             except Exception as ex:
                 _emit_event(
                     telemetry_events,
@@ -339,86 +531,102 @@ def execute_ingestion() -> Dict[str, Any]:
                 series_id=item.series_id,
                 sub_dataset_id=item.sub_dataset_id,
                 source_url=item.source_url,
-                source_bytes=normalize_metrics.get("source_bytes"),
+                source_bytes=None,
                 duration_ms=int((time.perf_counter() - download_started) * 1000),
             )
 
-            if normalize_metrics.get("extracted_from_archive"):
+            for normalised_file in results:
+                latest = _latest_record_for_source(
+                    records, normalised_file.source_url, normalised_file.filename
+                )
+
+                if normalised_file.metrics.get("extracted_from_archive"):
+                    _emit_event(
+                        telemetry_events,
+                        run_id=run_id,
+                        stage="EXTRACT",
+                        status="SUCCEEDED",
+                        attempt_number=1,
+                        series_id=normalised_file.series_id,
+                        sub_dataset_id=normalised_file.sub_dataset_id,
+                        source_url=normalised_file.source_url,
+                        file_name=normalised_file.metrics.get("archive_member_name"),
+                    )
+
                 _emit_event(
                     telemetry_events,
                     run_id=run_id,
-                    stage="EXTRACT",
+                    stage="NORMALIZE",
                     status="SUCCEEDED",
                     attempt_number=1,
-                    series_id=item.series_id,
-                    sub_dataset_id=item.sub_dataset_id,
-                    source_url=item.source_url,
-                    file_name=normalize_metrics.get("archive_member_name"),
+                    series_id=normalised_file.series_id,
+                    sub_dataset_id=normalised_file.sub_dataset_id,
+                    source_url=normalised_file.source_url,
+                    file_name=normalised_file.filename,
+                    raw_row_count=normalised_file.metrics.get("raw_row_count"),
+                    normalized_row_count=normalised_file.metrics.get(
+                        "normalized_row_count"
+                    ),
+                    normalized_bytes=normalised_file.metrics.get("normalized_bytes"),
                 )
 
-            _emit_event(
-                telemetry_events,
-                run_id=run_id,
-                stage="NORMALIZE",
-                status="SUCCEEDED",
-                attempt_number=1,
-                series_id=item.series_id,
-                sub_dataset_id=item.sub_dataset_id,
-                source_url=item.source_url,
-                file_name=filename,
-                raw_row_count=normalize_metrics.get("raw_row_count"),
-                normalized_row_count=normalize_metrics.get("normalized_row_count"),
-                normalized_bytes=normalize_metrics.get("normalized_bytes"),
-            )
+                content_key = normalised_file.content_hash
+                if latest and latest.get("_FILE_CONTENT_KEY") == content_key:
+                    _emit_event(
+                        telemetry_events,
+                        run_id=run_id,
+                        stage="UPLOAD",
+                        status="SKIPPED",
+                        attempt_number=1,
+                        series_id=normalised_file.series_id,
+                        sub_dataset_id=normalised_file.sub_dataset_id,
+                        source_url=normalised_file.source_url,
+                        source_content_hash=normalised_file.content_hash,
+                        skip_reason="content_unchanged",
+                    )
+                    logging.info(
+                        "Skipped upload (content unchanged): %s",
+                        normalised_file.source_url,
+                    )
+                    continue
 
-            if latest and latest.get("_FILE_CONTENT_KEY") == content_hash:
+                item.publication_date_value = _resolve_publication_datetime(
+                    item.publication_date_value
+                )
+                downloaded_at = now_utc_compact()
+                artifact = build_artifact(
+                    normalised_file,
+                    normalised_file.filename,
+                    normalised_file.content_hash,
+                    downloaded_at,
+                    acquisition_method="automated",
+                )
+
+                upload_bytes(artifact.adls_path, normalised_file.payload)
+                record = _write_audit_record(
+                    artifact, source_etag, source_last_modified
+                )
                 _emit_event(
                     telemetry_events,
                     run_id=run_id,
                     stage="UPLOAD",
-                    status="SKIPPED",
+                    status="SUCCEEDED",
                     attempt_number=1,
-                    series_id=item.series_id,
-                    sub_dataset_id=item.sub_dataset_id,
-                    source_url=item.source_url,
-                    source_content_hash=content_hash,
-                    skip_reason="content_unchanged",
+                    series_id=normalised_file.series_id,
+                    sub_dataset_id=normalised_file.sub_dataset_id,
+                    source_url=normalised_file.source_url,
+                    file_name=normalised_file.filename,
+                    source_content_hash=normalised_file.content_hash,
+                    load_id=artifact.source_content_hash[:16],
+                    raw_row_count=normalised_file.metrics.get("raw_row_count"),
+                    normalized_row_count=normalised_file.metrics.get(
+                        "normalized_row_count"
+                    ),
+                    uploaded_path=artifact.adls_path,
                 )
-                logging.info("Skipped upload (content unchanged): %s", item.source_url)
-                continue
-
-            item.publication_date_value = _resolve_publication_datetime(
-                item.publication_date_value
-            )
-            downloaded_at = now_utc_compact()
-            artifact = build_artifact(
-                item,
-                filename,
-                content_hash,
-                downloaded_at,
-                acquisition_method="automated",
-            )
-            upload_bytes(artifact.adls_path, csv_payload)
-            record = _write_audit_record(artifact, source_etag, source_last_modified)
-            _emit_event(
-                telemetry_events,
-                run_id=run_id,
-                stage="UPLOAD",
-                status="SUCCEEDED",
-                attempt_number=1,
-                series_id=item.series_id,
-                sub_dataset_id=item.sub_dataset_id,
-                source_url=item.source_url,
-                file_name=filename,
-                source_content_hash=content_hash,
-                load_id=artifact.source_content_hash[:16],
-                raw_row_count=normalize_metrics.get("raw_row_count"),
-                normalized_row_count=normalize_metrics.get("normalized_row_count"),
-                uploaded_path=artifact.adls_path,
-            )
-            uploaded_paths.append(artifact.adls_path)
-            records.append(record)
-            logging.info("Uploaded %s", artifact.adls_path)
+                uploaded_paths.append(artifact.adls_path)
+                records.append(record)
+                logging.info("Uploaded %s", artifact.adls_path)
 
         if not config.fallback.allow_manual_acquisition:
             continue
@@ -427,87 +635,112 @@ def execute_ingestion() -> Dict[str, Any]:
             if target.sub_dataset_id in discovered_targets:
                 continue
 
+            if execution_mode == "load-only" and total_remaining is not None:
+                if total_remaining <= 0:
+                    break
+            if execution_mode == "load-only" and dataset_remaining is not None:
+                if dataset_remaining <= 0:
+                    break
+
             manual_candidates = discover_manual_files(
                 config, target, effective_manual_prefix
             )
+            if execution_mode == "load-only":
+                manual_candidates = _apply_discovery_limits(
+                    manual_candidates,
+                    dataset_limit=dataset_remaining or 0,
+                    target_limit=target_download_limit,
+                    total_remaining=total_remaining,
+                )
+                if dataset_remaining is not None:
+                    dataset_remaining = max(
+                        0, dataset_remaining - len(manual_candidates)
+                    )
+                if total_remaining is not None:
+                    total_remaining = max(0, total_remaining - len(manual_candidates))
+
             for candidate in manual_candidates:
                 records = _records_for(candidate.series_id, candidate.sub_dataset_id)
                 latest = _latest_record_for_source(records, candidate.source_url)
                 payload = download_blob_bytes(candidate.source_url)
-                filename, csv_payload, content_hash, normalize_metrics = (
-                    normalize_payload_to_csv(candidate.link_text, payload)
-                )
-                normalize_metrics["source_bytes"] = len(payload)
-                _emit_event(
-                    telemetry_events,
-                    run_id=run_id,
-                    stage="NORMALIZE",
-                    status="SUCCEEDED",
-                    attempt_number=1,
-                    series_id=candidate.series_id,
-                    sub_dataset_id=candidate.sub_dataset_id,
-                    source_url=candidate.source_url,
-                    file_name=filename,
-                    raw_row_count=normalize_metrics.get("raw_row_count"),
-                    normalized_row_count=normalize_metrics.get("normalized_row_count"),
-                    normalized_bytes=normalize_metrics.get("normalized_bytes"),
-                    source_bytes=normalize_metrics.get("source_bytes"),
-                    acquisition_method="manual",
-                )
-                if latest and latest.get("_FILE_CONTENT_KEY") == content_hash:
+
+                results = normalize_payload_to_csv(candidate.link_text, payload)
+                for filename, csv_payload, content_hash, normalize_metrics in results:
+                    normalize_metrics["source_bytes"] = len(payload)
                     _emit_event(
                         telemetry_events,
                         run_id=run_id,
-                        stage="UPLOAD",
-                        status="SKIPPED",
+                        stage="NORMALIZE",
+                        status="SUCCEEDED",
                         attempt_number=1,
                         series_id=candidate.series_id,
                         sub_dataset_id=candidate.sub_dataset_id,
                         source_url=candidate.source_url,
-                        source_content_hash=content_hash,
-                        skip_reason="content_unchanged",
+                        file_name=filename,
+                        raw_row_count=normalize_metrics.get("raw_row_count"),
+                        normalized_row_count=normalize_metrics.get(
+                            "normalized_row_count"
+                        ),
+                        normalized_bytes=normalize_metrics.get("normalized_bytes"),
+                        source_bytes=normalize_metrics.get("source_bytes"),
                         acquisition_method="manual",
                     )
-                    logging.info(
-                        "Skipped manual upload (content unchanged): %s",
-                        candidate.source_url,
-                    )
-                    continue
+                    if latest and latest.get("_FILE_CONTENT_KEY") == content_hash:
+                        _emit_event(
+                            telemetry_events,
+                            run_id=run_id,
+                            stage="UPLOAD",
+                            status="SKIPPED",
+                            attempt_number=1,
+                            series_id=candidate.series_id,
+                            sub_dataset_id=candidate.sub_dataset_id,
+                            source_url=candidate.source_url,
+                            source_content_hash=content_hash,
+                            skip_reason="content_unchanged",
+                            acquisition_method="manual",
+                        )
+                        logging.info(
+                            "Skipped manual upload (content unchanged): %s",
+                            candidate.source_url,
+                        )
+                        continue
 
-                candidate.publication_date_value = _resolve_publication_datetime(
-                    candidate.publication_date_value
-                )
-                downloaded_at = now_utc_compact()
-                artifact = build_artifact(
-                    candidate,
-                    filename,
-                    content_hash,
-                    downloaded_at,
-                    acquisition_method="manual",
-                    fallback_reason="auto_discovery_empty",
-                )
-                upload_bytes(artifact.adls_path, csv_payload)
-                record = _write_audit_record(artifact)
-                _emit_event(
-                    telemetry_events,
-                    run_id=run_id,
-                    stage="UPLOAD",
-                    status="SUCCEEDED",
-                    attempt_number=1,
-                    series_id=candidate.series_id,
-                    sub_dataset_id=candidate.sub_dataset_id,
-                    source_url=candidate.source_url,
-                    file_name=filename,
-                    source_content_hash=content_hash,
-                    load_id=artifact.source_content_hash[:16],
-                    raw_row_count=normalize_metrics.get("raw_row_count"),
-                    normalized_row_count=normalize_metrics.get("normalized_row_count"),
-                    uploaded_path=artifact.adls_path,
-                    acquisition_method="manual",
-                )
-                uploaded_paths.append(artifact.adls_path)
-                records.append(record)
-                logging.info("Uploaded manual file %s", artifact.adls_path)
+                    candidate.publication_date_value = _resolve_publication_datetime(
+                        candidate.publication_date_value
+                    )
+                    downloaded_at = now_utc_compact()
+                    artifact = build_artifact(
+                        candidate,
+                        filename,
+                        content_hash,
+                        downloaded_at,
+                        acquisition_method="manual",
+                        fallback_reason="auto_discovery_empty",
+                    )
+                    upload_bytes(artifact.adls_path, csv_payload)
+                    record = _write_audit_record(artifact)
+                    _emit_event(
+                        telemetry_events,
+                        run_id=run_id,
+                        stage="UPLOAD",
+                        status="SUCCEEDED",
+                        attempt_number=1,
+                        series_id=candidate.series_id,
+                        sub_dataset_id=candidate.sub_dataset_id,
+                        source_url=candidate.source_url,
+                        file_name=filename,
+                        source_content_hash=content_hash,
+                        load_id=artifact.source_content_hash[:16],
+                        raw_row_count=normalize_metrics.get("raw_row_count"),
+                        normalized_row_count=normalize_metrics.get(
+                            "normalized_row_count"
+                        ),
+                        uploaded_path=artifact.adls_path,
+                        acquisition_method="manual",
+                    )
+                    uploaded_paths.append(artifact.adls_path)
+                    records.append(record)
+                    logging.info("Uploaded manual file %s", artifact.adls_path)
 
     telemetry_path = _write_telemetry_events(run_id, telemetry_events)
     return {

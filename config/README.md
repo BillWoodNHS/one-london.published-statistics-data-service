@@ -21,3 +21,9 @@ This folder contains ingestion configuration for supplier datasets.
 - Storage paths now partition by download time (`download_year`, `download_month`, `downloaded_at`) rather than `subject_period`.
 - Sidecar metadata now stores `_SUBJECT_PERIOD_FROM` and `_SUBJECT_PERIOD_TO` (inclusive timestamps) plus inference diagnostics.
 - Target configs may include optional `period_coverage` hints to prioritize runtime period inference.
+
+## Legacy Archive
+
+Historical migration material is archived under:
+
+- [legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md](../legacy/SCHEMA_MIGRATION_GUIDE_v2_to_v0p1.md)

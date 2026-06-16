@@ -30,6 +30,7 @@ Thumbs.db
 # Azure Functions local artifacts
 function_app/.python_packages/
 function_app/local.settings.json
+function_app/local.dataset-profile.env
 function_app/.funcignore
 
 # dbt artifacts

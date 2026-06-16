@@ -1,0 +1,1 @@
+{# DuckDB adapter - stage/pipe not needed for local execution #}

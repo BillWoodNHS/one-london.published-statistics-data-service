@@ -1,0 +1,1 @@
+{# DuckDB adapter - most file format operations are skipped (not needed for local execution) #}

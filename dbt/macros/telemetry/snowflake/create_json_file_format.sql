@@ -1,4 +1,4 @@
-{% macro create_json_file_format(database_name, schema_name, file_format_name) %}
+{% macro snowflake__create_json_file_format(database_name, schema_name, file_format_name) %}
     {% set sql %}
         create file format if not exists {{ adapter.quote(database_name) }}.{{ adapter.quote(schema_name) }}.{{ adapter.quote(file_format_name) }}
         type = json

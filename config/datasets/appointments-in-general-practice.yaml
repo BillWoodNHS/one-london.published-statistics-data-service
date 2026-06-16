@@ -27,7 +27,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Actual Duration
       file_extensions: &id001
       - zip
     sibling_discovery:
@@ -41,7 +41,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Actual Duration
       file_extensions: *id001
     sibling_discovery:
       enabled: true
@@ -113,7 +113,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Daily counts
       file_extensions: &id004
       - zip
     sibling_discovery:
@@ -127,7 +127,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Daily counts
       file_extensions: *id004
     sibling_discovery:
       enabled: true
@@ -155,7 +155,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: National Categor
       file_extensions: &id005
       - zip
     sibling_discovery:
@@ -169,7 +169,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: National Categor
       file_extensions: *id005
     sibling_discovery:
       enabled: true
@@ -197,7 +197,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: National Overview
       file_extensions: &id006
       - csv
     sibling_discovery:
@@ -211,7 +211,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: National Overview
       file_extensions: *id006
     sibling_discovery:
       enabled: true
@@ -239,7 +239,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Practice Level
       file_extensions: &id007
       - zip
     sibling_discovery:
@@ -253,7 +253,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Practice Level
       file_extensions: *id007
     sibling_discovery:
       enabled: true
@@ -281,7 +281,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: ': Regional'
       file_extensions: &id008
       - zip
     sibling_discovery:
@@ -295,7 +295,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: ': Regional'
       file_extensions: *id008
     sibling_discovery:
       enabled: true
@@ -323,7 +323,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: SDS Role Group
       file_extensions: &id009
       - zip
     sibling_discovery:
@@ -337,7 +337,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: SDS Role Group
       file_extensions: *id009
     sibling_discovery:
       enabled: true
@@ -365,7 +365,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Sub ICB Level
       file_extensions: &id010
       - csv
     sibling_discovery:
@@ -379,7 +379,7 @@ targets:
     partitioning_strategy: subject_period
     scrape_steps:
     - link_selector: a[href*='files.digital.nhs.uk']
-      text_filter: (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)
+      text_filter: Sub ICB Level
       file_extensions: *id010
     sibling_discovery:
       enabled: true

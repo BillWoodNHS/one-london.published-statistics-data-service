@@ -4,12 +4,21 @@
     {% endif %}
 
     {% set sql %}
-        select table_name
-        from {{ adapter.quote(database_name) }}.information_schema.tables
-        where table_schema = upper('{{ raw_schema }}')
-          and table_name like 'RAW_%'
-          and table_name <> 'RAW_FUNCTION_APP_EVENTS'
-        order by table_name
+        {% if target.type == 'duckdb' %}
+            select table_name
+            from information_schema.tables
+            where table_schema = '{{ raw_schema }}'
+              and table_name like 'RAW_%'
+              and table_name <> 'RAW_FUNCTION_APP_EVENTS'
+            order by table_name
+        {% else %}
+            select table_name
+            from {{ adapter.quote(database_name) }}.information_schema.tables
+            where table_schema = upper('{{ raw_schema }}')
+              and table_name like 'RAW_%'
+              and table_name <> 'RAW_FUNCTION_APP_EVENTS'
+            order by table_name
+        {% endif %}
     {% endset %}
 
     {% set results = run_query(sql) %}
@@ -42,12 +51,21 @@
     {% endif %}
 
     {% set sql %}
-        select table_name
-        from {{ adapter.quote(database_name) }}.information_schema.tables
-        where table_schema = upper('{{ raw_schema }}')
-          and table_name like 'RAW_%'
-          and table_name <> 'RAW_FUNCTION_APP_EVENTS'
-        order by table_name
+        {% if target.type == 'duckdb' %}
+            select table_name
+            from information_schema.tables
+            where table_schema = '{{ raw_schema }}'
+              and table_name like 'RAW_%'
+              and table_name <> 'RAW_FUNCTION_APP_EVENTS'
+            order by table_name
+        {% else %}
+            select table_name
+            from {{ adapter.quote(database_name) }}.information_schema.tables
+            where table_schema = upper('{{ raw_schema }}')
+              and table_name like 'RAW_%'
+              and table_name <> 'RAW_FUNCTION_APP_EVENTS'
+            order by table_name
+        {% endif %}
     {% endset %}
 
     {% set table_results = run_query(sql) %}
