@@ -3,5 +3,3 @@
     {% set cleaned = value | replace('-', '_') | replace(' ', '_') | replace('/', '_') %}
     {{ return(cleaned | upper) }}
 {% endmacro %}
-
-{# Dispatcher macros are now in their own files: create_storage_integration.sql #}

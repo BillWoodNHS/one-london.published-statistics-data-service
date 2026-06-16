@@ -1,7 +1,6 @@
 {% macro provision_sidecar_pipeline() %}
     {#
     Provision the sidecar metadata pipeline.
-    TODO: Adapter candidates should implement this macro in their own adapter-specific macro file, using the adapter dispatch pattern.
     For Snowflake: Creates metadata table, file format, stage, and Snowflake Pipe for automated ingestion.
     For DuckDB: Creates metadata table only (local files loaded via manifest-driven orchestration).
     #}

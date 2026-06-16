@@ -17,6 +17,10 @@
         {% set max_pub_view = 'MAX_PUBLICATION_' ~ object_suffix %}
         {% set current_revision_view = 'CURRENT_REVISION_' ~ object_suffix %}
         {% set reporting_columns = target_cfg.get('reporting_period_columns', []) %}
+        {% set period_coverage = target_cfg.get('period_coverage', {}) %}
+        {% set duration_type = period_coverage.get('file_scope', {}).get('duration_type', 'unknown') if period_coverage else 'unknown' %}
+        {% set skip_revision_views = (not reporting_columns or reporting_columns | length == 0)
+                                      and duration_type in ['rolling', 'calendar_ytd', 'fiscal_ytd'] %}
 
         {% do one_london_psds.create_presentation_view(
             database_name,
@@ -27,19 +31,25 @@
             reporting_columns
         ) %}
 
-        {% do one_london_psds.create_max_publication_view(
-            database_name,
-            presentation_schema,
-            max_pub_view,
-            presentation_view
-        ) %}
+        {% if not skip_revision_views %}
+            {% do one_london_psds.create_max_publication_view(
+                database_name,
+                presentation_schema,
+                max_pub_view,
+                presentation_view,
+                reporting_columns,
+                period_coverage
+            ) %}
 
-        {% do one_london_psds.create_current_revision_view(
-            database_name,
-            presentation_schema,
-            current_revision_view,
-            max_pub_view
-        ) %}
+            {% do one_london_psds.create_current_revision_view(
+                database_name,
+                presentation_schema,
+                current_revision_view,
+                max_pub_view,
+                reporting_columns,
+                period_coverage
+            ) %}
+        {% endif %}
 
         {% do outputs.append({'presentation_view': presentation_view, 'max_publication_view': max_pub_view, 'current_revision_view': current_revision_view}) %}
     {% endfor %}
