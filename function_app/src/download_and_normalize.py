@@ -4,15 +4,23 @@ import csv
 import hashlib
 import io
 import os
+import re
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
+from openpyxl.utils import column_index_from_string
 
-from .models import DiscoveredFile, LoadArtifact, NormalizedFile, TargetConfig
+from .models import (
+    DiscoveredFile,
+    LoadArtifact,
+    NormalizedFile,
+    SubTableConfig,
+    TargetConfig,
+)
 from .period_coverage import infer_period_coverage
 
 
@@ -73,22 +81,34 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def resolve_sub_table_adls_prefix(filename: str, target: TargetConfig) -> str:
-    """Return the ADLS path prefix for a file extracted from a zip.
+def resolve_sub_table_adls_prefix(
+    filename: str, metrics: Dict[str, Any], target: TargetConfig
+) -> str:
+    """Return the ADLS path prefix for a normalized file.
 
-    Tests the file's basename against each sub-table's filename_patterns. The
-    first sub-table with any matching pattern wins. If no sub-table matches the
-    file is routed to the parent target's adls_path_prefix.
+    If the file was produced by sheet-based splitting, its metrics already
+    carry the resolved sub-table prefix (decided during normalization, since
+    sheet names can't be recovered from the output filename) — return that
+    directly. Otherwise, test the file's basename against each sub-table's
+    filename_patterns (the zip-extraction case). The first sub-table with any
+    matching pattern wins. If neither applies, the file is routed to the
+    parent target's adls_path_prefix.
     """
-    import re as _re
+    sheet_prefix = metrics.get("matched_sub_table_adls_path_prefix")
+    if sheet_prefix:
+        return sheet_prefix
 
     for st in target.sub_tables:
-        if any(_re.search(p, filename, _re.IGNORECASE) for p in st.filename_patterns):
+        if st.filename_patterns and any(
+            re.search(p, filename, re.IGNORECASE) for p in st.filename_patterns
+        ):
             return st.adls_path_prefix
     return target.adls_path_prefix
 
 
-def _all_csvs_from_zip(payload: bytes) -> List[Tuple[str, bytes, Dict[str, Any]]]:
+def _all_csvs_from_zip(
+    payload: bytes, target: Optional[TargetConfig] = None
+) -> List[Tuple[str, bytes, Dict[str, Any]]]:
     # Extract all CSV/extractable files from a ZIP payload and return them individually
     results: List[Tuple[str, bytes, Dict[str, Any]]] = []
 
@@ -112,22 +132,24 @@ def _all_csvs_from_zip(payload: bytes) -> List[Tuple[str, bytes, Dict[str, Any]]
                 # convert excel to csv and append to results
                 data = zf.read(name)
                 ext = Path(name).suffix.lower() or ".xlsx"
-                csv_name, csv_payload, metrics = _excel_to_csv(
-                    Path(name).stem, data, ext
-                )
-                metrics["source_file_type"] = "zip"
-                metrics["extracted_from_archive"] = True
-                metrics["archive_member_name"] = Path(name).name
-                results.append((csv_name, csv_payload, metrics))
+                for csv_name, csv_payload, metrics in _excel_to_csv(
+                    Path(name).stem, data, ext, target
+                ):
+                    metrics["source_file_type"] = "zip"
+                    metrics["extracted_from_archive"] = True
+                    metrics["archive_member_name"] = Path(name).name
+                    results.append((csv_name, csv_payload, metrics))
             elif lowered.endswith(".ods"):
                 # convert ods to csv and append to results
                 data = zf.read(name)
                 ext = Path(name).suffix.lower() or ".ods"
-                csv_name, csv_payload, metrics = _ods_to_csv(Path(name).stem, data, ext)
-                metrics["source_file_type"] = "zip"
-                metrics["extracted_from_archive"] = True
-                metrics["archive_member_name"] = Path(name).name
-                results.append((csv_name, csv_payload, metrics))
+                for csv_name, csv_payload, metrics in _ods_to_csv(
+                    Path(name).stem, data, ext, target
+                ):
+                    metrics["source_file_type"] = "zip"
+                    metrics["extracted_from_archive"] = True
+                    metrics["archive_member_name"] = Path(name).name
+                    results.append((csv_name, csv_payload, metrics))
             elif lowered.endswith("/"):
                 # skip nested sub-directories
                 continue
@@ -138,77 +160,191 @@ def _all_csvs_from_zip(payload: bytes) -> List[Tuple[str, bytes, Dict[str, Any]]
     return results
 
 
-def _excel_to_csv(
-    base_name: str, payload: bytes, extension: str = ".xlsx"
-) -> Tuple[str, bytes, Dict[str, Any]]:
-    """Convert an Excel file payload to CSV bytes.
+def _parse_start_cell(start_cell: Optional[str]) -> Tuple[int, int]:
+    """Convert a top-left cell reference like 'B5' into (skiprows, start_col_idx).
 
-    Returns the new filename and content.
+    skiprows is the number of rows above the header row to skip. start_col_idx
+    is the 0-based index of the leftmost column to keep — columns to its left
+    are dropped after reading, since the table's right-hand extent isn't
+    specified and pandas can't pre-trim to an open-ended column range.
     """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
-        tmp.write(payload)
-        tmp_path = tmp.name
+    if not start_cell:
+        return 0, 0
+    match = re.fullmatch(r"([A-Za-z]+)([0-9]+)", start_cell)
+    col_letters, row_number = match.group(1).upper(), int(match.group(2))
+    return row_number - 1, column_index_from_string(col_letters) - 1
 
-    try:
-        df = pd.read_excel(tmp_path)
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(df.columns.tolist())
-        writer.writerows(df.values.tolist())
-        csv_payload = buffer.getvalue().encode("utf-8")
-        row_count = int(len(df.index))
+
+def _slugify_sheet_name(sheet_name: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", sheet_name).strip("_")
+    return slug or "sheet"
+
+
+def _read_sheet_to_csv_row(
+    tmp_path: str, sheet_name: str, engine: str, start_cell: Optional[str]
+) -> Tuple[bytes, int]:
+    skiprows, start_col_idx = _parse_start_cell(start_cell)
+    df = pd.read_excel(
+        tmp_path,
+        sheet_name=sheet_name,
+        engine=engine,
+        **({"skiprows": skiprows} if skiprows else {}),
+    )
+    if start_col_idx:
+        df = df.iloc[:, start_col_idx:]
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(df.columns.tolist())
+    writer.writerows(df.values.tolist())
+    return buffer.getvalue().encode("utf-8"), int(len(df.index))
+
+
+def _spreadsheet_to_csvs(
+    base_name: str,
+    tmp_path: str,
+    *,
+    engine: str,
+    source_file_type: str,
+    sub_tables: List[SubTableConfig],
+    excel_sheet: Optional[str],
+) -> List[Tuple[str, bytes, Dict[str, Any]]]:
+    """Split a spreadsheet workbook into one or more CSV outputs.
+
+    Shared by Excel and ODS handling — both formats support multiple sheets
+    and the same pandas read_excel kwargs, just a different engine.
+    """
+    sheet_routed = [st for st in sub_tables if st.sheet_name_patterns]
+
+    if not sheet_routed:
+        csv_payload, row_count = _read_sheet_to_csv_row(
+            tmp_path, excel_sheet or 0, engine, None
+        )
         metrics: Dict[str, Any] = {
-            "source_file_type": "excel",
+            "source_file_type": source_file_type,
             "extracted_from_archive": False,
             "converted_to_csv": True,
             "archive_member_name": None,
             "raw_row_count": row_count,
             "normalized_row_count": row_count,
         }
-        return f"{base_name}.csv", csv_payload, metrics
+        return [(f"{base_name}.csv", csv_payload, metrics)]
+
+    with pd.ExcelFile(tmp_path, engine=engine) as workbook:
+        available_sheets = list(workbook.sheet_names)
+    matched_sheets: set[str] = set()
+    results: List[Tuple[str, bytes, Dict[str, Any]]] = []
+
+    for st in sheet_routed:
+        for sheet_name in available_sheets:
+            if sheet_name in matched_sheets:
+                continue
+            if not any(
+                re.search(p, sheet_name, re.IGNORECASE) for p in st.sheet_name_patterns
+            ):
+                continue
+            matched_sheets.add(sheet_name)
+            csv_payload, row_count = _read_sheet_to_csv_row(
+                tmp_path, sheet_name, engine, st.start_cell
+            )
+            results.append(
+                (
+                    f"{base_name}__{_slugify_sheet_name(sheet_name)}.csv",
+                    csv_payload,
+                    {
+                        "source_file_type": source_file_type,
+                        "extracted_from_archive": False,
+                        "converted_to_csv": True,
+                        "archive_member_name": None,
+                        "raw_row_count": row_count,
+                        "normalized_row_count": row_count,
+                        "source_sheet_name": sheet_name,
+                        "matched_sub_table_object_name_suffix": st.object_name_suffix,
+                        "matched_sub_table_adls_path_prefix": st.adls_path_prefix,
+                    },
+                )
+            )
+
+    # Sheets matching no sub_table pattern are deliberately discarded here
+    # (presumed to be formatted reports/summaries, not data) — unlike an
+    # unmatched zip member, which still falls through to the parent target's
+    # adls_path_prefix in resolve_sub_table_adls_prefix.
+    if not results:
+        raise ValueError(
+            f"None of the configured sheet_name_patterns rules matched any "
+            f"sheet in {base_name}{Path(tmp_path).suffix} "
+            f"(available sheets: {available_sheets})"
+        )
+
+    return results
+
+
+def _excel_to_csv(
+    base_name: str,
+    payload: bytes,
+    extension: str = ".xlsx",
+    target: Optional[TargetConfig] = None,
+) -> List[Tuple[str, bytes, Dict[str, Any]]]:
+    """Convert an Excel file payload to one or more CSV outputs.
+
+    Returns a list of (filename, csv_bytes, metrics) — more than one entry
+    when the target defines sheet-splitting sub_tables that match multiple
+    sheets in the workbook.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
+        tmp.write(payload)
+        tmp_path = tmp.name
+
+    try:
+        return _spreadsheet_to_csvs(
+            base_name,
+            tmp_path,
+            engine="openpyxl" if extension == ".xlsx" else None,
+            source_file_type="excel",
+            sub_tables=target.sub_tables if target else [],
+            excel_sheet=target.excel_sheet if target else None,
+        )
     finally:
         os.unlink(tmp_path)
 
 
 def _ods_to_csv(
-    base_name: str, payload: bytes, extension: str = ".ods"
-) -> Tuple[str, bytes, Dict[str, Any]]:
-    """Convert an ODS file payload to CSV bytes.
+    base_name: str,
+    payload: bytes,
+    extension: str = ".ods",
+    target: Optional[TargetConfig] = None,
+) -> List[Tuple[str, bytes, Dict[str, Any]]]:
+    """Convert an ODS file payload to one or more CSV outputs.
 
-    Returns the new filename and content.
+    Returns a list of (filename, csv_bytes, metrics) — more than one entry
+    when the target defines sheet-splitting sub_tables that match multiple
+    sheets in the workbook.
     """
     with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
         tmp.write(payload)
         tmp_path = tmp.name
 
     try:
-        df = pd.read_excel(tmp_path, engine="odf")
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(df.columns.tolist())
-        writer.writerows(df.values.tolist())
-        csv_payload = buffer.getvalue().encode("utf-8")
-        row_count = int(len(df.index))
-        metrics: Dict[str, Any] = {
-            "source_file_type": "ods",
-            "extracted_from_archive": False,
-            "converted_to_csv": True,
-            "archive_member_name": None,
-            "raw_row_count": row_count,
-            "normalized_row_count": row_count,
-        }
-        return f"{base_name}.csv", csv_payload, metrics
+        return _spreadsheet_to_csvs(
+            base_name,
+            tmp_path,
+            engine="odf",
+            source_file_type="ods",
+            sub_tables=target.sub_tables if target else [],
+            excel_sheet=target.excel_sheet if target else None,
+        )
     finally:
         os.unlink(tmp_path)
 
 
-def normalize_to_csv(item: DiscoveredFile) -> List[NormalizedFile]:
+def normalize_to_csv(
+    item: DiscoveredFile, target: Optional[TargetConfig] = None
+) -> List[NormalizedFile]:
     """Download and normalize a file from a URL to CSV.
 
     Returns a list of NormalizedFile objects.
     """
     payload = _download(item.source_url)
-    raw_results = normalize_payload_to_csv(Path(item.source_url).name, payload)
+    raw_results = normalize_payload_to_csv(Path(item.source_url).name, payload, target)
 
     normalized_files: List[NormalizedFile] = []
     for filename, csv_payload, content_hash, metrics in raw_results:
@@ -236,13 +372,47 @@ def normalize_to_csv(item: DiscoveredFile) -> List[NormalizedFile]:
     return normalized_files
 
 
+def _finalize_spreadsheet_outputs(
+    sheet_outputs: List[Tuple[str, bytes, Dict[str, Any]]],
+    source_payload: bytes,
+    source_content_hash: str,
+) -> List[Tuple[str, bytes, str, Dict[str, Any]]]:
+    """Attach content hashes and source/normalized byte sizes to sheet outputs.
+
+    When a workbook produces exactly one output (today's behaviour: no
+    sheet-splitting sub_tables configured), the content hash is the hash of
+    the original source payload, unchanged from before this feature existed.
+    When splitting produces multiple outputs, each needs its own hash (the
+    source payload hash would be identical and wrongly identical across
+    distinct sheets) — mirroring how zip extraction already hashes each
+    extracted file individually.
+    """
+    use_per_output_hash = len(sheet_outputs) > 1
+    outputs = []
+    for name, csv_payload, metrics in sheet_outputs:
+        outputs.append(
+            (
+                name,
+                csv_payload,
+                _sha256(csv_payload) if use_per_output_hash else source_content_hash,
+                {
+                    **metrics,
+                    "source_bytes": len(source_payload),
+                    "normalized_bytes": len(csv_payload),
+                },
+            )
+        )
+    return outputs
+
+
 def normalize_payload_to_csv(
-    source_name: str, payload: bytes
+    source_name: str, payload: bytes, target: Optional[TargetConfig] = None
 ) -> List[Tuple[str, bytes, str, Dict[str, Any]]]:
     ## Normalize a file payload (CSV, ZIP, Excel, or ODS) to CSV.
     ## Returns a list of filenames, content bytes, SHA-256 hash, and telemetry metrics.
     ## List is used to account for ZIP files that may contain multiple CSVs
-    ## or extractable files.
+    ## or extractable files, and for Excel/ODS workbooks split into multiple
+    ## sheet-based outputs.
 
     content_hash = _sha256(payload)
     lowered = source_name.lower()
@@ -262,7 +432,7 @@ def normalize_payload_to_csv(
 
     if lowered.endswith(".zip"):
         outputs = []
-        for name, csv_payload, metrics in _all_csvs_from_zip(payload):
+        for name, csv_payload, metrics in _all_csvs_from_zip(payload, target):
             outputs.append(
                 (
                     name,
@@ -279,17 +449,13 @@ def normalize_payload_to_csv(
 
     if lowered.endswith(".xlsx") or lowered.endswith(".xls"):
         ext = Path(source_name).suffix.lower() or ".xlsx"
-        name, csv_payload, metrics = _excel_to_csv(Path(source_name).stem, payload, ext)
-        metrics["source_bytes"] = len(payload)
-        metrics["normalized_bytes"] = len(csv_payload)
-        return [(name, csv_payload, content_hash, metrics)]
+        sheet_outputs = _excel_to_csv(Path(source_name).stem, payload, ext, target)
+        return _finalize_spreadsheet_outputs(sheet_outputs, payload, content_hash)
 
     if lowered.endswith(".ods"):
         ext = Path(source_name).suffix.lower() or ".ods"
-        name, csv_payload, metrics = _ods_to_csv(Path(source_name).stem, payload, ext)
-        metrics["source_bytes"] = len(payload)
-        metrics["normalized_bytes"] = len(csv_payload)
-        return [(name, csv_payload, content_hash, metrics)]
+        sheet_outputs = _ods_to_csv(Path(source_name).stem, payload, ext, target)
+        return _finalize_spreadsheet_outputs(sheet_outputs, payload, content_hash)
 
     raise ValueError(f"Unsupported file type for source: {source_name}")
 
@@ -387,10 +553,11 @@ def build_artifact(
 
 def normalize_local_file_to_csv(
     local_file: Path,
+    target: Optional[TargetConfig] = None,
 ) -> List[Tuple[str, bytes, str, Dict[str, Any]]]:
     """Normalize a local file to CSV, returning filename, content, hash, and metrics."""
     payload = local_file.read_bytes()
-    return normalize_payload_to_csv(local_file.name, payload)
+    return normalize_payload_to_csv(local_file.name, payload, target)
 
 
 def ensure_utf8(file_path: Path) -> None:

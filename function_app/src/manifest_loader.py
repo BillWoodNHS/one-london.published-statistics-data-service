@@ -33,6 +33,7 @@ RESERVED_OBJECT_NAME_PREFIXES = ("STG_", "PIPE_", "INGEST_", "RAW_")
 ADLS_PATH_PREFIX_PATTERN = re.compile(
     r"^[a-z0-9_\-][a-z0-9_\-/]*[a-z0-9_\-]$|^[a-z0-9_\-]$"
 )
+START_CELL_PATTERN = re.compile(r"^[A-Z]+[0-9]+$")
 
 
 def _require(value, key: str):
@@ -93,20 +94,32 @@ def _parse_filename_patterns(raw, key: str) -> List[str]:
     return patterns
 
 
-def _check_sub_table_pattern_overlap(
-    sub_tables: List[SubTableConfig], target_id: str
-) -> None:
-    """Raise ManifestError if any two sub-tables share overlapping filename patterns.
+def _parse_start_cell(raw, key: str) -> str | None:
+    """Validate and normalise an optional start_cell reference like 'B5'."""
+    if raw is None or raw == "":
+        return None
+    value = str(raw).strip().upper()
+    if not START_CELL_PATTERN.fullmatch(value):
+        raise ManifestError(
+            f"Invalid {key}: must be a cell reference like 'A1' or 'B5'"
+        )
+    return value
 
-    Uses re.search to detect exact duplicates and obvious substring matches.
-    Each pattern from table A is tested against each pattern string from table B
-    (and vice versa), catching cases where one pattern would match the literal
-    text of another.
+
+def _check_pattern_overlap(
+    entries: List[tuple[str, List[str]]], target_id: str, label: str
+) -> None:
+    """Raise ManifestError if any two entries share overlapping patterns.
+
+    Each entry is (object_name_suffix, patterns). Uses re.search to detect
+    exact duplicates and obvious substring matches. Each pattern from entry A
+    is tested against each pattern string from entry B (and vice versa),
+    catching cases where one pattern would match the literal text of another.
     """
-    for i, a in enumerate(sub_tables):
-        for b in sub_tables[i + 1 :]:
-            for pa in a.filename_patterns:
-                for pb in b.filename_patterns:
+    for i, (suffix_a, patterns_a) in enumerate(entries):
+        for suffix_b, patterns_b in entries[i + 1 :]:
+            for pa in patterns_a:
+                for pb in patterns_b:
                     conflict = (
                         pa == pb
                         or re.search(pa, pb, re.IGNORECASE)
@@ -114,10 +127,35 @@ def _check_sub_table_pattern_overlap(
                     )
                     if conflict:
                         raise ManifestError(
-                            f"Target {target_id!r}: sub_table patterns overlap — "
-                            f"{a.object_name_suffix!r} pattern {pa!r} conflicts with "
-                            f"{b.object_name_suffix!r} pattern {pb!r}"
+                            f"Target {target_id!r}: sub_table {label} patterns "
+                            f"overlap — {suffix_a!r} pattern {pa!r} conflicts with "
+                            f"{suffix_b!r} pattern {pb!r}"
                         )
+
+
+def _check_sub_table_pattern_overlap(
+    sub_tables: List[SubTableConfig], target_id: str
+) -> None:
+    """Raise ManifestError if any two sub-tables share overlapping patterns.
+
+    Filename-routed sub-tables are checked for overlap against other
+    filename-routed sub-tables, and sheet-routed sub-tables against other
+    sheet-routed sub-tables. The two groups are never cross-checked since
+    they match different dimensions (file basename vs. sheet name) and
+    cannot conflict with each other.
+    """
+    filename_routed = [
+        (st.object_name_suffix, st.filename_patterns)
+        for st in sub_tables
+        if st.filename_patterns
+    ]
+    sheet_routed = [
+        (st.object_name_suffix, st.sheet_name_patterns)
+        for st in sub_tables
+        if st.sheet_name_patterns
+    ]
+    _check_pattern_overlap(filename_routed, target_id, label="filename")
+    _check_pattern_overlap(sheet_routed, target_id, label="sheet_name")
 
 
 def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
@@ -283,6 +321,18 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
             sub_tables: List[SubTableConfig] = []
             for st_idx, st in enumerate(target.get("sub_tables", []), start=1):
                 st_prefix = f"targets[{idx}].sub_tables[{st_idx}]"
+                has_filename_patterns = bool(st.get("filename_patterns"))
+                has_sheet_patterns = bool(st.get("sheet_name_patterns"))
+                if has_filename_patterns and has_sheet_patterns:
+                    raise ManifestError(
+                        f"{st_prefix}: must not define both filename_patterns "
+                        "and sheet_name_patterns"
+                    )
+                if not has_filename_patterns and not has_sheet_patterns:
+                    raise ManifestError(
+                        f"{st_prefix}: must define filename_patterns or "
+                        "sheet_name_patterns"
+                    )
                 sub_tables.append(
                     SubTableConfig(
                         object_name_suffix=_require_object_name_suffix(
@@ -293,9 +343,24 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                             st.get("adls_path_prefix"),
                             f"{st_prefix}.adls_path_prefix",
                         ),
-                        filename_patterns=_parse_filename_patterns(
-                            st.get("filename_patterns"),
-                            f"{st_prefix}.filename_patterns",
+                        filename_patterns=(
+                            _parse_filename_patterns(
+                                st.get("filename_patterns"),
+                                f"{st_prefix}.filename_patterns",
+                            )
+                            if has_filename_patterns
+                            else []
+                        ),
+                        sheet_name_patterns=(
+                            _parse_filename_patterns(
+                                st.get("sheet_name_patterns"),
+                                f"{st_prefix}.sheet_name_patterns",
+                            )
+                            if has_sheet_patterns
+                            else []
+                        ),
+                        start_cell=_parse_start_cell(
+                            st.get("start_cell"), f"{st_prefix}.start_cell"
                         ),
                     )
                 )
