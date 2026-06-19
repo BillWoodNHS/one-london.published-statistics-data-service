@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,39 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+ENCODINGS = [
+    "utf-8",
+    "cp1252",
+    "latin-1",
+    "ascii",
+    "utf-16",
+    "utf-16le",
+    "utf-16be",
+    "utf-32",
+    "utf-32le",
+    "utf-32be",
+]
+
+# Errors with these markers indicate a genuine SQL/schema problem (e.g. a
+# column-count mismatch) rather than a decode failure, so retrying with a
+# different encoding will never fix them.
+_NON_ENCODING_ERROR_MARKERS = ("Binder Error", "Catalog Error")
+
+READ_CSV_OPTS = "header=true, all_varchar=true, quote='\"', hive_partitioning=false"
+
+
+@dataclass
+class LoadFailure:
+    table_name: str
+    csv_path: Path
+    error: str
+
+
+@dataclass
+class LoadResult:
+    loaded_rows: int = 0
+    failures: list[LoadFailure] = field(default_factory=list)
+
 
 def _as_posix(path: Path) -> str:
     return path.as_posix().replace("\\", "/")
@@ -38,47 +72,32 @@ def _fq(schema: str, table: str) -> str:
     return f"{_qident(schema)}.{_qident(table)}"
 
 
-def _execute_with_encoding_retry(con, sql, params, csv_path: Path):
-    encodings = [
-        "utf-8",  # default encoding
-        "cp1252",  # Windows-1252 encoding
-        "latin-1",  # ISO-8859-1 encoding
-        "ascii",  # ASCII encoding
-        "utf-16",  # UTF-16 encoding
-        "utf-16le",  # UTF-16 Little Endian encoding
-        "utf-16be",  # UTF-16 Big Endian encoding
-        "utf-32",  # UTF-32 encoding
-        "utf-32le",  # UTF-32 Little Endian encoding
-        "utf-32be",  # UTF-32 Big Endian encoding
-    ]
+def _is_retryable_encoding_error(ex: Exception) -> bool:
+    msg = str(ex)
+    return not any(marker in msg for marker in _NON_ENCODING_ERROR_MARKERS)
 
-    last_error = None
-    for encoding in encodings:
+
+def _detect_encoding(con, csv_path: Path) -> str:
+    """Find the first encoding that lets DuckDB parse this file's header.
+
+    Only probes schema (LIMIT 0), so this never reads the file's data twice.
+    Stops immediately on a non-encoding error (e.g. a Binder Error) since no
+    amount of encoding retrying will fix a schema/SQL problem.
+    """
+    last_error: Exception | None = None
+    for encoding in ENCODINGS:
         try:
-            logger.info(
-                "Attempting to execute SQL with encoding %s for file %s",
-                encoding,
-                csv_path,
-            )
-            con.execute(sql, params + [encoding])
-            logger.info(
-                "Successfully executed SQL with encoding %s for file %s",
-                encoding,
-                csv_path,
+            con.execute(
+                f"select * from read_csv_auto(?, {READ_CSV_OPTS}, encoding=?) limit 0",
+                [str(csv_path), encoding],
             )
             return encoding
-
         except Exception as ex:
+            if not _is_retryable_encoding_error(ex):
+                raise
             last_error = ex
-            logger.warning(
-                "Error executing SQL with encoding %s for file %s: %s. Retrying with next encoding.",  # noqa: E501
-                encoding,
-                csv_path,
-                str(ex)[:200],  # Limit error message length
-            )
-
     msg = (
-        f"Failed to execute SQL with all attempted encodings for file {csv_path}."
+        f"Could not decode {csv_path} with any known encoding. "
         f" Last error: {str(last_error)[:200]}"
     )
     raise RuntimeError(msg)
@@ -115,6 +134,7 @@ def _ensure_ingest_table_from_csv(
     con: duckdb.DuckDBPyConnection,
     table_name: str,
     csv_path: Path,
+    encoding: str,
 ) -> None:
     relation = _fq("INGEST", table_name)
     con.execute(
@@ -130,13 +150,56 @@ def _ensure_ingest_table_from_csv(
             cast(null as varchar) as _FALLBACK_REASON,
             cast(null as varchar) as _LOAD_ID,
             *
-        from read_csv_auto(
-            ?, header=true, all_varchar=true, encoding='utf-8', quote='"'
-        )
+        from read_csv_auto(?, {READ_CSV_OPTS}, encoding=?)
         limit 0
         """,
-        [str(csv_path)],
+        [str(csv_path), encoding],
     )
+
+
+def _table_columns(con: duckdb.DuckDBPyConnection, table_name: str) -> set[str]:
+    rows = con.execute(
+        "select column_name from information_schema.columns "
+        "where table_schema = 'INGEST' and table_name = ?",
+        [table_name],
+    ).fetchall()
+    return {r[0] for r in rows}
+
+
+def _csv_columns(
+    con: duckdb.DuckDBPyConnection, csv_path: Path, encoding: str
+) -> list[str]:
+    description = con.execute(
+        (f"select * from read_csv_auto(?, {READ_CSV_OPTS}, encoding=?) limit 0"),
+        [str(csv_path), encoding],
+    ).description
+    return [c[0] for c in description]
+
+
+def _evolve_table_schema(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    csv_path: Path,
+    encoding: str,
+) -> None:
+    """Add any column present in this file but missing from the table.
+
+    Mirrors Snowpipe-style incremental schema evolution: each file is
+    evaluated as it lands, new columns are added as nullable, and earlier
+    rows simply read back NULL for columns that didn't exist yet.
+    """
+    existing = _table_columns(con, table_name)
+    for column in _csv_columns(con, csv_path, encoding):
+        if column not in existing:
+            relation = _fq("INGEST", table_name)
+            con.execute(f"alter table {relation} add column {_qident(column)} varchar")
+            logger.info(
+                "Schema evolution: %s gained column %r (from %s)",
+                table_name,
+                column,
+                csv_path.name,
+            )
+            existing.add(column)
 
 
 def _insert_csv_rows(
@@ -144,6 +207,7 @@ def _insert_csv_rows(
     table_name: str,
     csv_path: Path,
     sidecar: dict[str, Any],
+    encoding: str,
 ) -> int:
     relation = _fq("INGEST", table_name)
     ingested_at = sidecar.get("_INGESTED_AT") or sidecar.get("_DOWNLOADED_AT") or ""
@@ -153,16 +217,10 @@ def _insert_csv_rows(
     acquisition_method = sidecar.get("_ACQUISITION_METHOD") or "automated"
     fallback_reason = sidecar.get("_FALLBACK_REASON") or ""
     load_id = sidecar.get("_LOAD_ID") or file_content_key[:16]
-    row_count = int(
-        con.execute(
-            "select count(*) from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8', quote='\"')",  # noqa: E501
-            [str(csv_path)],
-        ).fetchone()[0]
-    )
-    _execute_with_encoding_retry(
-        con,
+
+    result = con.execute(
         f"""
-        insert into {relation}
+        insert into {relation} by name
         select
             try_cast(? as timestamp) as _INGESTED_AT,
             ? as _SOURCE_FILE_PATH,
@@ -173,7 +231,8 @@ def _insert_csv_rows(
             ? as _FALLBACK_REASON,
             ? as _LOAD_ID,
             *
-        from read_csv_auto(?, header=true, all_varchar=true, encoding=?, quote='"')
+        from read_csv_auto(?, {READ_CSV_OPTS}, encoding=?)
+        returning 1
         """,
         [
             ingested_at,
@@ -184,21 +243,74 @@ def _insert_csv_rows(
             fallback_reason,
             load_id,
             str(csv_path),
-            # encoding appended by _execute_with_encoding_retry
+            encoding,
         ],
-        csv_path,
     )
-    return row_count
+    return len(result.fetchall())
+
+
+def _load_one_file(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    csv_path: Path,
+    sidecar_by_target: dict[str, dict[str, Any]],
+    local_root: Path,
+    table_created: bool,
+) -> tuple[int, bool, str | None]:
+    """Load a single CSV into the named ingest table.
+
+    Returns (rows_loaded, table_created, error_message). On failure,
+    rows_loaded is 0 and error_message is set; the caller is expected to log
+    and continue with the next file rather than abort the run.
+    """
+    try:
+        encoding = _detect_encoding(con, csv_path)
+        if not table_created:
+            _ensure_ingest_table_from_csv(con, table_name, csv_path, encoding)
+            table_created = True
+        else:
+            _evolve_table_schema(con, table_name, csv_path, encoding)
+
+        rel_target = _as_posix(csv_path.relative_to(local_root)).strip("/")
+        sidecar = sidecar_by_target.get(rel_target, {})
+        rows = _insert_csv_rows(con, table_name, csv_path, sidecar, encoding)
+        suffix = "" if encoding == "utf-8" else f" (encoding={encoding})"
+        logger.info("Loaded %s: %d rows%s", csv_path.name, rows, suffix)
+        return rows, table_created, None
+    except Exception as ex:
+        message = str(ex)[:300]
+        logger.warning("Failed to load %s: %s", csv_path.name, message)
+        return 0, table_created, message
+
+
+def _load_target_files(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    csv_files: list[Path],
+    sidecar_by_target: dict[str, dict[str, Any]],
+    local_root: Path,
+    result: LoadResult,
+) -> None:
+    logger.info("Loading %d files into INGEST.%s", len(csv_files), table_name)
+    table_created = False
+    for csv_path in csv_files:
+        rows, table_created, error = _load_one_file(
+            con, table_name, csv_path, sidecar_by_target, local_root, table_created
+        )
+        if error is not None:
+            result.failures.append(LoadFailure(table_name, csv_path, error))
+        else:
+            result.loaded_rows += rows
 
 
 def _load_ingest_tables(
     con: duckdb.DuckDBPyConnection,
     local_root: Path,
     manifest_root: Path,
-) -> int:
+) -> LoadResult:
     configs = _load_manifests(manifest_root)
     sidecar_by_target = _load_sidecar_index(local_root)
-    loaded_rows = 0
+    result = LoadResult()
 
     for config in configs:
         for target in config.targets:
@@ -206,25 +318,22 @@ def _load_ingest_tables(
                 continue
 
             target_prefix = local_root / target.adls_path_prefix
-            if not target_prefix.exists():
-                continue
-
-            table_name = f"INGEST_{target.object_name_suffix}"
-            csv_files = sorted(
-                path
-                for path in target_prefix.rglob("*.csv")
-                if "downloaded_at=" in _as_posix(path)
-            )
-            if not csv_files:
-                continue
-
-            logger.info("Loading %d files into INGEST.%s", len(csv_files), table_name)
-            _ensure_ingest_table_from_csv(con, table_name, csv_files[0])
-
-            for csv_path in csv_files:
-                rel_target = _as_posix(csv_path.relative_to(local_root)).strip("/")
-                sidecar = sidecar_by_target.get(rel_target, {})
-                loaded_rows += _insert_csv_rows(con, table_name, csv_path, sidecar)
+            if target_prefix.exists():
+                table_name = f"INGEST_{target.object_name_suffix}"
+                csv_files = sorted(
+                    path
+                    for path in target_prefix.rglob("*.csv")
+                    if "downloaded_at=" in _as_posix(path)
+                )
+                if csv_files:
+                    _load_target_files(
+                        con,
+                        table_name,
+                        csv_files,
+                        sidecar_by_target,
+                        local_root,
+                        result,
+                    )
 
             for sub_table in target.sub_tables:
                 st_prefix = local_root / sub_table.adls_path_prefix
@@ -238,16 +347,11 @@ def _load_ingest_tables(
                 )
                 if not st_csv_files:
                     continue
-                logger.info(
-                    "Loading %d files into INGEST.%s", len(st_csv_files), st_table
+                _load_target_files(
+                    con, st_table, st_csv_files, sidecar_by_target, local_root, result
                 )
-                _ensure_ingest_table_from_csv(con, st_table, st_csv_files[0])
-                for csv_path in st_csv_files:
-                    rel_target = _as_posix(csv_path.relative_to(local_root)).strip("/")
-                    sidecar = sidecar_by_target.get(rel_target, {})
-                    loaded_rows += _insert_csv_rows(con, st_table, csv_path, sidecar)
 
-    return loaded_rows
+    return result
 
 
 def _load_sidecar_table(con: duckdb.DuckDBPyConnection, local_root: Path) -> int:
@@ -428,19 +532,32 @@ def _load_artifacts(local_root: Path, manifest_root: Path, duckdb_path: Path) ->
     try:
         con = duckdb.connect(str(duckdb_path))
         _create_schemas(con)
-        ingest_rows = _load_ingest_tables(con, local_root, manifest_root)
+        load_result = _load_ingest_tables(con, local_root, manifest_root)
         sidecar_rows = _load_sidecar_table(con, local_root)
         # telemetry_rows = _load_telemetry_table(con, local_root)
         # TODO: mimic the ingestion telemetry table load
         telemetry_rows = 0  # TODO: mimic the ingestion telemetry table load
         logger.info(
             "Loaded ingest_rows=%d sidecar_rows=%d telemetry_rows=%d",
-            ingest_rows,
+            load_result.loaded_rows,
             sidecar_rows,
             telemetry_rows,
         )
+        if load_result.failures:
+            logger.error(
+                "%d file(s) failed to load across %d target(s):",
+                len(load_result.failures),
+                len({f.table_name for f in load_result.failures}),
+            )
+            for failure in load_result.failures:
+                logger.error(
+                    "  %s / %s: %s",
+                    failure.table_name,
+                    failure.csv_path.name,
+                    failure.error,
+                )
         con.close()
-        return 0
+        return 1 if load_result.failures else 0
     except Exception as ex:
         logger.error("Error loading local artifacts to DuckDB: %s", ex)
         return 1
