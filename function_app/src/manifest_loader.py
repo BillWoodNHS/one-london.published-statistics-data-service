@@ -17,6 +17,7 @@ from .models import (
     SourcePageConfig,
     SubjectPeriodRule,
     SubjectPeriodRuleItem,
+    SubTableConfig,
     TargetConfig,
 )
 
@@ -73,6 +74,50 @@ def _require_adls_path_prefix(value, key: str) -> str:
             f"and forward slashes — no leading/trailing slashes"
         )
     return prefix
+
+
+def _parse_filename_patterns(raw, key: str) -> List[str]:
+    """Normalise a scalar string or list of strings into a validated pattern list."""
+    if raw is None or raw == "":
+        raise ManifestError(f"Missing required key: {key}")
+    patterns: List[str] = [raw] if isinstance(raw, str) else list(raw)
+    if not patterns:
+        raise ManifestError(f"{key} must not be empty")
+    for p in patterns:
+        if not isinstance(p, str) or not p:
+            raise ManifestError(f"{key} entries must be non-empty strings")
+        try:
+            re.compile(p)
+        except re.error as exc:
+            raise ManifestError(f"Invalid regex in {key} ({p!r}): {exc}") from exc
+    return patterns
+
+
+def _check_sub_table_pattern_overlap(
+    sub_tables: List[SubTableConfig], target_id: str
+) -> None:
+    """Raise ManifestError if any two sub-tables share overlapping filename patterns.
+
+    Uses re.search to detect exact duplicates and obvious substring matches.
+    Each pattern from table A is tested against each pattern string from table B
+    (and vice versa), catching cases where one pattern would match the literal
+    text of another.
+    """
+    for i, a in enumerate(sub_tables):
+        for b in sub_tables[i + 1 :]:
+            for pa in a.filename_patterns:
+                for pb in b.filename_patterns:
+                    conflict = (
+                        pa == pb
+                        or re.search(pa, pb, re.IGNORECASE)
+                        or re.search(pb, pa, re.IGNORECASE)
+                    )
+                    if conflict:
+                        raise ManifestError(
+                            f"Target {target_id!r}: sub_table patterns overlap — "
+                            f"{a.object_name_suffix!r} pattern {pa!r} conflicts with "
+                            f"{b.object_name_suffix!r} pattern {pb!r}"
+                        )
 
 
 def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
@@ -235,6 +280,27 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                 ]
                 normalized_steps = legacy_steps
 
+            sub_tables: List[SubTableConfig] = []
+            for st_idx, st in enumerate(target.get("sub_tables", []), start=1):
+                st_prefix = f"targets[{idx}].sub_tables[{st_idx}]"
+                sub_tables.append(
+                    SubTableConfig(
+                        object_name_suffix=_require_object_name_suffix(
+                            st.get("object_name_suffix"),
+                            f"{st_prefix}.object_name_suffix",
+                        ),
+                        adls_path_prefix=_require_adls_path_prefix(
+                            st.get("adls_path_prefix"),
+                            f"{st_prefix}.adls_path_prefix",
+                        ),
+                        filename_patterns=_parse_filename_patterns(
+                            st.get("filename_patterns"),
+                            f"{st_prefix}.filename_patterns",
+                        ),
+                    )
+                )
+            _check_sub_table_pattern_overlap(sub_tables, target_id)
+
             targets.append(
                 TargetConfig(
                     sub_dataset_id=target_id,
@@ -248,6 +314,7 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                     encoding=target.get("encoding", "utf-8"),
                     reporting_period_columns=target.get("reporting_period_columns", []),
                     page_date_selectors=target.get("page_date_selectors", []),
+                    sub_tables=sub_tables,
                     period_coverage=(
                         PeriodCoverageHint(
                             file_scope=PeriodCoverageFileScopeHint(

@@ -107,6 +107,11 @@ targets:
 - sub_dataset_id: daily-counts
   object_name_suffix: GP_APPTS_DAILY_COUNTS
   adls_path_prefix: appointments-in-general-practice/daily-counts
+  sub_tables:
+  - object_name_suffix: GP_APPTS_DAILY_COUNTS_COVERAGE
+    adls_path_prefix: appointments-in-general-practice/daily-counts-coverage
+    filename_patterns:
+    - APPOINTMENTS_GP_COVERAGE
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive
@@ -233,6 +238,11 @@ targets:
 - sub_dataset_id: practice-level
   object_name_suffix: GP_APPTS_PRACTICE_LEVEL
   adls_path_prefix: appointments-in-general-practice/practice-level
+  sub_tables:
+  - object_name_suffix: GP_APPTS_PRACTICE_LEVEL_MAPPING
+    adls_path_prefix: appointments-in-general-practice/practice-level-mapping
+    filename_patterns:
+    - ^Mapping
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/appointments-in-general-practice/march-2026
     page_role: archive

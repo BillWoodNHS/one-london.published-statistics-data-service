@@ -130,7 +130,9 @@ def _ensure_ingest_table_from_csv(
             cast(null as varchar) as _FALLBACK_REASON,
             cast(null as varchar) as _LOAD_ID,
             *
-        from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8')
+        from read_csv_auto(
+            ?, header=true, all_varchar=true, encoding='utf-8', quote='"'
+        )
         limit 0
         """,
         [str(csv_path)],
@@ -153,7 +155,7 @@ def _insert_csv_rows(
     load_id = sidecar.get("_LOAD_ID") or file_content_key[:16]
     row_count = int(
         con.execute(
-            "select count(*) from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8')",  # noqa: E501
+            "select count(*) from read_csv_auto(?, header=true, all_varchar=true, encoding='utf-8', quote='\"')",  # noqa: E501
             [str(csv_path)],
         ).fetchone()[0]
     )
@@ -171,7 +173,7 @@ def _insert_csv_rows(
             ? as _FALLBACK_REASON,
             ? as _LOAD_ID,
             *
-        from read_csv_auto(?, header=true, all_varchar=true, encoding=?)
+        from read_csv_auto(?, header=true, all_varchar=true, encoding=?, quote='"')
         """,
         [
             ingested_at,
@@ -223,6 +225,27 @@ def _load_ingest_tables(
                 rel_target = _as_posix(csv_path.relative_to(local_root)).strip("/")
                 sidecar = sidecar_by_target.get(rel_target, {})
                 loaded_rows += _insert_csv_rows(con, table_name, csv_path, sidecar)
+
+            for sub_table in target.sub_tables:
+                st_prefix = local_root / sub_table.adls_path_prefix
+                if not st_prefix.exists():
+                    continue
+                st_table = f"INGEST_{sub_table.object_name_suffix}"
+                st_csv_files = sorted(
+                    path
+                    for path in st_prefix.rglob("*.csv")
+                    if "downloaded_at=" in _as_posix(path)
+                )
+                if not st_csv_files:
+                    continue
+                logger.info(
+                    "Loading %d files into INGEST.%s", len(st_csv_files), st_table
+                )
+                _ensure_ingest_table_from_csv(con, st_table, st_csv_files[0])
+                for csv_path in st_csv_files:
+                    rel_target = _as_posix(csv_path.relative_to(local_root)).strip("/")
+                    sidecar = sidecar_by_target.get(rel_target, {})
+                    loaded_rows += _insert_csv_rows(con, st_table, csv_path, sidecar)
 
     return loaded_rows
 

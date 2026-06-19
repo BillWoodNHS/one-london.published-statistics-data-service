@@ -38,4 +38,32 @@
     {% elif target.type == 'duckdb' %}
         {{ log('✓ Local pipeline provisioned for ' ~ object_suffix, info=true) }}
     {% endif %}
+
+    {% for sub_table in target_cfg.get('sub_tables', []) %}
+        {% set sub_suffix = sub_table['object_name_suffix'] %}
+        {% set sub_ingest_table = 'INGEST_' ~ sub_suffix %}
+        {% set sub_raw_view = 'RAW_' ~ sub_suffix %}
+        {% set sub_file_format = 'CSV_FORMAT_' ~ sub_suffix %}
+        {% set sub_stage_name = 'STAGE_' ~ sub_suffix %}
+        {% set sub_pipe_name = 'PIPE_' ~ sub_suffix %}
+        {% set sub_blob_url = (adls_url_root.rstrip('/') ~ '/' ~ sub_table['adls_path_prefix'].strip('/') ~ '/') if adls_url_root != '' else '' %}
+
+        {{ log('Provisioning sub-table pipeline for ' ~ sub_suffix, info=true) }}
+
+        {{ create_ingest_table(database, ingest_schema, sub_ingest_table) }}
+        {{ create_raw_dedup_view(database, raw_schema, sub_raw_view, ingest_schema, sub_ingest_table) }}
+
+        {% if target.type == 'snowflake' %}
+            {% if sub_blob_url == '' %}
+                {{ exceptions.raise_compiler_error('blob_url required for Snowflake sub_table ' ~ sub_suffix) }}
+            {% endif %}
+
+            {{ create_csv_file_format(database, infra_schema, sub_file_format) }}
+            {{ create_stage_and_pipe(database, infra_schema, sub_stage_name, storage_integration, sub_blob_url, sub_file_format, sub_pipe_name, sub_ingest_table, ingest_schema) }}
+
+            {{ log('✓ Complete pipeline provisioned for sub-table ' ~ sub_suffix, info=true) }}
+        {% elif target.type == 'duckdb' %}
+            {{ log('✓ Local pipeline provisioned for sub-table ' ~ sub_suffix, info=true) }}
+        {% endif %}
+    {% endfor %}
 {% endmacro %}

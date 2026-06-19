@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple
 import pandas as pd
 import requests
 
-from .models import DiscoveredFile, LoadArtifact, NormalizedFile
+from .models import DiscoveredFile, LoadArtifact, NormalizedFile, TargetConfig
 from .period_coverage import infer_period_coverage
 
 
@@ -71,6 +71,21 @@ def _download(url: str) -> bytes:
 def _sha256(data: bytes) -> str:
     """Compute the SHA-256 hash of the given bytes."""
     return hashlib.sha256(data).hexdigest()
+
+
+def resolve_sub_table_adls_prefix(filename: str, target: TargetConfig) -> str:
+    """Return the ADLS path prefix for a file extracted from a zip.
+
+    Tests the file's basename against each sub-table's filename_patterns. The
+    first sub-table with any matching pattern wins. If no sub-table matches the
+    file is routed to the parent target's adls_path_prefix.
+    """
+    import re as _re
+
+    for st in target.sub_tables:
+        if any(_re.search(p, filename, _re.IGNORECASE) for p in st.filename_patterns):
+            return st.adls_path_prefix
+    return target.adls_path_prefix
 
 
 def _all_csvs_from_zip(payload: bytes) -> List[Tuple[str, bytes, Dict[str, Any]]]:

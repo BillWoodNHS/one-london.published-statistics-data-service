@@ -17,7 +17,9 @@ from function_app.src.download_and_normalize import (
     _excel_to_csv,
     _ods_to_csv,
     normalize_payload_to_csv,
+    resolve_sub_table_adls_prefix,
 )
+from function_app.src.models import SubTableConfig, TargetConfig
 
 # ---------------------------------------------------------------------------
 # Helpers to build test payloads in memory
@@ -294,3 +296,99 @@ class TestNormalizePayloadToCsv:
         ((name, _, _, _),) = normalize_payload_to_csv("subdir/data.csv", CSV_SIMPLE)
         # Should preserve original source_name
         assert "data.csv" in name
+
+
+# ---------------------------------------------------------------------------
+# resolve_sub_table_adls_prefix
+# ---------------------------------------------------------------------------
+
+
+def _make_target(sub_tables=None) -> TargetConfig:
+    return TargetConfig(
+        sub_dataset_id="test-target",
+        object_name_suffix="TEST_TARGET",
+        adls_path_prefix="dataset/test-target",
+        sub_tables=sub_tables or [],
+    )
+
+
+def _make_sub_table(suffix, prefix, patterns) -> SubTableConfig:
+    return SubTableConfig(
+        object_name_suffix=suffix,
+        adls_path_prefix=prefix,
+        filename_patterns=patterns,
+    )
+
+
+class TestResolveSubTableAdlsPrefix:
+    def test_no_sub_tables_returns_parent_prefix(self):
+        target = _make_target()
+        assert (
+            resolve_sub_table_adls_prefix("DATA_FILE_Jan26.csv", target)
+            == "dataset/test-target"
+        )
+
+    def test_matching_filename_returns_sub_table_prefix(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["COVERAGE_FILE"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_FILE_Jan26.csv", target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_non_matching_filename_returns_parent_prefix(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["COVERAGE_FILE"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("DATA_FILE_Jan26.csv", target)
+            == "dataset/test-target"
+        )
+
+    def test_pattern_match_is_case_insensitive(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["coverage_file"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_FILE.csv", target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_first_matching_sub_table_wins(self):
+        st1 = _make_sub_table("TEST_TARGET_A", "dataset/test-target-a", ["FILE_A"])
+        st2 = _make_sub_table("TEST_TARGET_B", "dataset/test-target-b", ["FILE_A"])
+        target = _make_target([st1, st2])
+        assert (
+            resolve_sub_table_adls_prefix("FILE_A.csv", target)
+            == "dataset/test-target-a"
+        )
+
+    def test_second_pattern_in_array_matches(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE",
+            "dataset/test-target-coverage",
+            ["COVERAGE_PATTERN_V1", "COVERAGE_PATTERN_V2"],
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_PATTERN_V2_Jan26.csv", target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_anchor_pattern_only_matches_start(self):
+        st = _make_sub_table(
+            "TEST_TARGET_MAPPING", "dataset/test-target-mapping", ["^Mapping"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("Mapping.csv", target)
+            == "dataset/test-target-mapping"
+        )
+        assert (
+            resolve_sub_table_adls_prefix("NotMapping.csv", target)
+            == "dataset/test-target"
+        )
