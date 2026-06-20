@@ -45,6 +45,7 @@
                 database_name,
                 presentation_schema,
                 current_revision_view,
+                presentation_view,
                 max_pub_view,
                 reporting_columns,
                 period_coverage
