@@ -218,3 +218,248 @@ class TestManifestLoaderAdlsPathPrefix:
         _manifest_with_target_patch(tmp_path, {"adls_path_prefix": valid})
         cfg = load_manifests(tmp_path)
         assert cfg[0].targets[0].adls_path_prefix == valid
+
+
+# ---------------------------------------------------------------------------
+# sub_tables validation
+# ---------------------------------------------------------------------------
+
+_VALID_SUB_TABLE = {
+    "object_name_suffix": "TEST_DEFAULT_SUB",
+    "adls_path_prefix": "test-dataset/default-sub",
+    "filename_patterns": ["^SUB_FILE"],
+}
+
+
+class TestSubTableConfig:
+    def _manifest_with_sub_tables(self, tmp_path: Path, sub_tables: list) -> Path:
+        data = _minimal_manifest()
+        data["targets"][0]["sub_tables"] = sub_tables
+        return _write_yaml(tmp_path, data)
+
+    # --- Happy path ---
+
+    def test_valid_sub_table_list_parses(self, tmp_path):
+        self._manifest_with_sub_tables(tmp_path, [_VALID_SUB_TABLE])
+        cfg = load_manifests(tmp_path)
+        target = cfg[0].targets[0]
+        assert len(target.sub_tables) == 1
+        st = target.sub_tables[0]
+        assert st.object_name_suffix == "TEST_DEFAULT_SUB"
+        assert st.adls_path_prefix == "test-dataset/default-sub"
+        assert st.filename_patterns == ["^SUB_FILE"]
+
+    def test_scalar_string_filename_patterns_normalised_to_list(self, tmp_path):
+        sub_table = dict(_VALID_SUB_TABLE)
+        sub_table["filename_patterns"] = "^SUB_FILE"
+        self._manifest_with_sub_tables(tmp_path, [sub_table])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables[0].filename_patterns == ["^SUB_FILE"]
+
+    def test_multiple_patterns_in_array_accepted(self, tmp_path):
+        sub_table = dict(_VALID_SUB_TABLE)
+        sub_table["filename_patterns"] = ["PATTERN_A", "PATTERN_B"]
+        self._manifest_with_sub_tables(tmp_path, [sub_table])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables[0].filename_patterns == [
+            "PATTERN_A",
+            "PATTERN_B",
+        ]
+
+    def test_multiple_non_overlapping_sub_tables_accepted(self, tmp_path):
+        st2 = {
+            "object_name_suffix": "TEST_DEFAULT_MAPPING",
+            "adls_path_prefix": "test-dataset/default-mapping",
+            "filename_patterns": ["^MAPPING_FILE"],
+        }
+        self._manifest_with_sub_tables(tmp_path, [_VALID_SUB_TABLE, st2])
+        cfg = load_manifests(tmp_path)
+        assert len(cfg[0].targets[0].sub_tables) == 2
+
+    def test_empty_sub_tables_list_accepted(self, tmp_path):
+        self._manifest_with_sub_tables(tmp_path, [])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables == []
+
+    def test_no_sub_tables_key_gives_empty_list(self, tmp_path):
+        _write_yaml(tmp_path, _minimal_manifest())
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables == []
+
+    # --- Error: missing / invalid fields ---
+
+    def test_missing_object_name_suffix_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        del st["object_name_suffix"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="object_name_suffix"):
+            load_manifests(tmp_path)
+
+    def test_invalid_object_name_suffix_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        st["object_name_suffix"] = "lower_case"
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError):
+            load_manifests(tmp_path)
+
+    def test_missing_adls_path_prefix_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        del st["adls_path_prefix"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="adls_path_prefix"):
+            load_manifests(tmp_path)
+
+    def test_missing_filename_patterns_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        del st["filename_patterns"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="filename_patterns"):
+            load_manifests(tmp_path)
+
+    def test_empty_filename_patterns_list_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        st["filename_patterns"] = []
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="filename_patterns"):
+            load_manifests(tmp_path)
+
+    def test_invalid_regex_in_filename_patterns_raises(self, tmp_path):
+        st = dict(_VALID_SUB_TABLE)
+        st["filename_patterns"] = ["[invalid"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="regex"):
+            load_manifests(tmp_path)
+
+    # --- Overlap detection ---
+
+    def test_overlapping_patterns_across_sub_tables_raises(self, tmp_path):
+        st1 = dict(_VALID_SUB_TABLE)
+        st2 = {
+            "object_name_suffix": "TEST_DEFAULT_OVERLAP",
+            "adls_path_prefix": "test-dataset/default-overlap",
+            "filename_patterns": ["SUB_FILE"],  # substring of "^SUB_FILE"
+        }
+        self._manifest_with_sub_tables(tmp_path, [st1, st2])
+        with pytest.raises(ManifestError, match="overlap"):
+            load_manifests(tmp_path)
+
+    def test_duplicate_pattern_across_sub_tables_raises(self, tmp_path):
+        st1 = dict(_VALID_SUB_TABLE)
+        st2 = {
+            "object_name_suffix": "TEST_DEFAULT_DUP",
+            "adls_path_prefix": "test-dataset/default-dup",
+            "filename_patterns": ["^SUB_FILE"],
+        }
+        self._manifest_with_sub_tables(tmp_path, [st1, st2])
+        with pytest.raises(ManifestError, match="overlap"):
+            load_manifests(tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# sub_tables sheet-routing (Excel/ODS tab splitting) validation
+# ---------------------------------------------------------------------------
+
+_VALID_SHEET_SUB_TABLE = {
+    "object_name_suffix": "TEST_DEFAULT_SHEET",
+    "adls_path_prefix": "test-dataset/default-sheet",
+    "sheet_name_patterns": ["^Data"],
+}
+
+
+class TestSubTableSheetRouting:
+    def _manifest_with_sub_tables(self, tmp_path: Path, sub_tables: list) -> Path:
+        data = _minimal_manifest()
+        data["targets"][0]["sub_tables"] = sub_tables
+        return _write_yaml(tmp_path, data)
+
+    def test_valid_sheet_sub_table_parses(self, tmp_path):
+        self._manifest_with_sub_tables(tmp_path, [_VALID_SHEET_SUB_TABLE])
+        cfg = load_manifests(tmp_path)
+        st = cfg[0].targets[0].sub_tables[0]
+        assert st.sheet_name_patterns == ["^Data"]
+        assert st.filename_patterns == []
+        assert st.start_cell is None
+
+    def test_scalar_string_sheet_name_patterns_normalised_to_list(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["sheet_name_patterns"] = "^Data"
+        self._manifest_with_sub_tables(tmp_path, [st])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables[0].sheet_name_patterns == ["^Data"]
+
+    def test_multiple_sheet_name_patterns_accepted(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["sheet_name_patterns"] = ["national.*data", "national.*cases"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables[0].sheet_name_patterns == [
+            "national.*data",
+            "national.*cases",
+        ]
+
+    def test_start_cell_parsed_and_uppercased(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["start_cell"] = "b5"
+        self._manifest_with_sub_tables(tmp_path, [st])
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].sub_tables[0].start_cell == "B5"
+
+    @pytest.mark.parametrize("invalid", ["1A", "B", "B-5", "B5B", ""])
+    def test_invalid_start_cell_raises(self, tmp_path, invalid):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["start_cell"] = invalid
+        self._manifest_with_sub_tables(tmp_path, [st])
+        if invalid == "":
+            load_manifests(tmp_path)  # empty string treated as omitted
+            return
+        with pytest.raises(ManifestError, match="start_cell"):
+            load_manifests(tmp_path)
+
+    def test_invalid_regex_in_sheet_name_patterns_raises(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["sheet_name_patterns"] = ["[invalid"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="regex"):
+            load_manifests(tmp_path)
+
+    def test_both_filename_patterns_and_sheet_pattern_raises(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["filename_patterns"] = ["^SOME_FILE"]
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="must not define both"):
+            load_manifests(tmp_path)
+
+    def test_neither_filename_patterns_nor_sheet_pattern_raises(self, tmp_path):
+        st = {
+            "object_name_suffix": "TEST_DEFAULT_NEITHER",
+            "adls_path_prefix": "test-dataset/default-neither",
+        }
+        self._manifest_with_sub_tables(tmp_path, [st])
+        with pytest.raises(ManifestError, match="must define filename_patterns"):
+            load_manifests(tmp_path)
+
+    def test_overlapping_sheet_patterns_raises(self, tmp_path):
+        st1 = dict(_VALID_SHEET_SUB_TABLE)
+        st2 = {
+            "object_name_suffix": "TEST_DEFAULT_SHEET_DUP",
+            "adls_path_prefix": "test-dataset/default-sheet-dup",
+            "sheet_name_patterns": ["Data"],  # substring of "^Data"
+        }
+        self._manifest_with_sub_tables(tmp_path, [st1, st2])
+        with pytest.raises(ManifestError, match="overlap"):
+            load_manifests(tmp_path)
+
+    def test_filename_and_sheet_routed_sub_tables_coexist_without_overlap_check(
+        self, tmp_path
+    ):
+        # A filename-routed and a sheet-routed sub_table on the same target
+        # must not be cross-checked for overlap — they match different
+        # dimensions (file basename vs. sheet name) and can share identical
+        # pattern text without conflict.
+        st1 = dict(_VALID_SUB_TABLE)
+        st1["filename_patterns"] = ["Data"]
+        st2 = dict(_VALID_SHEET_SUB_TABLE)
+        st2["sheet_name_patterns"] = ["Data"]
+        self._manifest_with_sub_tables(tmp_path, [st1, st2])
+        cfg = load_manifests(tmp_path)
+        assert len(cfg[0].targets[0].sub_tables) == 2

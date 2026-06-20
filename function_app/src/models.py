@@ -81,6 +81,24 @@ class SourcePageConfig:
 
 
 @dataclass
+class SubTableConfig:
+    """Configuration for a sub-table within a target.
+
+    Either filename-routed (files extracted from a zip are routed to this
+    sub-table when their basename matches any pattern in filename_patterns)
+    or sheet-routed (sheets within an Excel/ODS workbook are routed to this
+    sub-table when their name matches any pattern in sheet_name_patterns).
+    Exactly one of filename_patterns/sheet_name_patterns is set per sub-table.
+    """
+
+    object_name_suffix: str
+    adls_path_prefix: str
+    filename_patterns: List[str] = field(default_factory=list)
+    sheet_name_patterns: List[str] = field(default_factory=list)
+    start_cell: Optional[str] = None
+
+
+@dataclass
 class TargetConfig:
     """Configuration for a sub-dataset target.
 
@@ -99,6 +117,7 @@ class TargetConfig:
     reporting_period_columns: List[str] = field(default_factory=list)
     page_date_selectors: List[str] = field(default_factory=list)
     period_coverage: Optional[PeriodCoverageHint] = None
+    sub_tables: List[SubTableConfig] = field(default_factory=list)
 
 
 @dataclass

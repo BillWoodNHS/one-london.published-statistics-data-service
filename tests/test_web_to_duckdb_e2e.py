@@ -62,7 +62,7 @@ def _run_web_manifest_to_duckdb(tmp_path, monkeypatch, manifest_name: str):
     con.execute("drop view if exists current_revision_view")
     con.execute(
         "create table raw_data as select * from "
-        "read_csv_auto(?, header=true, all_varchar=true)",
+        "read_csv_auto(?, header=true, all_varchar=true, quote='\"')",
         [str(csv_path)],
     )
     con.execute("alter table raw_data add column _PUBLICATION_DATE varchar")

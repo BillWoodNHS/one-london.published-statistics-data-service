@@ -27,6 +27,8 @@ Each entry in `targets`:
 - optional: `reporting_period_columns`
 - optional: `page_date_selectors` (regex patterns to extract page-level publication/revision date per sub-publication)
 - optional: `period_coverage` (hint block to prioritize runtime period-range detection)
+- optional: `excel_sheet` (name of the sheet/tab to read for `.xlsx`/`.xls`/`.ods` sources; defaults to the first sheet when omitted)
+- optional: `sub_tables` (split one discovered source into multiple output tables — see below)
 
 `period_coverage` options:
 - `file_scope.duration_type`: `unknown` | `single_period` | `rolling` | `calendar_ytd` | `fiscal_ytd` | `daily`
@@ -48,6 +50,57 @@ period_coverage:
 		- month
 ```
 
+## Sub-Tables (splitting one source into multiple output tables)
+
+Sometimes a single discovered source doesn't map to a single output table:
+
+- A `.zip` payload may bundle files with different schemas (e.g. a main data file plus a coverage/lookup file).
+- A `.xlsx`/`.xls`/`.ods` workbook may have several tabs, some of which are formatted reports/summaries to ignore, and others — possibly more than one — containing distinct tabular data.
+
+`sub_tables` handles both cases with the same mechanism: each entry is a rule that pulls part of a source out into its own output table, with its own `object_name_suffix`/`adls_path_prefix` (dbt provisions an `INGEST_<suffix>`/`RAW_<suffix>` pair per sub_table automatically). Each entry must define **exactly one** of `filename_patterns` or `sheet_name_patterns` — not both, not neither.
+
+`object_name_suffix` must be unique across the **whole dataset file**, not just within one target — it is what dbt and the local DuckDB loader use to name the physical `INGEST_<suffix>`/`RAW_<suffix>` tables, with no `sub_dataset_id` qualifier. Reusing the same suffix across sibling targets (e.g. one per organism/region) silently merges their data into the same physical table.
+
+Common fields:
+- `object_name_suffix`: same naming rules as the target's own `object_name_suffix`.
+- `adls_path_prefix`: same path rules as the target's own `adls_path_prefix`.
+
+### Filename-routed (ZIP extraction)
+
+- `filename_patterns`: a regex string, or list of regex strings, matched case-insensitively against the basename of each file extracted from the ZIP. The first sub_table with a matching pattern wins.
+- A file that matches no `filename_patterns` across any sub_table falls through to the parent target's own `adls_path_prefix` — it is still ingested, just under the target's main table rather than a sub_table.
+
+```yaml
+sub_tables:
+  - object_name_suffix: GP_APPTS_DAILY_COUNTS_COVERAGE
+    adls_path_prefix: appointments-in-general-practice/daily-counts-coverage
+    filename_patterns:
+      - APPOINTMENTS_GP_COVERAGE
+```
+
+### Sheet-routed (Excel/ODS tab splitting)
+
+- `sheet_name_patterns`: a regex string, or list of regex strings, matched case-insensitively against sheet/tab names in the workbook — any pattern in the list matching is enough. Use a list when wording varies across releases (e.g. some files say "national ... data", others say "national ... cases"). Every sheet that matches becomes its own output file, all routed to that sub_table — if several sheets match (e.g. one tab per month with the same schema), each produces a separate output but all land in the same sub_table's table.
+- `start_cell` (optional): the top-left cell of the table, **including its header row** — e.g. `B5`. Rows above it are skipped and columns to its left are dropped. Defaults to `A1` when omitted.
+- A sheet that matches no `sheet_name_patterns` across any sub_table on the target is **dropped, not ingested** — this is the point: non-matching tabs are presumed to be formatted reports/summaries, not data. This is deliberately different from the filename-routed fallback above, where an unmatched file still gets ingested under the parent target.
+- If a target defines sheet-routed sub_tables but none of their patterns match any sheet in a given workbook, loading that source fails loudly (manifest/source mismatch) rather than silently producing no output.
+- Prefer loose patterns (e.g. `raw.*data` rather than a literal `Table_2_raw_data`) — published tab names rarely match an assumed literal string exactly, and `re.search` already runs case-insensitively, so the pattern only needs to capture the meaningful words and their order.
+
+```yaml
+sub_tables:
+  - object_name_suffix: WAITING_LIST_BY_TRUST
+    adls_path_prefix: waiting-lists/by-trust
+    sheet_name_patterns: ^Trust
+  - object_name_suffix: WAITING_LIST_BY_ICB
+    adls_path_prefix: waiting-lists/by-icb
+    sheet_name_patterns:
+      - national.*data
+      - national.*cases
+    start_cell: B3
+```
+
+Note: `sheet_name_patterns`/`start_cell` and the simple `excel_sheet` field address different needs — use `excel_sheet` when the whole workbook is one table that just happens not to be on the first tab; use sheet-routed `sub_tables` when the workbook contains multiple distinct tables across tabs.
+
 ## Authoring Rules
 
 - Keep `sub_dataset_id` specific and stable.
@@ -58,6 +111,8 @@ period_coverage:
 - Use narrow `text_filter` patterns to avoid ambiguous links.
 - Set `file_extensions` where possible (`csv`, `zip`, `xlsx`, `xls`).
 - If manual fallback is required, configure `fallback.manual_drop_path` clearly.
+- Keep `sub_tables` patterns (`filename_patterns` or `sheet_name_patterns`) narrow and non-overlapping with sibling sub_tables on the same target — overlapping patterns within the same routing dimension (filename vs. sheet name) are rejected at load time.
+- Confirm `sheet_name_patterns`/`start_cell` against the real workbook before relying on them — sheet names and header positions in published spreadsheets can change between releases.
 
 ## Add New Series Checklist
 

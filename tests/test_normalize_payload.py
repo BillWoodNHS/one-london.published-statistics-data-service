@@ -17,7 +17,9 @@ from function_app.src.download_and_normalize import (
     _excel_to_csv,
     _ods_to_csv,
     normalize_payload_to_csv,
+    resolve_sub_table_adls_prefix,
 )
+from function_app.src.models import SubTableConfig, TargetConfig
 
 # ---------------------------------------------------------------------------
 # Helpers to build test payloads in memory
@@ -147,7 +149,7 @@ class TestAllCsvsFromZip:
 class TestExcelToCsv:
     def test_converts_xlsx_to_csv(self):
         xlsx = _make_xlsx(["name", "score"], [["alice", 95], ["bob", 87]])
-        name, content, metrics = _excel_to_csv("my_report", xlsx, ".xlsx")
+        ((name, content, metrics),) = _excel_to_csv("my_report", xlsx, ".xlsx")
         assert name == "my_report.csv"
         decoded = content.decode("utf-8")
         assert "name,score" in decoded
@@ -160,15 +162,151 @@ class TestExcelToCsv:
 
     def test_converted_csv_has_correct_row_count(self):
         xlsx = _make_xlsx(["a"], [[1], [2], [3], [4], [5]])
-        _, content, metrics = _excel_to_csv("data", xlsx, ".xlsx")
+        ((_, content, metrics),) = _excel_to_csv("data", xlsx, ".xlsx")
         assert metrics["raw_row_count"] == 5
         assert _count_csv_rows(content) == 5
+
+    def test_excel_sheet_selector_reads_named_sheet(self):
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["junk"])
+        data_sheet = wb.create_sheet("Data")
+        data_sheet.append(["a", "b"])
+        data_sheet.append([1, 2])
+        buf = io.BytesIO()
+        wb.save(buf)
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            excel_sheet="Data",
+        )
+        ((name, content, metrics),) = _excel_to_csv(
+            "report", buf.getvalue(), ".xlsx", target
+        )
+        assert name == "report.csv"
+        decoded = content.decode("utf-8")
+        assert "a,b" in decoded
+        assert metrics["raw_row_count"] == 1
+
+    def test_sheet_splitting_produces_one_output_per_matched_sheet(self):
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["ignore me"])
+        monthly_jan = wb.create_sheet("Monthly Jan")
+        monthly_jan.append(["a", "b"])
+        monthly_jan.append([1, 2])
+        monthly_feb = wb.create_sheet("Monthly Feb")
+        monthly_feb.append(["a", "b"])
+        monthly_feb.append([3, 4])
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="MONTHLY",
+            adls_path_prefix="dataset/monthly",
+            sheet_name_patterns=["^Monthly"],
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        results = _excel_to_csv("report", buf.getvalue(), ".xlsx", target)
+        assert len(results) == 2
+        names = {name for name, _, _ in results}
+        assert names == {"report__Monthly_Jan.csv", "report__Monthly_Feb.csv"}
+        for _, _, metrics in results:
+            assert metrics["matched_sub_table_object_name_suffix"] == "MONTHLY"
+            assert metrics["matched_sub_table_adls_path_prefix"] == "dataset/monthly"
+            assert metrics["source_sheet_name"] in {"Monthly Jan", "Monthly Feb"}
+
+    def test_sheet_splitting_matches_any_of_multiple_patterns(self):
+        # Real-world sheets vary in wording across releases (e.g. "national
+        # ... data" vs "national ... cases") — sheet_name_patterns is a list
+        # so any alternative can match.
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["ignore me"])
+        national = wb.create_sheet("National Cases")
+        national.append(["a", "b"])
+        national.append([1, 2])
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="NATIONAL",
+            adls_path_prefix="dataset/national",
+            sheet_name_patterns=["national.*data", "national.*cases"],
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        results = _excel_to_csv("report", buf.getvalue(), ".xlsx", target)
+        assert len(results) == 1
+        assert results[0][2]["source_sheet_name"] == "National Cases"
+
+    def test_sheet_splitting_with_start_cell_skips_header_offset(self):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Data"
+        ws["B3"] = "a"
+        ws["C3"] = "b"
+        ws["B4"] = 1
+        ws["C4"] = 2
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="DATA",
+            adls_path_prefix="dataset/data",
+            sheet_name_patterns=["Data"],
+            start_cell="B3",
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        ((name, content, metrics),) = _excel_to_csv(
+            "report", buf.getvalue(), ".xlsx", target
+        )
+        decoded = content.decode("utf-8")
+        assert "a,b" in decoded
+        assert "1,2" in decoded
+        assert metrics["raw_row_count"] == 1
+
+    def test_sheet_splitting_raises_when_no_sheet_matches(self):
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["junk"])
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="DATA",
+            adls_path_prefix="dataset/data",
+            sheet_name_patterns=["^Data"],
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        with pytest.raises(ValueError, match="None of the configured"):
+            _excel_to_csv("report", buf.getvalue(), ".xlsx", target)
 
 
 class TestOdsToCsv:
     def test_converts_ods_to_csv(self):
         ods = _make_ods(["name", "score"], [["alice", 95], ["bob", 87]])
-        name, content, metrics = _ods_to_csv("my_report", ods, ".ods")
+        ((name, content, metrics),) = _ods_to_csv("my_report", ods, ".ods")
         assert name == "my_report.csv"
         decoded = content.decode("utf-8")
         assert "name,score" in decoded
@@ -181,13 +319,13 @@ class TestOdsToCsv:
 
     def test_converted_ods_has_correct_row_count(self):
         ods = _make_ods(["a"], [[1], [2], [3], [4], [5]])
-        _, content, metrics = _ods_to_csv("data", ods, ".ods")
+        ((_, content, metrics),) = _ods_to_csv("data", ods, ".ods")
         assert metrics["raw_row_count"] == 5
         assert _count_csv_rows(content) == 5
 
     def test_empty_ods_returns_zero_rows(self):
         ods = _make_ods(["header"], [])
-        _, content, metrics = _ods_to_csv("empty", ods, ".ods")
+        ((_, content, metrics),) = _ods_to_csv("empty", ods, ".ods")
         assert metrics["raw_row_count"] == 0
         assert _count_csv_rows(content) == 0
 
@@ -294,3 +432,178 @@ class TestNormalizePayloadToCsv:
         ((name, _, _, _),) = normalize_payload_to_csv("subdir/data.csv", CSV_SIMPLE)
         # Should preserve original source_name
         assert "data.csv" in name
+
+    def test_single_output_excel_content_hash_matches_source_payload(self):
+        import hashlib
+
+        xlsx = _make_xlsx(["col"], [["val1"]])
+        ((_, _, h, _),) = normalize_payload_to_csv("report.xlsx", xlsx)
+        assert h == hashlib.sha256(xlsx).hexdigest()
+
+    def test_sheet_splitting_produces_distinct_hashes_per_sheet(self):
+        wb = openpyxl.Workbook()
+        wb.active.title = "Jan"
+        wb.active.append(["a"])
+        wb.active.append([1])
+        feb = wb.create_sheet("Feb")
+        feb.append(["a"])
+        feb.append([2])
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="MONTHLY",
+            adls_path_prefix="dataset/monthly",
+            sheet_name_patterns=[".*"],
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        results = normalize_payload_to_csv("report.xlsx", buf.getvalue(), target)
+        assert len(results) == 2
+        hashes = {h for _, _, h, _ in results}
+        assert len(hashes) == 2
+        for _, _, _, metrics in results:
+            assert metrics["matched_sub_table_adls_path_prefix"] == "dataset/monthly"
+
+    def test_zip_containing_excel_with_sheet_splitting(self):
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["junk"])
+        data_sheet = wb.create_sheet("Data")
+        data_sheet.append(["a", "b"])
+        data_sheet.append([1, 2])
+        buf = io.BytesIO()
+        wb.save(buf)
+        zip_payload = _make_zip(("report.xlsx", buf.getvalue()))
+
+        sub_table = SubTableConfig(
+            object_name_suffix="DATA",
+            adls_path_prefix="dataset/data",
+            sheet_name_patterns=["^Data"],
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        ((name, content, _, metrics),) = normalize_payload_to_csv(
+            "archive.zip", zip_payload, target
+        )
+        assert name == "report__Data.csv"
+        assert metrics["source_file_type"] == "zip"
+        assert metrics["extracted_from_archive"] is True
+        assert metrics["matched_sub_table_adls_path_prefix"] == "dataset/data"
+
+
+# ---------------------------------------------------------------------------
+# resolve_sub_table_adls_prefix
+# ---------------------------------------------------------------------------
+
+
+def _make_target(sub_tables=None) -> TargetConfig:
+    return TargetConfig(
+        sub_dataset_id="test-target",
+        object_name_suffix="TEST_TARGET",
+        adls_path_prefix="dataset/test-target",
+        sub_tables=sub_tables or [],
+    )
+
+
+def _make_sub_table(suffix, prefix, patterns) -> SubTableConfig:
+    return SubTableConfig(
+        object_name_suffix=suffix,
+        adls_path_prefix=prefix,
+        filename_patterns=patterns,
+    )
+
+
+class TestResolveSubTableAdlsPrefix:
+    def test_no_sub_tables_returns_parent_prefix(self):
+        target = _make_target()
+        assert (
+            resolve_sub_table_adls_prefix("DATA_FILE_Jan26.csv", {}, target)
+            == "dataset/test-target"
+        )
+
+    def test_matching_filename_returns_sub_table_prefix(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["COVERAGE_FILE"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_FILE_Jan26.csv", {}, target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_non_matching_filename_returns_parent_prefix(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["COVERAGE_FILE"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("DATA_FILE_Jan26.csv", {}, target)
+            == "dataset/test-target"
+        )
+
+    def test_pattern_match_is_case_insensitive(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["coverage_file"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_FILE.csv", {}, target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_first_matching_sub_table_wins(self):
+        st1 = _make_sub_table("TEST_TARGET_A", "dataset/test-target-a", ["FILE_A"])
+        st2 = _make_sub_table("TEST_TARGET_B", "dataset/test-target-b", ["FILE_A"])
+        target = _make_target([st1, st2])
+        assert (
+            resolve_sub_table_adls_prefix("FILE_A.csv", {}, target)
+            == "dataset/test-target-a"
+        )
+
+    def test_second_pattern_in_array_matches(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE",
+            "dataset/test-target-coverage",
+            ["COVERAGE_PATTERN_V1", "COVERAGE_PATTERN_V2"],
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("COVERAGE_PATTERN_V2_Jan26.csv", {}, target)
+            == "dataset/test-target-coverage"
+        )
+
+    def test_anchor_pattern_only_matches_start(self):
+        st = _make_sub_table(
+            "TEST_TARGET_MAPPING", "dataset/test-target-mapping", ["^Mapping"]
+        )
+        target = _make_target([st])
+        assert (
+            resolve_sub_table_adls_prefix("Mapping.csv", {}, target)
+            == "dataset/test-target-mapping"
+        )
+        assert (
+            resolve_sub_table_adls_prefix("NotMapping.csv", {}, target)
+            == "dataset/test-target"
+        )
+
+    def test_sheet_routed_metrics_short_circuit_filename_matching(self):
+        st = _make_sub_table(
+            "TEST_TARGET_COVERAGE", "dataset/test-target-coverage", ["COVERAGE_FILE"]
+        )
+        target = _make_target([st])
+        metrics = {"matched_sub_table_adls_path_prefix": "dataset/sheet-routed"}
+        assert (
+            resolve_sub_table_adls_prefix(
+                "DOES_NOT_MATCH_ANY_PATTERN.csv", metrics, target
+            )
+            == "dataset/sheet-routed"
+        )

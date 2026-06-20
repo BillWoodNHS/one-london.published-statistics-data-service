@@ -354,6 +354,7 @@ def main() -> int:
     print(f"Max total files: {os.environ['LOCAL_MAX_TOTAL_FILES']}")
 
     # Choose execution mode
+    load_had_failures = False
     if args.pytest_only:
         print("\nRunning pytest test suite only (ingestion skipped)...")
         code = _run_pytest()
@@ -364,8 +365,13 @@ def main() -> int:
             print("\nLoading local artifacts to DuckDB ingest tables...")
             load_code = _load_local_artifacts_to_duckdb()
             if load_code != 0:
-                print("✗ DuckDB artifact load failed.")
-                return load_code
+                # The loader isolates failures per file/target and already
+                # attempted every dataset, so a non-zero exit here means
+                # "some files failed" rather than "nothing was loaded" -
+                # continue to dbt for the datasets that did load, but still
+                # surface the failure in the final exit code.
+                print("⚠ DuckDB artifact load completed with failures (see log above).")
+                load_had_failures = True
             if not args.skip_dbt_run:
                 print("\nRunning dbt provisioning and telemetry models...")
                 dbt_code = _run_dbt_local()
@@ -385,6 +391,10 @@ def main() -> int:
             return verify_code
 
     mode_label = "pytest" if args.pytest_only else "ingestion"
+    if load_had_failures:
+        print(f"\nLocal e2e {mode_label} run completed with DuckDB load failures.")
+        return 1
+
     print(f"\nLocal e2e {mode_label} run completed successfully.")
     return 0
 

@@ -74,7 +74,7 @@ def test_execute_ingestion_skips_redownload_and_reupload_when_source_unchanged(
     def fake_download_blob_bytes(blob_path: str) -> bytes:
         return storage[blob_path]
 
-    def fake_normalize_to_csv(item: DiscoveredFile):
+    def fake_normalize_to_csv(item: DiscoveredFile, target=None):
         normalize_call_count["count"] += 1
         return [
             NormalizedFile(

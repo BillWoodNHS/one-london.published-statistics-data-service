@@ -27,7 +27,7 @@ targets:
     partitioning_strategy: none
     scrape_steps:
     - link_selector: a[href$='.ods']
-      text_filter: CDI|C difficile
+      text_filter: CDI|C. difficile
       file_extensions:
       - ods
     sibling_discovery:
@@ -45,6 +45,18 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_DIFFICILE_RAW
+    adls_path_prefix: infection-control/c-difficile-infection-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_DIFFICILE_NATIONAL
+    adls_path_prefix: infection-control/c-difficile-infection-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
@@ -58,7 +70,7 @@ targets:
     partitioning_strategy: none
     scrape_steps:
     - link_selector: a[href$='.ods']
-      text_filter: E-coli|Ecoli
+      text_filter: E-coli|E. coli
       file_extensions:
       - ods
     sibling_discovery:
@@ -76,6 +88,18 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_ECOLI_RAW
+    adls_path_prefix: infection-control/e-coli-bacteraemia-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_ECOLI_NATIONAL
+    adls_path_prefix: infection-control/e-coli-bacteraemia-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: *id001
 - sub_dataset_id: klebsiella-spp-bacteraemia
@@ -105,6 +129,18 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_KLEBSIELLA_RAW
+    adls_path_prefix: infection-control/klebsiella-spp-bacteraemia-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_KLEBSIELLA_NATIONAL
+    adls_path_prefix: infection-control/klebsiella-spp-bacteraemia-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: *id001
 - sub_dataset_id: mrsa-bacteraemia
@@ -134,6 +170,18 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_MRSA_RAW
+    adls_path_prefix: infection-control/mrsa-bacteraemia-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_MRSA_NATIONAL
+    adls_path_prefix: infection-control/mrsa-bacteraemia-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: *id001
 - sub_dataset_id: mssa-bacteraemia
@@ -163,6 +211,18 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_MSSA_RAW
+    adls_path_prefix: infection-control/mssa-bacteraemia-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_MSSA_NATIONAL
+    adls_path_prefix: infection-control/mssa-bacteraemia-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: *id001
 - sub_dataset_id: p-aeruginosa
@@ -174,7 +234,7 @@ targets:
     partitioning_strategy: none
     scrape_steps:
     - link_selector: a[href$='.ods']
-      text_filter: P-aeruginosa|P_aeruginosa
+      text_filter: P-aeruginosa|P. aeruginosa
       file_extensions:
       - ods
     sibling_discovery:
@@ -192,5 +252,17 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: INFECTION_PSEUDOMONAS_RAW
+    adls_path_prefix: infection-control/p-aeruginosa-raw-data
+    sheet_name_patterns:
+    - raw.*data
+    start_cell: A4
+  - object_name_suffix: INFECTION_PSEUDOMONAS_NATIONAL
+    adls_path_prefix: infection-control/p-aeruginosa-national-data
+    sheet_name_patterns:
+    - national.*data
+    - national.*cases
+    start_cell: A4
 
   page_date_selectors: *id001

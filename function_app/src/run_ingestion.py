@@ -18,6 +18,7 @@ from .download_and_normalize import (
     build_artifact,
     normalize_payload_to_csv,
     normalize_to_csv,
+    resolve_sub_table_adls_prefix,
 )
 from .manifest_loader import load_manifests
 from .manual_sources import discover_manual_files
@@ -474,6 +475,8 @@ def execute_ingestion() -> Dict[str, Any]:
             )
             continue
 
+        target_by_sub_id = {t.sub_dataset_id: t for t in config.targets}
+
         for item in discovered:
             records = _records_for(item.series_id, item.sub_dataset_id)
             latest = _latest_record_for_source(records, item.source_url)
@@ -505,7 +508,13 @@ def execute_ingestion() -> Dict[str, Any]:
             )
             download_started = time.perf_counter()
             try:
-                results = normalize_to_csv(item)
+                item_target = target_by_sub_id.get(item.sub_dataset_id)
+                results = normalize_to_csv(item, item_target)
+                if item_target and item_target.sub_tables:
+                    for nf in results:
+                        nf.adls_path_prefix = resolve_sub_table_adls_prefix(
+                            nf.filename, nf.metrics, item_target
+                        )
             except Exception as ex:
                 _emit_event(
                     telemetry_events,
@@ -664,7 +673,10 @@ def execute_ingestion() -> Dict[str, Any]:
                 latest = _latest_record_for_source(records, candidate.source_url)
                 payload = download_blob_bytes(candidate.source_url)
 
-                results = normalize_payload_to_csv(candidate.link_text, payload)
+                candidate_target = target_by_sub_id.get(candidate.sub_dataset_id)
+                results = normalize_payload_to_csv(
+                    candidate.link_text, payload, candidate_target
+                )
                 for filename, csv_payload, content_hash, normalize_metrics in results:
                     normalize_metrics["source_bytes"] = len(payload)
                     _emit_event(
@@ -709,6 +721,10 @@ def execute_ingestion() -> Dict[str, Any]:
                         candidate.publication_date_value
                     )
                     downloaded_at = now_utc_compact()
+                    if candidate_target and candidate_target.sub_tables:
+                        candidate.adls_path_prefix = resolve_sub_table_adls_prefix(
+                            filename, normalize_metrics, candidate_target
+                        )
                     artifact = build_artifact(
                         candidate,
                         filename,
