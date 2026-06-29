@@ -96,6 +96,20 @@ def _parse_args() -> argparse.Namespace:
         help="LOCAL_MAX_TOTAL_FILES limit (0 disables limit).",
     )
     parser.add_argument(
+        "--schema-root",
+        default=str(REPO_ROOT / "config" / "schemas"),
+        help=(
+            "Directory of known-schema YAML files (one per dataset_id), used "
+            "for local-only schema drift warnings (default: config/schemas)."
+        ),
+    )
+    parser.add_argument(
+        "--schema-drift-threshold",
+        type=float,
+        default=0.20,
+        help="Jaccard distance above which schema drift is reported (default: 0.20).",
+    )
+    parser.add_argument(
         "--skip-verification",
         action="store_true",
         help="Skip post-run local verification and summary report generation.",
@@ -285,7 +299,7 @@ def _run_ingestion() -> int:
         return 1
 
 
-def _load_local_artifacts_to_duckdb() -> int:
+def _load_local_artifacts_to_duckdb(args: argparse.Namespace) -> int:
     """Load downloaded artifacts into dbt-compatible ingest DuckDB tables.
 
     Returns:
@@ -300,6 +314,10 @@ def _load_local_artifacts_to_duckdb() -> int:
         os.environ["MANIFEST_ROOT"],
         "--duckdb-file",
         os.environ["DUCKDB_FILE"],
+        "--schema-root",
+        args.schema_root,
+        "--schema-drift-threshold",
+        str(args.schema_drift_threshold),
     ]
     return subprocess.call(command, cwd=REPO_ROOT)
 
@@ -352,6 +370,8 @@ def main() -> int:
     print(f"Max files per dataset: {os.environ['LOCAL_MAX_FILES_PER_DATASET']}")
     print(f"Max files per target: {os.environ['LOCAL_MAX_FILES_PER_TARGET']}")
     print(f"Max total files: {os.environ['LOCAL_MAX_TOTAL_FILES']}")
+    print(f"Schema root: {args.schema_root}")
+    print(f"Schema drift threshold: {args.schema_drift_threshold}")
 
     # Choose execution mode
     load_had_failures = False
@@ -363,7 +383,7 @@ def main() -> int:
         code = _run_ingestion()
         if code == 0 and not args.skip_duckdb_load:
             print("\nLoading local artifacts to DuckDB ingest tables...")
-            load_code = _load_local_artifacts_to_duckdb()
+            load_code = _load_local_artifacts_to_duckdb(args)
             if load_code != 0:
                 # The loader isolates failures per file/target and already
                 # attempted every dataset, so a non-zero exit here means

@@ -36,6 +36,35 @@ def test_build_report_counts_files_and_sidecars(tmp_path: Path):
     ]
 
 
+def test_build_report_includes_schema_drift_warnings(tmp_path: Path):
+    local_root = tmp_path / "local_adls"
+    local_root.mkdir(parents=True)
+    warnings_path = local_root / "schema_drift_warnings.json"
+    warnings_path.write_text(
+        json.dumps(
+            [
+                {
+                    "table_name": "TEST_DRIFT_SAMPLE",
+                    "csv_path": "drift-dataset/drift-target/sample.csv",
+                    "known_columns": ["ColA", "ColB", "ColC"],
+                    "actual_columns": ["ColA", "ColX"],
+                    "drift_ratio": 0.75,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    report = verify_local_run._build_report(
+        local_root=local_root,
+        duckdb_path=local_root / "local_validation.duckdb",
+    )
+
+    assert report["schema_drift_warning_count"] == 1
+    assert report["schema_drift_warnings"][0]["table_name"] == "TEST_DRIFT_SAMPLE"
+    assert "Schema Drift Warnings" in verify_local_run._to_markdown(report)
+
+
 def test_write_reports_outputs_json_and_markdown(tmp_path: Path):
     report = {
         "generated_at_utc": "2026-06-12T00:00:00Z",
@@ -45,6 +74,8 @@ def test_write_reports_outputs_json_and_markdown(tmp_path: Path):
         "files_by_series_sub_dataset": [],
         "sidecar_source_url_count": 0,
         "csv_path_sample": [],
+        "schema_drift_warning_count": 0,
+        "schema_drift_warnings": [],
         "duckdb": {
             "path": str(tmp_path / "x.duckdb"),
             "database_exists": False,

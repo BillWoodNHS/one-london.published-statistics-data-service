@@ -45,6 +45,67 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  sub_tables:
+  - object_name_suffix: CHS_WAIT_NON_SUBMISSION
+    adls_path_prefix: community-health-services-waiting-list/non-submission-data
+    sheet_name_patterns:
+    - ^Table 1$
+    start_cell: A3
+  - object_name_suffix: CHS_WAIT_NATIONAL_TOTALS_WAITING_BY_SERVICE
+    adls_path_prefix: community-health-services-waiting-list/national-by-service
+    sheet_name_patterns:
+    - ^Table 2$
+    start_cell: A3
+  - object_name_suffix: CHS_WAIT_NATIONAL_BY_SERVICE_AND_WAITING_TIME
+    adls_path_prefix: community-health-services-waiting-list/national-by-service-and-wait-time
+    sheet_name_patterns:
+    - ^Table 3$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORANISATION_AND_SERVICE
+    adls_path_prefix: community-health-services-waiting-list/by-organisation-and-service
+    sheet_name_patterns:
+    - ^Table 4$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_00_TO_01_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/00-to-01-weeks
+    sheet_name_patterns:
+    - ^Table 4a$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_01_TO_02_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/01-to-02-weeks
+    sheet_name_patterns:
+    - ^Table 4b$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_02_TO_04_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/02-to-04-weeks
+    sheet_name_patterns:
+    - ^Table 4c$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_04_TO_12_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/04-to-12-weeks
+    sheet_name_patterns:
+    - ^Table 4d$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_12_TO_18_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/12-to-18-weeks
+    sheet_name_patterns:
+    - ^Table 4e$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_18_TO_52_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/18-to-52-weeks
+    sheet_name_patterns:
+    - ^Table 4f$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_52_TO_104_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/52-to-104-weeks
+    sheet_name_patterns:
+    - ^Table 4g$
+    start_cell: A5
+  - object_name_suffix: CHS_WAIT_BY_ORGANISATION_AND_SERVICE_OVER_104_WEEKS
+    adls_path_prefix: community-health-services-waiting-list/over-104-weeks
+    sheet_name_patterns:
+    - ^Table 4h$
+    start_cell: A5
 
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})

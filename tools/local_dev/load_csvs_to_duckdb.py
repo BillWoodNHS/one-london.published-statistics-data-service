@@ -20,6 +20,14 @@ try:
 except ImportError:
     duckdb = None
 
+from tools.local_dev.schema_drift import (
+    KnownSchema,
+    SchemaDriftWarning,
+    detect_drift,
+    load_known_schema,
+    warnings_to_json,
+)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -58,6 +66,15 @@ class LoadFailure:
 class LoadResult:
     loaded_rows: int = 0
     failures: list[LoadFailure] = field(default_factory=list)
+    drift_warnings: list[SchemaDriftWarning] = field(default_factory=list)
+
+
+@dataclass
+class DriftSettings:
+    """Per-table schema drift check configuration, or None to disable."""
+
+    known_schema: KnownSchema | None
+    threshold: float
 
 
 def _as_posix(path: Path) -> str:
@@ -249,6 +266,30 @@ def _insert_csv_rows(
     return len(result.fetchall())
 
 
+def _check_schema_drift(
+    con: duckdb.DuckDBPyConnection,
+    csv_path: Path,
+    drift_settings: DriftSettings,
+) -> SchemaDriftWarning | None:
+    """Compare a CSV's columns against the known schema, if one is set."""
+    if drift_settings.known_schema is None:
+        return None
+    encoding = _detect_encoding(con, csv_path)
+    columns = _csv_columns(con, csv_path, encoding)
+    warning = detect_drift(
+        drift_settings.known_schema, columns, drift_settings.threshold
+    )
+    if warning is not None:
+        warning.csv_path = csv_path
+        logger.warning(
+            "Schema drift: %s drifted %.0f%% from known schema (file=%s)",
+            warning.table_name,
+            warning.drift_ratio * 100,
+            csv_path.name,
+        )
+    return warning
+
+
 def _load_one_file(
     con: duckdb.DuckDBPyConnection,
     table_name: str,
@@ -290,10 +331,15 @@ def _load_target_files(
     sidecar_by_target: dict[str, dict[str, Any]],
     local_root: Path,
     result: LoadResult,
+    drift_settings: DriftSettings,
 ) -> None:
     logger.info("Loading %d files into INGEST.%s", len(csv_files), table_name)
     table_created = False
     for csv_path in csv_files:
+        drift_warning = _check_schema_drift(con, csv_path, drift_settings)
+        if drift_warning is not None:
+            result.drift_warnings.append(drift_warning)
+
         rows, table_created, error = _load_one_file(
             con, table_name, csv_path, sidecar_by_target, local_root, table_created
         )
@@ -303,10 +349,19 @@ def _load_target_files(
             result.loaded_rows += rows
 
 
+def _drift_settings_for(
+    schema_root: Path, dataset_id: str, suffix: str, threshold: float
+) -> DriftSettings:
+    known_schema = load_known_schema(schema_root, dataset_id, suffix)
+    return DriftSettings(known_schema=known_schema, threshold=threshold)
+
+
 def _load_ingest_tables(
     con: duckdb.DuckDBPyConnection,
     local_root: Path,
     manifest_root: Path,
+    schema_root: Path,
+    drift_threshold: float,
 ) -> LoadResult:
     configs = _load_manifests(manifest_root)
     sidecar_by_target = _load_sidecar_index(local_root)
@@ -326,6 +381,12 @@ def _load_ingest_tables(
                     if "downloaded_at=" in _as_posix(path)
                 )
                 if csv_files:
+                    drift_settings = _drift_settings_for(
+                        schema_root,
+                        config.dataset_id,
+                        target.object_name_suffix,
+                        drift_threshold,
+                    )
                     _load_target_files(
                         con,
                         table_name,
@@ -333,6 +394,7 @@ def _load_ingest_tables(
                         sidecar_by_target,
                         local_root,
                         result,
+                        drift_settings,
                     )
 
             for sub_table in target.sub_tables:
@@ -347,8 +409,20 @@ def _load_ingest_tables(
                 )
                 if not st_csv_files:
                     continue
+                drift_settings = _drift_settings_for(
+                    schema_root,
+                    config.dataset_id,
+                    sub_table.object_name_suffix,
+                    drift_threshold,
+                )
                 _load_target_files(
-                    con, st_table, st_csv_files, sidecar_by_target, local_root, result
+                    con,
+                    st_table,
+                    st_csv_files,
+                    sidecar_by_target,
+                    local_root,
+                    result,
+                    drift_settings,
                 )
 
     return result
@@ -524,7 +598,30 @@ def _load_telemetry_table(con: duckdb.DuckDBPyConnection, local_root: Path) -> i
     return rows_loaded
 
 
-def _load_artifacts(local_root: Path, manifest_root: Path, duckdb_path: Path) -> int:
+def _write_drift_warnings(local_root: Path, result: LoadResult) -> None:
+    """Persist drift warnings so verify_local_run.py can report on them.
+
+    Written unconditionally (even when empty) so the report always finds a
+    predictable artifact rather than treating "no file" as "no drift".
+    """
+    warnings_path = local_root / "schema_drift_warnings.json"
+    warnings_path.write_text(
+        json.dumps(warnings_to_json(result.drift_warnings), indent=2),
+        encoding="utf-8",
+    )
+    if result.drift_warnings:
+        logger.warning(
+            "%d schema drift warning(s) detected.", len(result.drift_warnings)
+        )
+
+
+def _load_artifacts(
+    local_root: Path,
+    manifest_root: Path,
+    duckdb_path: Path,
+    schema_root: Path,
+    drift_threshold: float,
+) -> int:
     if duckdb is None:
         logger.error("DuckDB not installed. Run: pip install duckdb")
         return 1
@@ -532,7 +629,9 @@ def _load_artifacts(local_root: Path, manifest_root: Path, duckdb_path: Path) ->
     try:
         con = duckdb.connect(str(duckdb_path))
         _create_schemas(con)
-        load_result = _load_ingest_tables(con, local_root, manifest_root)
+        load_result = _load_ingest_tables(
+            con, local_root, manifest_root, schema_root, drift_threshold
+        )
         sidecar_rows = _load_sidecar_table(con, local_root)
         # telemetry_rows = _load_telemetry_table(con, local_root)
         # TODO: mimic the ingestion telemetry table load
@@ -556,6 +655,7 @@ def _load_artifacts(local_root: Path, manifest_root: Path, duckdb_path: Path) ->
                     failure.csv_path.name,
                     failure.error,
                 )
+        _write_drift_warnings(local_root, load_result)
         con.close()
         return 1 if load_result.failures else 0
     except Exception as ex:
@@ -585,6 +685,25 @@ def main() -> int:
         default=None,
         help="DuckDB file path (default: LOCAL_STORAGE_ROOT/local_validation.duckdb)",
     )
+    parser.add_argument(
+        "--schema-root",
+        type=Path,
+        default=Path("config/schemas"),
+        help=(
+            "Directory of known-schema YAML files (one per dataset_id), used "
+            "for local-only schema drift warnings. Missing files/suffixes are "
+            "skipped (default: config/schemas)."
+        ),
+    )
+    parser.add_argument(
+        "--schema-drift-threshold",
+        type=float,
+        default=0.20,
+        help=(
+            "Jaccard distance above which a file's columns are reported as "
+            "schema drift relative to its known schema (default: 0.20)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -605,8 +724,15 @@ def main() -> int:
     logger.info("Loading local artifacts from: %s", local_root)
     logger.info("Manifest root: %s", manifest_root)
     logger.info("DuckDB destination: %s", duckdb_file)
+    logger.info("Schema root: %s", args.schema_root.resolve())
 
-    return _load_artifacts(local_root, manifest_root, duckdb_file)
+    return _load_artifacts(
+        local_root,
+        manifest_root,
+        duckdb_file,
+        args.schema_root.resolve(),
+        args.schema_drift_threshold,
+    )
 
 
 if __name__ == "__main__":

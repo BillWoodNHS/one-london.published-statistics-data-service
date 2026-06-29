@@ -26,8 +26,8 @@ targets:
     page_role: default
     partitioning_strategy: none
     scrape_steps:
-    - link_selector: a[href*='Apr-Mar']
-      text_filter: Apr.*Mar|Combined|Final
+    - link_selector: a[href*='Monthly-Combined-CSV']
+      text_filter: (?=.*Combined)(?=.*CSV)(?=.*(?:Final|Provisional))
       file_extensions:
       - csv
       - xlsx
@@ -58,8 +58,8 @@ targets:
     page_role: default
     partitioning_strategy: none
     scrape_steps:
-    - link_selector: a[href*='ICB']
-      text_filter: ICB|Commissioner|Extract
+    - link_selector: a[href*='Data-Extract-ICB-Sub-Location']
+      text_filter: ICB|Commissioner|Data Extract
       file_extensions:
       - xlsx
     sibling_discovery:

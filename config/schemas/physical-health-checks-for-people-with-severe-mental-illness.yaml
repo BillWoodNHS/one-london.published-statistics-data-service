@@ -1,0 +1,20 @@
+schemas:
+  PHYSICAL_HEALTH_SMI_DATA:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - National
+      - Region
+      - ICB_Code
+      - ICB_Name
+      - Sub_ICB_Code
+      - Sub_ICB_Name
+      - PCN_Code
+      - PCN_Name
+      - Practice_Code
+      - Practice_Name
+      - Demographic_Field
+      - Demographic_Value
+      - Measure_ID
+      - Measure_Name
+      - Measure_Value

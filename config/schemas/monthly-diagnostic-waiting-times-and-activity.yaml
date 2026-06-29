@@ -1,0 +1,33 @@
+schemas:
+  DIAGNOSTIC_WAIT_DEFAULT:
+    columns:
+    - Period
+    - Provider Parent Org Code
+    - Provider Parent Name
+    - Provider Org Code
+    - Provider Org Name
+    - Commissioner Parent Org Code
+    - Commissioner Parent Name
+    - Commissioner Org Code
+    - Commissioner Org Name
+    - Diagnostic Tests Sort Order
+    - Diagnostic Tests
+    - 00 < 01 Week
+    - 01 < 02 Weeks
+    - 02 < 03 Weeks
+    - 03 < 04 Weeks
+    - 04 < 05 Weeks
+    - 05 < 06 Weeks
+    - 06 < 07 Weeks
+    - 07 < 08 Weeks
+    - 08 < 09 Weeks
+    - 09 < 10 Weeks
+    - 10 < 11 Weeks
+    - 11 < 12 Weeks
+    - 12 < 13 Weeks
+    - 13+ Weeks
+    - Total WL
+    - Waiting List Activity
+    - Planned Activity
+    - Unscheduled Activity
+    - Total Activity

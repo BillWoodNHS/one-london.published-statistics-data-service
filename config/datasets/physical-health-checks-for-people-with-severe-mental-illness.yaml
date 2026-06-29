@@ -19,8 +19,8 @@ fallback:
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: default
-  object_name_suffix: PHYSICAL_HEALTH_DEFAULT
-  adls_path_prefix: physical-health-checks-for-people-with-severe-mental-illness/default
+  object_name_suffix: PHYSICAL_HEALTH_SMI_DATA
+  adls_path_prefix: physical-health-checks-for-people-with-severe-mental-illness/data
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/physical-health-checks-for-people-with-severe-mental-illness
     page_role: default

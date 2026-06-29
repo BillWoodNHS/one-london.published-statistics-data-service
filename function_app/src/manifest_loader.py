@@ -19,6 +19,7 @@ from .models import (
     SubjectPeriodRuleItem,
     SubTableConfig,
     TargetConfig,
+    UnpivotConfig,
 )
 
 
@@ -104,6 +105,23 @@ def _parse_start_cell(raw, key: str) -> str | None:
             f"Invalid {key}: must be a cell reference like 'A1' or 'B5'"
         )
     return value
+
+
+def _parse_unpivot(raw, key: str) -> UnpivotConfig | None:
+    """Validate and parse an optional unpivot block."""
+    if raw is None:
+        return None
+    id_columns = raw.get("id_columns")
+    if not id_columns or not isinstance(id_columns, list):
+        raise ManifestError(f"{key}.id_columns must be a non-empty list")
+    variable_column_name = raw.get("variable_column_name")
+    if not variable_column_name:
+        raise ManifestError(f"{key}.variable_column_name is required")
+    return UnpivotConfig(
+        id_columns=list(id_columns),
+        variable_column_name=variable_column_name,
+        value_column_name=raw.get("value_column_name", "value"),
+    )
 
 
 def _check_pattern_overlap(
@@ -362,6 +380,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                         start_cell=_parse_start_cell(
                             st.get("start_cell"), f"{st_prefix}.start_cell"
                         ),
+                        unpivot=_parse_unpivot(
+                            st.get("unpivot"), f"{st_prefix}.unpivot"
+                        ),
                     )
                 )
             _check_sub_table_pattern_overlap(sub_tables, target_id)
@@ -380,6 +401,9 @@ def load_manifests(manifest_root: Path) -> List[DatasetSeriesConfig]:
                     reporting_period_columns=target.get("reporting_period_columns", []),
                     page_date_selectors=target.get("page_date_selectors", []),
                     sub_tables=sub_tables,
+                    unpivot=_parse_unpivot(
+                        target.get("unpivot"), f"targets[{idx}].unpivot"
+                    ),
                     period_coverage=(
                         PeriodCoverageHint(
                             file_scope=PeriodCoverageFileScopeHint(

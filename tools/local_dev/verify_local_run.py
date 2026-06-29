@@ -100,6 +100,15 @@ def _load_sidecar(path: Path) -> Dict[str, Any]:
         return {}
 
 
+def _load_drift_warnings(local_root: Path) -> List[Dict[str, Any]]:
+    path = local_root / "schema_drift_warnings.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, list) else []
+    except Exception:
+        return []
+
+
 def _duckdb_table_summary(duckdb_path: Path) -> Dict[str, Any]:
     summary: Dict[str, Any] = {
         "duckdb_available": False,
@@ -160,6 +169,7 @@ def _duckdb_table_summary(duckdb_path: Path) -> Dict[str, Any]:
 def _build_report(local_root: Path, duckdb_path: Path) -> Dict[str, Any]:
     csv_files = _collect_csv_files(local_root)
     sidecars = _collect_sidecars(local_root)
+    drift_warnings = _load_drift_warnings(local_root)
 
     file_counts: Dict[Tuple[str, str], int] = defaultdict(int)
     for csv_file in csv_files:
@@ -193,6 +203,8 @@ def _build_report(local_root: Path, duckdb_path: Path) -> Dict[str, Any]:
         ],
         "sidecar_source_url_count": len(sidecar_by_source),
         "csv_path_sample": [str(path) for path in csv_files[:25]],
+        "schema_drift_warning_count": len(drift_warnings),
+        "schema_drift_warnings": drift_warnings,
         "duckdb": _duckdb_table_summary(duckdb_path),
         "observations": {
             "csv_without_sidecar_possible": len(csv_files) > len(sidecars),
@@ -212,6 +224,7 @@ def _to_markdown(report: Dict[str, Any]) -> str:
         f"- CSV files: {report['csv_file_count']}",
         f"- Sidecar files: {report['sidecar_file_count']}",
         f"- Sidecar source URL count: {report['sidecar_source_url_count']}",
+        f"- Schema drift warnings: {report['schema_drift_warning_count']}",
         "",
         "## Files by Series and Sub-dataset",
         "",
@@ -248,7 +261,29 @@ def _to_markdown(report: Dict[str, Any]) -> str:
             f"{table['column_count']} |"
         )
 
+    lines.extend(_drift_warnings_markdown(report["schema_drift_warnings"]))
+
     return "\n".join(lines) + "\n"
+
+
+def _drift_warnings_markdown(drift_warnings: List[Dict[str, Any]]) -> List[str]:
+    lines = ["", "## Schema Drift Warnings", ""]
+    if not drift_warnings:
+        lines.append("None detected.")
+        return lines
+
+    lines.extend(
+        [
+            "| Table | CSV File | Drift Ratio |",
+            "|---|---|---:|",
+        ]
+    )
+    for warning in drift_warnings:
+        csv_name = Path(warning["csv_path"]).name
+        lines.append(
+            f"| {warning['table_name']} | {csv_name} | {warning['drift_ratio']:.2f} |"
+        )
+    return lines
 
 
 def _write_reports(
@@ -274,6 +309,7 @@ def main() -> int:
     print(f"  CSV files: {report['csv_file_count']}")
     print(f"  Sidecar files: {report['sidecar_file_count']}")
     print(f"  DuckDB tables: {report['duckdb']['table_count']}")
+    print(f"  Schema drift warnings: {report['schema_drift_warning_count']}")
 
     if args.report_dir:
         json_path, md_path = _write_reports(

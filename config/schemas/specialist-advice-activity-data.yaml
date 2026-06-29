@@ -1,0 +1,22 @@
+schemas:
+  SPECIALIST_ADVICE_COMMISSIONER:
+    columns:
+      - Activity Month
+      - ICB Code
+      - ICB Name
+      - Diverted Requests
+      - Processed Requests
+      - In scope of ERF?
+      - Type of Specialist Advice
+      - Requests
+
+  SPECIALIST_ADVICE_PROVIDER:
+    columns:
+      - Activity Month
+      - Provider Code
+      - Provider Name
+      - Type of Specialist Advice
+      - Diverted Requests
+      - Processed Requests
+      - In scope of ERF?
+      - Requests

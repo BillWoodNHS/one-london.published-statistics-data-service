@@ -18,16 +18,48 @@ fallback:
   max_auto_retries: 3
   timeout_threshold_minutes: 5
 targets:
-- sub_dataset_id: integrated-urgent-care-aggregate-data-collection
-  object_name_suffix: INTEGRATED_UC_DEFAULT
+- sub_dataset_id: iuc-adc-official-statistics
+  object_name_suffix: IUC_ADC_OFFICIAL_STATISTICS
   adls_path_prefix: integrated-urgent-care-aggregate-data-collection/integrated-urgent-care-aggregate-data-collection
   source_pages:
   - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='.csv']
-      text_filter: IUCADC|Provisional
+    - link_selector: a[href*='IUCADC']:not([href*='Provisional'])
+      text_filter: ^(?=.*IUCADC)(?!.*Provisional)
+      file_extensions:
+      - csv
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
+  reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+
+  page_date_selectors:
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+
+- sub_dataset_id: iuc-adc-provisional-statistics
+  object_name_suffix: IUC_ADC_PROVISIONAL_STATISTICS
+  adls_path_prefix: integrated-urgent-care-aggregate-data-collection/integrated-urgent-care-aggregate-data-collection
+  source_pages:
+  - page_url: https://www.england.nhs.uk/statistics/statistical-work-areas/iucadc-new-from-april-2021/integrated-urgent-care-aggregate-data-collection-iucadc-inc-nhs111-statistics-apr-2026-mar-2027/
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href*='Provisional']
+      text_filter: Provisional
       file_extensions:
       - csv
     sibling_discovery:

@@ -81,6 +81,23 @@ class SourcePageConfig:
 
 
 @dataclass
+class UnpivotConfig:
+    """Configuration for reshaping wide columns into a long format.
+
+    Every column not listed in id_columns is melted: its header becomes a
+    value in variable_column_name, its cell value becomes
+    value_column_name. Generic by design — equally suited to a column per
+    reporting period or a column per metric. No interpretation (e.g. date
+    parsing) of the melted header text happens here; that is a downstream,
+    dataset-specific concern.
+    """
+
+    id_columns: List[str]
+    variable_column_name: str
+    value_column_name: str = "value"
+
+
+@dataclass
 class SubTableConfig:
     """Configuration for a sub-table within a target.
 
@@ -96,6 +113,7 @@ class SubTableConfig:
     filename_patterns: List[str] = field(default_factory=list)
     sheet_name_patterns: List[str] = field(default_factory=list)
     start_cell: Optional[str] = None
+    unpivot: Optional[UnpivotConfig] = None
 
 
 @dataclass
@@ -118,6 +136,7 @@ class TargetConfig:
     page_date_selectors: List[str] = field(default_factory=list)
     period_coverage: Optional[PeriodCoverageHint] = None
     sub_tables: List[SubTableConfig] = field(default_factory=list)
+    unpivot: Optional[UnpivotConfig] = None
 
 
 @dataclass

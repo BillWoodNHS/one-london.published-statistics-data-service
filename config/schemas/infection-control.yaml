@@ -1,0 +1,144 @@
+schemas:
+  INFECTION_DIFFICILE_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_DIFFICILE_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source
+
+  INFECTION_ECOLI_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_ECOLI_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source
+
+  INFECTION_KLEBSIELLA_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_KLEBSIELLA_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source
+
+  INFECTION_MRSA_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_MRSA_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source
+
+  INFECTION_MSSA_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_MSSA_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source
+
+  INFECTION_PSEUDOMONAS_RAW:
+    columns:
+    - Collection
+    - Organisation type
+    - Organisation code
+    - Organisation name
+    - UKHSA centre
+    - ICB
+    - Region name
+    - Year
+    - Month
+    - Metric
+    - Figure
+    - Data signed off
+    - Data changed since last publication?
+
+  INFECTION_PSEUDOMONAS_NATIONAL:
+    columns:
+    - Organisation name
+    - Organisation code
+    - Metric
+    - Period # pivoted from source
+    - Value # pivoted from source

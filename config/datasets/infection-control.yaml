@@ -57,10 +57,17 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+
 - sub_dataset_id: e-coli-bacteraemia
   object_name_suffix: INFECTION_ECOLI
   adls_path_prefix: infection-control/e-coli-bacteraemia
@@ -100,8 +107,15 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: *id001
+
 - sub_dataset_id: klebsiella-spp-bacteraemia
   object_name_suffix: INFECTION_KLEBSIELLA
   adls_path_prefix: infection-control/klebsiella-spp-bacteraemia
@@ -141,8 +155,15 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: *id001
+
 - sub_dataset_id: mrsa-bacteraemia
   object_name_suffix: INFECTION_MRSA
   adls_path_prefix: infection-control/mrsa-bacteraemia
@@ -182,8 +203,15 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: *id001
+
 - sub_dataset_id: mssa-bacteraemia
   object_name_suffix: INFECTION_MSSA
   adls_path_prefix: infection-control/mssa-bacteraemia
@@ -223,8 +251,15 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: *id001
+
 - sub_dataset_id: p-aeruginosa
   object_name_suffix: INFECTION_PSEUDOMONAS
   adls_path_prefix: infection-control/p-aeruginosa
@@ -264,5 +299,11 @@ targets:
     - national.*data
     - national.*cases
     start_cell: A4
-
+    unpivot:
+      id_columns:
+      - Organisation name
+      - Organisation code
+      - Metric
+      variable_column_name: Period
+      value_column_name: Value
   page_date_selectors: *id001
