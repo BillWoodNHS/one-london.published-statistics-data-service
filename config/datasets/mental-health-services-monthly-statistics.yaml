@@ -26,8 +26,8 @@ targets:
     page_role: default
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='OAP*.zip']
-      text_filter: MHSDS.Monthly:.Performance*Out of Area Placements
+    - link_selector: a[href*='OAP' i][href$='.zip']
+      text_filter: MHSDS.Monthly.*Performance.*Out of Area Placements
       file_extensions:
       - zip
     sibling_discovery:

@@ -26,8 +26,8 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='learning-disabilities-health-check-scheme*.csv']
-      text_filter: Learning.Disability.Health.Check.Scheme*CSV
+    - link_selector: a[href$='.csv']
+      text_filter: Learning.Disability.Health.Check.Scheme.*CSV
       file_extensions:
       - csv
     sibling_discovery:
@@ -56,8 +56,8 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='LDHC*Data*Dictionary*.xlsx']
-      text_filter: Data.Dictionary
+    - link_selector: a[href$='.xlsx']
+      text_filter: LDHC.*Data.*Dictionary
       file_extensions:
       - xlsx
     sibling_discovery:

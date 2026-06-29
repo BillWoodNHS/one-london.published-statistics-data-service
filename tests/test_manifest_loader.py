@@ -11,7 +11,7 @@ def test_manifest_loads_targets():
     mh = next(
         m
         for m in manifests
-        if m.series_id == "mental_health_services_monthly_statistics"
+        if m.series_id == "mental-health-services-monthly-statistics"
     )
     assert len(mh.targets) == 3
     # Find performance-data-file target instead of relying on order
