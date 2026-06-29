@@ -29,6 +29,7 @@ Each entry in `targets`:
 - optional: `period_coverage` (hint block to prioritize runtime period-range detection)
 - optional: `excel_sheet` (name of the sheet/tab to read for `.xlsx`/`.xls`/`.ods` sources; defaults to the first sheet when omitted)
 - optional: `sub_tables` (split one discovered source into multiple output tables — see below)
+- optional: `unpivot` (reshape wide, repeating columns into a long format — see below)
 
 `period_coverage` options:
 - `file_scope.duration_type`: `unknown` | `single_period` | `rolling` | `calendar_ytd` | `fiscal_ytd` | `daily`
@@ -101,6 +102,57 @@ sub_tables:
 
 Note: `sheet_name_patterns`/`start_cell` and the simple `excel_sheet` field address different needs — use `excel_sheet` when the whole workbook is one table that just happens not to be on the first tab; use sheet-routed `sub_tables` when the workbook contains multiple distinct tables across tabs.
 
+## Unpivoting (reshaping wide, repeating columns into a long format)
+
+Some sources name a column after each reporting period it covers (e.g. one
+column per month: `Apr 2025`, `May 2025`, ...), or name a column after each
+metric it reports (e.g. `Attendances`, `Admissions`, ...). Left as-is, these
+columns accumulate over time — a new month column appears every release, and
+a full backlog/historical load brings in years of distinct columns at once.
+This causes permanent schema drift in the ingested table.
+
+`unpivot` reshapes a wide table into a stable long format **before** it is
+written to storage, so the ingested table's columns never grow. It is
+generic — it has no notion of "dates" or "metrics", it simply melts every
+column that isn't listed in `id_columns`:
+
+- `id_columns`: the columns to keep as-is per output row. List the small,
+  stable set of identifying columns (e.g. org code/name) — **not** the
+  wide/repeating columns, which may be numerous and whose exact names can
+  vary release to release (e.g. `Apr-25` one year, `April 2025` the next).
+- `variable_column_name`: the output column that receives each melted
+  column's original header text (e.g. `reporting_period`, or `metric` for
+  a column-per-metric source).
+- `value_column_name`: the output column that receives each melted
+  column's cell value. Defaults to `value`.
+
+No interpretation of the melted header text happens here (e.g. parsing
+`Apr 2025` into a real date) — that is a downstream, dataset-specific
+concern best handled in a dbt staging model.
+
+`unpivot` can be set on a target (applies to the whole source) or on an
+individual `sub_table` (applies to just that routed sheet/file) — use the
+sub_table form when only one tab of a workbook is wide-format.
+
+```yaml
+sub_tables:
+  - object_name_suffix: NATIONAL_DATA
+    adls_path_prefix: cdi-monthly/national-data
+    sheet_name_patterns:
+      - Table_1_national_data
+    start_cell: B4
+    unpivot:
+      id_columns:
+        - Org Code
+        - Org name
+      variable_column_name: reporting_period
+      value_column_name: value
+```
+
+A 12-column 2019 file and an 18-column 2026 file of the same series both
+reduce to the same `id_columns` + `reporting_period` + `value` shape, so no
+column list ever needs to be enumerated or updated as new periods appear.
+
 ## Authoring Rules
 
 - Keep `sub_dataset_id` specific and stable.
@@ -113,6 +165,7 @@ Note: `sheet_name_patterns`/`start_cell` and the simple `excel_sheet` field addr
 - If manual fallback is required, configure `fallback.manual_drop_path` clearly.
 - Keep `sub_tables` patterns (`filename_patterns` or `sheet_name_patterns`) narrow and non-overlapping with sibling sub_tables on the same target — overlapping patterns within the same routing dimension (filename vs. sheet name) are rejected at load time.
 - Confirm `sheet_name_patterns`/`start_cell` against the real workbook before relying on them — sheet names and header positions in published spreadsheets can change between releases.
+- When a source has one column per reporting period or per metric, configure `unpivot` rather than letting the column list grow unbounded — list `id_columns` (the small, stable set), not the wide/repeating columns.
 
 ## Add New Series Checklist
 
