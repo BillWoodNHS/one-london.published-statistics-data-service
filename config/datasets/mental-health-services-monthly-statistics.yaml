@@ -46,14 +46,14 @@ targets:
     breakdown_granularity:
     - month
   sub_tables:
-  - object_name_prefix: MH_SERVICES_OOA_ACUTE
+  - object_name_suffix: MH_SERVICES_OOA_ACUTE
     adls_path_prefix: mental-health-services-monthly-statistics/out-of-area-placements-acute
-    filename_patterns: 
+    filename_patterns:
     - OAPs_acute_
-  - object_name_prefix: MH_SERVICES_OOA_NON_ACUTE
+  - object_name_suffix: MH_SERVICES_OOA_NON_ACUTE
     adls_path_prefix: mental-health-services-monthly-statistics/out-of-area-placements-non-acute
-    filename_patterns: 
-    - OAPs_non_acute_  
+    filename_patterns:
+    - OAPs_non_acute_
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
