@@ -1,0 +1,12 @@
+schemas:
+  UEC_SITUATION_CRITICAL_CARE:
+    columns:
+      - Period
+      - Level
+      - Region
+      - ICB
+      - Org Code
+      - Org Name
+      - Metric
+      - Type
+      - Value

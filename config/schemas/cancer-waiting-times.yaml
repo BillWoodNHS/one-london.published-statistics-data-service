@@ -1,0 +1,59 @@
+schemas:
+  CANCER_WAIT_COMBINED:
+   columns:
+   - Period
+   - Basis
+   - Org_Code
+   - Parent_Org
+   - Org_Name
+   - Standard_or_Item
+   - Cancer_Type
+   - Referral_Route_or_Stage
+   - Treatment_Modality
+   - Total
+   - Within
+   - After
+   - Performance
+   - Within_14_days
+   - In_15_to_28_days
+   - In_29_to_42_days
+   - In_43_to_62_days
+   - After_62_days
+   - Within_31_days
+   - In_32_to_38_days
+   - In_39_to_48_days
+   - In_49_to_62_days
+   - In_63_to_76_days
+   - In_77_to_90_days
+   - In_91_to_104_days
+   - After_104_days
+   - In_15_to_16_days
+   - In_17_to_21_days
+   - In_22_to_28_days
+   - After_28_days
+
+  CANCER_WAIT_COMMISSIONER:
+    columns:
+    - PERIOD
+    - YEAR
+    - MONTH
+    - STANDARD
+    - ICB SUB LOCATION
+    - SUB-CATEGORY
+    - TOTAL
+    - WITHIN STANDARD
+    - BREACHES
+
+  CANCER_WAIT_MONTHLY:
+    columns:
+    - PERIOD
+    - YEAR
+    - MONTH
+    - STANDARD
+    - ORG CODE
+    - STAGE/ROUTE
+    - TREATMENT MODALITY
+    - CANCER TYPE
+    - TOTAL TREATED
+    - WITHIN STANDARD
+    - BREACHES

@@ -1,0 +1,91 @@
+schemas:
+  CHS_WAIT_NON_SUBMISSION: # Table 1
+    columns:
+     - Organisation Type
+     - Organisation Name
+     - Period # pivoted from individual monthly period columns
+     - Value # pivoted values
+  
+  CHS_WAIT_NATIONAL_TOTALS_WAITING_BY_SERVICE: # Table 2
+    columns:
+     - Service
+     - Period # pivoted from individual monthly period columns
+     - Value # pivoted values
+
+  CHS_WAIT_NATIONAL_BY_SERVICE_AND_WAITING_TIME: # Table 3
+    columns:
+     - 
+     - Waiting Time # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORANISATION_AND_SERVICE: # Table 4
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_00_TO_01_WEEKS: # Table 4a
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_01_TO_02_WEEKS: # Table 4b
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_02_TO_04_WEEKS: # Table 4c
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_04_TO_12_WEEKS: # Table 4d
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_12_TO_18_WEEKS: # Table 4e
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_18_TO_52_WEEKS: # Table 4f
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_52_TO_104_WEEKS: # Table 4g
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values
+
+  CHS_WAIT_BY_ORGANISATION_AND_SERVICE_OVER_104_WEEKS: # Table 4h
+    columns:
+     - Organisation Type
+     - Organisation Code
+     - Organisation Name
+     - Service # pivoted from individual columns
+     - Value # pivoted values

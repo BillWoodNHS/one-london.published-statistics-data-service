@@ -1,0 +1,24 @@
+schemas:
+  IUC_ADC_OFFICIAL_STATISTICS:
+    columns:
+    - REPORTING_PERIOD
+    - ORG_CODE
+    - ORG_NAME
+    - CONTRACT_CODE
+    - CONTRACT_NAME
+    - ITEM_NUMBER
+    - VALUE
+    - REGION_CODE
+    - REGION_NAME
+  
+  IUC_ADC_PROVISIONAL_STATISTICS:
+    columns:
+    - REPORTING_PERIOD
+    - ORG_CODE
+    - ORG_NAME
+    - CONTRACT_CODE
+    - CONTRACT_NAME
+    - DAY
+    - ITEM_NUMBER
+    - VALUE
+    - DATE

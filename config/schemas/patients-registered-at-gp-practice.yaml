@@ -1,0 +1,67 @@
+schemas:
+  GP_PATIENTS_FIVE_YEAR_REGIONS:
+    columns:
+      - PUBLICATION
+      - EXTRACT_DATE
+      - ORG_TYPE
+      - ORG_CODE
+      - ONS_CODE
+      - POSTCODE
+      - SEX
+      - AGE_GROUP_5
+      - NUMBER_OF_PATIENTS
+  
+  GP_PATIENTS_ALL_PERSONS:
+    columns:
+      - PUBLICATION
+      - EXTRACT_DATE
+      - TYPE
+      - SUB_ICB_LOCATION_CODE
+      - ONS_SUB_ICB_LOCATION_CODE
+      - CODE
+      - POSTCODE
+      - SEX
+      - AGE
+      - NUMBER_OF_PATIENTS
+
+  GP_PATIENTS_COMMISSIONING_MAP:
+    columns:
+      - PUBLICATION
+      - EXTRACT_DATE
+      - PRACTICE_CODE
+      - PRACTICE_NAME
+      - PRACTICE_POSTCODE
+      - PCN_CODE
+      - PCN_NAME
+      - ONS_SUB_ICB_LOCATION_CODE
+      - SUB_ICB_LOCATION_CODE
+      - SUB_ICB_LOCATION_NAME
+      - ONS_ICB_CODE
+      - ICB_CODE
+      - ICB_NAME
+      - ONS_COMM_REGION_CODE
+      - COMM_REGION_CODE
+      - COMM_REGION_NAME
+      - SUPPLIER_NAME
+
+  GP_PATIENTS_SINGLE_YEAR_GP_GENDER:
+    columns:
+      - EXTRACT_DATE
+      - SUB_ICB_LOCATION_CODE
+      - ONS_SUB_ICB_LOCATION_CODE
+      - ORG_CODE
+      - POSTCODE
+      - SEX
+      - AGE
+      - NUMBER_OF_PATIENTS
+      
+  GP_PATIENTS_SINGLE_YEAR_REGIONS:
+    columns:
+      - PUBLICATION
+      - EXTRACT_DATE
+      - ORG_TYPE
+      - ORG_CODE
+      - ONS_CODE
+      - SEX
+      - AGE
+      - NUMBER_OF_PATIENTS

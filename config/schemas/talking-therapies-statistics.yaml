@@ -1,0 +1,220 @@
+schemas:
+  TALKING_THERAPY_DATA_QUALITY:
+    columns:
+      - ReportingPeriodStartDate
+      - ReportingPeriodEndDate
+      - Org_Code
+      - DataTable
+      - UID
+      - DataItem
+      - Valid_suppressed
+      - Default_suppressed
+      - Invalid_suppressed
+      - Missing_suppressed
+      - Denominator_suppressed
+
+  TALKING_THERAPY_EMPLOYMENT:
+    columns:
+      - REPORTING_PERIOD_START
+      - REPORTING_PERIOD_END
+      - GROUP_TYPE
+      - ORG_CODE1
+      - ORG_NAME1
+      - ORG_CODE2
+      - ORG_NAME2
+      - MEASURE_ID
+      - MEASURE_NAME
+      - MEASURE_VALUE_SUPPRESSED
+
+  TALKING_THERAPY_ENTER_TREATMENT:
+    columns:
+      - REPORTING_PERIOD_START
+      - REPORTING_PERIOD_END
+      - GROUP_TYPE
+      - ORG_CODE1
+      - ORG_NAME1
+      - ORG_CODE2
+      - ORG_NAME2
+      - MEASURE_ID
+      - MEASURE_NAME
+      - MEASURE_VALUE_SUPPRESSED
+
+  TALKING_THERAPY_MONTHLY:
+    columns:
+      - REPORTING_PERIOD_START
+      - REPORTING_PERIOD_END
+      - GROUP_TYPE
+      - ORG_CODE1
+      - ORG_NAME1
+      - ORG_CODE2
+      - ORG_NAME2
+      - MEASURE_ID
+      - MEASURE_NAME
+      - MEASURE_VALUE_SUPPRESSED
+
+  TALKING_THERAPY_TIME_SERIES:
+    columns:
+      - REPORTING_PERIOD_START
+      - REPORTING_PERIOD_END
+      - GROUP_TYPE
+      - ORG_CODE1
+      - ORG_NAME1
+      - ORG_CODE2
+      - ORG_NAME2
+      - MEASURE_ID
+      - MEASURE_NAME
+      - MEASURE_VALUE
+
+  TALKING_THERAPY_QUARTERLY:
+    columns:
+      - REPORTING_PERIOD_START
+      - REPORTING_PERIOD_END
+      - ICB
+      - ICBName
+      - SubICB
+      - SubICBName
+      - Provider
+      - ProviderName
+      - GroupType
+      - VariableType
+      - VariableA
+      - VariableB
+      - MEASURE_ID
+      - MEASURE_NAME
+      - MEASURE_VALUE_SUPPRESSED
+
+
+  # TALKING_THERAPY_QUARTERLY_EMPLOYMENT
+  TALKING_THERAPY_QTR_TBL01_COMPLETED_REFERRALS:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Data_period
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL03_EMPLOYMENT_STATUS_CHANGE_OVERALL:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL04_EMPLOYMENT_STATUS_CHANGE_BY_PROVIDER:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - ProviderCode
+      - ProviderName
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL05_EMPLOYMENT_STATUS_CHANGE_SELF_EMPLOY_SPLIT:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+  
+  TALKING_THERAPY_QTR_TBL06A_EMPLOYMENT_STATUS_CHANGE_SUPPORT_LATEST_QUARTER:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL06B_EMPLOYMENT_STATUS_CHANGE_SUPPORT_PREV_2_QUARTERS:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL07_EMPLOYMENT_STATUS_AT_START_WITH_END_DATE_RECORDED:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL08_EMPLOYMENT_STATUS_AT_START_WITH_END_DATE_RECORDED_BY_PROVIDER:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - ProviderCode
+      - ProviderName
+      - Measure_Name
+      - Measure_Value 
+
+  TALKING_THERAPY_QTR_TBL09_BENEFITS_STATUS_CHANGE_OVERALL:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL10_BENEFITS_STATUS_CHANGE_BY_TYPE:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL11_PRESENTEEISM_SCORE_CHANGE_OVERALL:
+    columns:  
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+  
+  TALKING_THERAPY_QTR_TBL12_WORK_AND_SOCIAL_ADJUSTMENT_SCORE_CHANGE_OVERALL:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Measure_Name
+      - Measure_Value
+  
+  TALKING_THERAPY_QTR_TBL13_DEMOGRAPHICS_BREAKDOWN:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Demographic
+      - Demographic_breakdown
+      - Measure_Value
+
+  TALKING_THERAPY_QTR_TBL14_EMPLOYMENT_STATUS_DATA_QUALITY:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Org_Code1
+      - Org_Name1
+      - Org_Code2
+      - Org_Name2
+      - Measure_Name
+      - Measure_Value
+  
+  TALKING_THERAPY_QTR_TBL15_BENEFITS_STATUS_DATA_QUALITY:
+    columns:
+      - Reporting_Period_Start
+      - Reporting_Period_End
+      - Group_Type
+      - Org_Code1
+      - Org_Name1
+      - Org_Code2
+      - Org_Name2
+      - Measure_Name
+      - Measure_Value

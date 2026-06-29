@@ -1,0 +1,124 @@
+schemas:
+  RTT_WAIT_DEFAULT:
+    columns:
+      - Period
+      - Provider Parent Org Code
+      - Provider Parent Name
+      - Provider Org Code
+      - Provider Org Name
+      - Commissioner Parent Org Code
+      - Commissioner Parent Name
+      - Commissioner Org Code
+      - Commissioner Org Name
+      - RTT Part Type
+      - RTT Part Description
+      - Treatment Function Code
+      - Treatment Function Name
+      - Gt 00 To 01 Weeks SUM 1
+      - Gt 01 To 02 Weeks SUM 1
+      - Gt 02 To 03 Weeks SUM 1
+      - Gt 03 To 04 Weeks SUM 1
+      - Gt 04 To 05 Weeks SUM 1
+      - Gt 05 To 06 Weeks SUM 1
+      - Gt 06 To 07 Weeks SUM 1
+      - Gt 07 To 08 Weeks SUM 1
+      - Gt 08 To 09 Weeks SUM 1
+      - Gt 09 To 10 Weeks SUM 1
+      - Gt 10 To 11 Weeks SUM 1
+      - Gt 11 To 12 Weeks SUM 1
+      - Gt 12 To 13 Weeks SUM 1
+      - Gt 13 To 14 Weeks SUM 1
+      - Gt 14 To 15 Weeks SUM 1
+      - Gt 15 To 16 Weeks SUM 1
+      - Gt 16 To 17 Weeks SUM 1
+      - Gt 17 To 18 Weeks SUM 1
+      - Gt 18 To 19 Weeks SUM 1
+      - Gt 19 To 20 Weeks SUM 1
+      - Gt 20 To 21 Weeks SUM 1
+      - Gt 21 To 22 Weeks SUM 1
+      - Gt 22 To 23 Weeks SUM 1
+      - Gt 23 To 24 Weeks SUM 1
+      - Gt 24 To 25 Weeks SUM 1
+      - Gt 25 To 26 Weeks SUM 1
+      - Gt 26 To 27 Weeks SUM 1
+      - Gt 27 To 28 Weeks SUM 1
+      - Gt 28 To 29 Weeks SUM 1
+      - Gt 29 To 30 Weeks SUM 1
+      - Gt 30 To 31 Weeks SUM 1
+      - Gt 31 To 32 Weeks SUM 1
+      - Gt 32 To 33 Weeks SUM 1
+      - Gt 33 To 34 Weeks SUM 1
+      - Gt 34 To 35 Weeks SUM 1
+      - Gt 35 To 36 Weeks SUM 1
+      - Gt 36 To 37 Weeks SUM 1
+      - Gt 37 To 38 Weeks SUM 1
+      - Gt 38 To 39 Weeks SUM 1
+      - Gt 39 To 40 Weeks SUM 1
+      - Gt 40 To 41 Weeks SUM 1
+      - Gt 41 To 42 Weeks SUM 1
+      - Gt 42 To 43 Weeks SUM 1
+      - Gt 43 To 44 Weeks SUM 1
+      - Gt 44 To 45 Weeks SUM 1
+      - Gt 45 To 46 Weeks SUM 1
+      - Gt 46 To 47 Weeks SUM 1
+      - Gt 47 To 48 Weeks SUM 1
+      - Gt 48 To 49 Weeks SUM 1
+      - Gt 49 To 50 Weeks SUM 1
+      - Gt 50 To 51 Weeks SUM 1
+      - Gt 51 To 52 Weeks SUM 1
+      - Gt 52 To 53 Weeks SUM 1
+      - Gt 53 To 54 Weeks SUM 1
+      - Gt 54 To 55 Weeks SUM 1
+      - Gt 55 To 56 Weeks SUM 1
+      - Gt 56 To 57 Weeks SUM 1
+      - Gt 57 To 58 Weeks SUM 1
+      - Gt 58 To 59 Weeks SUM 1
+      - Gt 59 To 60 Weeks SUM 1
+      - Gt 60 To 61 Weeks SUM 1
+      - Gt 61 To 62 Weeks SUM 1
+      - Gt 62 To 63 Weeks SUM 1
+      - Gt 63 To 64 Weeks SUM 1
+      - Gt 64 To 65 Weeks SUM 1
+      - Gt 65 To 66 Weeks SUM 1
+      - Gt 66 To 67 Weeks SUM 1
+      - Gt 67 To 68 Weeks SUM 1
+      - Gt 68 To 69 Weeks SUM 1
+      - Gt 69 To 70 Weeks SUM 1
+      - Gt 70 To 71 Weeks SUM 1
+      - Gt 71 To 72 Weeks SUM 1
+      - Gt 72 To 73 Weeks SUM 1
+      - Gt 73 To 74 Weeks SUM 1
+      - Gt 74 To 75 Weeks SUM 1
+      - Gt 75 To 76 Weeks SUM 1
+      - Gt 76 To 77 Weeks SUM 1
+      - Gt 77 To 78 Weeks SUM 1
+      - Gt 78 To 79 Weeks SUM 1
+      - Gt 79 To 80 Weeks SUM 1
+      - Gt 80 To 81 Weeks SUM 1
+      - Gt 81 To 82 Weeks SUM 1
+      - Gt 82 To 83 Weeks SUM 1
+      - Gt 83 To 84 Weeks SUM 1
+      - Gt 84 To 85 Weeks SUM 1
+      - Gt 85 To 86 Weeks SUM 1
+      - Gt 86 To 87 Weeks SUM 1
+      - Gt 87 To 88 Weeks SUM 1
+      - Gt 88 To 89 Weeks SUM 1
+      - Gt 89 To 90 Weeks SUM 1
+      - Gt 90 To 91 Weeks SUM 1
+      - Gt 91 To 92 Weeks SUM 1
+      - Gt 92 To 93 Weeks SUM 1
+      - Gt 93 To 94 Weeks SUM 1
+      - Gt 94 To 95 Weeks SUM 1
+      - Gt 95 To 96 Weeks SUM 1
+      - Gt 96 To 97 Weeks SUM 1
+      - Gt 97 To 98 Weeks SUM 1
+      - Gt 98 To 99 Weeks SUM 1
+      - Gt 99 To 100 Weeks SUM 1
+      - Gt 100 To 101 Weeks SUM 1
+      - Gt 101 To 102 Weeks SUM 1
+      - Gt 102 To 103 Weeks SUM 1
+      - Gt 103 To 104 Weeks SUM 1
+      - Gt 104 Weeks SUM 1
+      - Total
+      - Patients with unknown clock start date
+      - Total All

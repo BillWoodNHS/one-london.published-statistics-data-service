@@ -1,0 +1,147 @@
+schemas:
+  GP_APPTS_ACTUAL_DURATION:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - REGION_ONS_CODE
+    - Appointment_Date
+    - ACTUAL_DURATION
+    - COUNT_OF_APPOINTMENTS
+
+  GP_APPTS_COVID_VACC:
+    columns:
+    - Date
+    - Type
+    - NHS Area Code
+    - ONS Code
+    - Name
+    - Total
+
+  # sub-table of GP_APPTS_DAILY_COUNTS
+  GP_APPTS_DAILY_COUNTS:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - REGION_ONS_CODE
+    - Appointment_Date
+    - APPT_STATUS
+    - HCP_TYPE
+    - APPT_MODE
+    - TIME_BETWEEN_BOOK_AND_APPT
+    - COUNT_OF_APPOINTMENTS
+
+  # sub-table of GP_APPTS_DAILY_COUNTS
+  GP_APPTS_DAILY_COUNTS_COVERAGE:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - ICB_ONS_CODE
+    - REGION_CODE
+    - Appointment_Month
+    - Included Practices
+    - Open Practices
+    - Patients registered at included practices
+    - Patients registered at open practices
+
+  GP_APPTS_NAT_CATEGORIES:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - REGION_ONS_CODE
+    - Appointment_Date
+    - SERVICE_SETTING
+    - CONTEXT_TYPE
+    - NATIONAL_CATEGORY
+    - COUNT_OF_APPOINTMENTS
+
+  GP_APPTS_NAT_OVERVIEW:
+    columns:
+    - APPOINTMENT_MONTH
+    - APPT_STATUS
+    - HCP_TYPE
+    - APPT_MODE
+    - SERVICE_SETTING
+    - CONTEXT_TYPE
+    - NATIONAL_CATEGORY
+    - APPOINTMENTS
+
+  # sub-table of GP_APPTS_PRACTICE_LEVEL 
+  GP_APPTS_PRACTICE_LEVEL:
+    columns:
+    - APPOINTMENT_MONTH_START_DATE
+    - GP_CODE
+    - GP_NAME
+    - SUPPLIER
+    - PCN_CODE
+    - PCN_NAME
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_NAME
+    - HCP_TYPE
+    - APPT_MODE
+    - NATIONAL_CATEGORY
+    - TIME_BETWEEN_BOOK_AND_APPT
+    - COUNT_OF_APPOINTMENTS
+    - APPT_STATUS
+
+  # sub-table of GP_APPTS_PRACTICE_LEVEL
+  GP_APPTS_PRACTICE_LEVEL_MAPPING:
+    columns:
+    - GP_CODE
+    - GP_NAME
+    - SUPPLIER
+    - PCN_CODE
+    - PCN_NAME
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_CODE
+    - ICB_NAME
+    - REGION_CODE
+    - REGION_NAME
+
+  GP_APPTS_REGIONAL:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - ICB_NAME
+    - REGION_ONS_CODE
+    - REGION_NAME
+    - APPOINTMENT_MONTH
+    - APPT_STATUS
+    - HCP_TYPE
+    - APPT_MODE
+    - TIME_BETWEEN_BOOK_AND_APPT
+    - COUNT_OF_APPOINTMENTS
+
+  GP_APPTS_SDS_ROLE:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - REGION_ONS_CODE
+    - Appointment_Date
+    - SDS_ROLE_GROUP
+    - COUNT_OF_APPOINTMENTS
+
+  GP_APPTS_SUB_ICB:
+    columns:
+    - SUB_ICB_LOCATION_CODE
+    - SUB_ICB_LOCATION_ONS_CODE
+    - SUB_ICB_LOCATION_NAME
+    - ICB_ONS_CODE
+    - ICB_NAME
+    - REGION_ONS_CODE
+    - REGION_NAME
+    - APPOINTMENT_MONTH
+    - APPT_STATUS
+    - HCP_TYPE
+    - APPT_MODE
+    - TIME_BETWEEN_BOOK_AND_APPT
+    - COUNT_OF_APPOINTMENTS

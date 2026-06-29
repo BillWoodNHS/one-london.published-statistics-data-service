@@ -1,0 +1,15 @@
+schemas:
+  CDC_DEFAULT:
+   columns:
+    - Region Code
+    - Regional Name
+    - ICB
+    - CDC Code
+    - CDC Name
+    - ID
+    - Diagnostic Test Type
+    - Reporting Month
+    - Sum of Metric_Value
+
+# pre 2025 columns:
+# REGION_CODE,REGION_NAME,SITE_ODS_CODE,SITE_ODS_NAME,TEST_ID,Diagnostic_test_type,DATE,VALUE

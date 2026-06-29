@@ -1,0 +1,45 @@
+schemas:
+  DQMI_WITH_DID:
+    columns:
+    - Dataset
+    - Data Provider Code
+    - Data Provider Name
+    - Org Type
+    - Recoded Data Item
+    - Complete Denominator
+    - Valid Numerator
+    - Default Numerator
+    - Threshold Value
+    - Defaults in Excess
+    - Coverage per dataset
+    - DQMI
+    - Dataset Score
+    - Data Item Score
+    - National Data Item Average
+    - Reporting Period
+    - Experimental DQMI Score
+    - Experimental Dataset Score
+    - Standard Item
+
+  DQMI_WITHOUT_DID:
+    columns:
+    - Dataset
+    - Data Provider Code
+    - Data Provider Name
+    - Org Type
+    - Recoded Data Item
+    - Complete Denominator
+    - Valid Numerator
+    - Default Numerator
+    - Threshold Value
+    - Defaults in Excess
+    - Coverage per dataset
+    - DQMI
+    - Dataset Score
+    - Data Item Score
+    - National Data Item Average
+    - Reporting Period
+    - Experimental DQMI Score
+    - Experimental Dataset Score
+    - Standard Item
+  

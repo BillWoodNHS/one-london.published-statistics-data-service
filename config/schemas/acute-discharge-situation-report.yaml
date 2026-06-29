@@ -1,0 +1,13 @@
+schemas:
+  ACUTE_MONTHLY:
+    columns:
+    - Period
+    - Level
+    - Region
+    - ICB
+    - Org Code
+    - Org Name
+    - Metric
+    - Metric Type
+    - Metric Group
+    - Value
