@@ -26,8 +26,8 @@ targets:
     page_role: archive
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='.csv']
-      text_filter: Learning.Disabilit
+    - link_selector: a[href$='learning-disabilities-health-check-scheme*.csv']
+      text_filter: Learning.Disability.Health.Check.Scheme*CSV
       file_extensions:
       - csv
     sibling_discovery:
@@ -45,7 +45,47 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
+  page_date_selectors:
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
+  - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+- sub_dataset_id: monthly-publication
+  object_name_suffix: LD_HEALTH_MONTHLY_DICTIONARY
+  adls_path_prefix: learning-disabilities-health-check-scheme/monthly-dictionary
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/learning-disabilities-health-check-scheme/england-march-2026
+    page_role: archive
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='LDHC*Data*Dictionary*.xlsx']
+      text_filter: Data.Dictionary
+      file_extensions:
+      - xlsx
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 25
+  reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+  sub_tables:
+  - object_name_suffix: LD_HEALTH_MONTHLY_DICTIONARY_INDICATORS
+    adls_path_prefix: learning-disabilities-health-check-scheme/monthly-dictionary-indicators
+    sheet_name_patterns:
+    - indicators
+    start_cell: A4
+  - object_name_suffix: LD_HEALTH_MONTHLY_DICTIONARY_MEASURES
+    adls_path_prefix: learning-disabilities-health-check-scheme/monthly-dictionary-measures
+    sheet_name_patterns:
+    - measures
+    start_cell: A4
   page_date_selectors:
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})

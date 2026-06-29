@@ -45,10 +45,10 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+
 - sub_dataset_id: employment-advisors
   object_name_suffix: TALKING_THERAPY_EMPLOYMENT
   adls_path_prefix: talking-therapies-statistics/employment-advisors
@@ -76,8 +76,8 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
   page_date_selectors: *id001
+
 - sub_dataset_id: enter-treatment-rolling-quarter
   object_name_suffix: TALKING_THERAPY_ENTER_TREATMENT
   adls_path_prefix: talking-therapies-statistics/enter-treatment-rolling-quarter
@@ -105,8 +105,8 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
   page_date_selectors: *id001
+
 - sub_dataset_id: monthly-activity
   object_name_suffix: TALKING_THERAPY_MONTHLY
   adls_path_prefix: talking-therapies-statistics/monthly-activity
@@ -134,66 +134,8 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
   page_date_selectors: *id001
-- sub_dataset_id: quarterly-activity
-  object_name_suffix: TALKING_THERAPY_QUARTERLY
-  adls_path_prefix: talking-therapies-statistics/quarterly-activity
-  source_pages:
-  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
-    page_role: default
-    partitioning_strategy: subject_period
-    scrape_steps:
-    - link_selector: a[href$='.zip'][href*='quarterly_data' i]
-      text_filter: Quarter
-      file_extensions:
-      - zip
-    sibling_discovery:
-      enabled: true
-      link_selector: a[href]
-      url_pattern: null
-      text_pattern: null
-      max_pages: 100
-  reporting_period_columns: []
-  period_coverage:
-    file_scope:
-      duration_type: unknown
-      duration_value: null
-      duration_unit: null
-      fiscal_year_start_month: 4
-    breakdown_granularity:
-    - month
 
-  page_date_selectors: *id001
-- sub_dataset_id: quarterly-employment-advisor-data
-  object_name_suffix: TALKING_THERAPY_QUARTERLY_EMPLOYMENT
-  adls_path_prefix: talking-therapies-statistics/quarterly-employment-advisor-data
-  source_pages:
-  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
-    page_role: default
-    partitioning_strategy: subject_period
-    scrape_steps:
-    - link_selector: a[href$='.zip'][href*='quarterly_ea_report' i]
-      text_filter: Quarterly Report on Employment Advisor
-      file_extensions:
-      - zip
-    sibling_discovery:
-      enabled: true
-      link_selector: a[href]
-      url_pattern: null
-      text_pattern: null
-      max_pages: 100
-  reporting_period_columns: []
-  period_coverage:
-    file_scope:
-      duration_type: unknown
-      duration_value: null
-      duration_unit: null
-      fiscal_year_start_month: 4
-    breakdown_granularity:
-    - month
-
-  page_date_selectors: *id001
 - sub_dataset_id: time-series-for-key-measures
   object_name_suffix: TALKING_THERAPY_TIME_SERIES
   adls_path_prefix: talking-therapies-statistics/time-series-for-key-measures
@@ -221,5 +163,124 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
+  page_date_selectors: *id001
+
+- sub_dataset_id: quarterly-activity
+  object_name_suffix: TALKING_THERAPY_QUARTERLY_DATA
+  adls_path_prefix: talking-therapies-statistics/quarterly-activity-data
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip'][href*='quarterly_data' i]
+      text_filter: Quarter
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+  page_date_selectors: *id001
+
+- sub_dataset_id: quarterly-employment-advisor-data
+  object_name_suffix: TALKING_THERAPY_QUARTERLY_EMPLOYMENT_ADVISOR_REPORT
+  adls_path_prefix: talking-therapies-statistics/quarterly-employment-advisor-report-data
+  source_pages:
+  - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/nhs-talking-therapies-monthly-statistics-including-employment-advisors
+    page_role: default
+    partitioning_strategy: subject_period
+    scrape_steps:
+    - link_selector: a[href$='.zip'][href*='quarterly_ea_report' i]
+      text_filter: Quarterly Report on Employment Advisor
+      file_extensions:
+      - zip
+    sibling_discovery:
+      enabled: true
+      link_selector: a[href]
+      url_pattern: null
+      text_pattern: null
+      max_pages: 100
+  reporting_period_columns: []
+  period_coverage:
+    file_scope:
+      duration_type: unknown
+      duration_value: null
+      duration_unit: null
+      fiscal_year_start_month: 4
+    breakdown_granularity:
+    - month
+  sub_tables:
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL01_COMPLETED_REFERRALS
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl01-completed-referrals
+    filename_patterns:
+    - ^Table1$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL03_EMPLOYMENT_STATUS_CHANGE_OVERALL
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl03-employment-status-change-overall
+    filename_patterns:
+    - ^Table2&3$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL04_EMPLOYMENT_STATUS_CHANGE_BY_PROVIDER
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl04-employment-status-change-by-provider
+    filename_patterns:
+    - ^Table4$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL05_EMPLOYMENT_STATUS_CHANGE_SELF_EMPLOY_SPLIT
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl05-employment-status-change-self-employ-split
+    filename_patterns:
+    - ^Table5$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL06A_EMPLOYMENT_STATUS_CHANGE_SUPPORT_LATEST_QUARTER
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl06a-employment-status-change-support-latest-quarter
+    filename_patterns:
+    - ^Table6a$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL06B_EMPLOYMENT_STATUS_CHANGE_SUPPORT_PREV_2_QUARTERS
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl06b-employment-status-change-support-prev-2-quarters
+    filename_patterns:
+    - ^Table6b$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL07_EMPLOYMENT_STATUS_AT_START_WITH_END_DATE_RECORDED
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl07-employment-status-at-start-with-end-date-recorded
+    filename_patterns:
+    - ^Table7$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL08_EMPLOYMENT_STATUS_AT_START_WITH_END_DATE_RECORDED_BY_PROVIDER
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl08-employment-status-at-start-with-end-date-recorded-by-provider
+    filename_patterns:
+    - ^Table8$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL09_BENEFITS_STATUS_CHANGE_OVERALL
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl09-benefits-status-change-overall
+    filename_patterns:
+    - ^Table9$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL10_BENEFITS_STATUS_CHANGE_BY_TYPE
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl10-benefits-status-change-by-type
+    filename_patterns:
+    - ^Table10$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL11_PRESENTEEISM_SCORE_CHANGE_OVERALL
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl11-presenteeism-score-change-overall
+    filename_patterns:
+    - ^Table11$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL12_WORK_AND_SOCIAL_ADJUSTMENT_SCORE_CHANGE_OVERALL
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl12-work-and-social-adjustment-score-change-overall
+    filename_patterns:
+    - ^Table12$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL13_DEMOGRAPHICS_BREAKDOWN
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl13-demographics-breakdown
+    filename_patterns:
+    - ^Table13$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL14_EMPLOYMENT_STATUS_DATA_QUALITY
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl14-employment-status-data-quality
+    filename_patterns:
+    - ^Table14$
+  - object_name_suffix: TALKING_THERAPY_QTR_TBL15_BENEFITS_STATUS_DATA_QUALITY
+    adls_path_prefix: talking-therapies-statistics/qrt-report-tbl15-benefits-status-data-quality
+    filename_patterns:
+    - ^Table15$
 
   page_date_selectors: *id001

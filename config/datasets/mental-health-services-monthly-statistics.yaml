@@ -1,5 +1,5 @@
-dataset_id: mental_health_services_monthly_statistics
-series_id: mental_health_services_monthly_statistics
+dataset_id: mental-health-services-monthly-statistics
+series_id: mental-health-services-monthly-statistics
 entry_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics
 publication_date:
   source: link_text
@@ -14,20 +14,20 @@ subject_period:
     pattern: (jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[\s_\-/]*\d{2,4})
 fallback:
   allow_manual_acquisition: true
-  manual_drop_path: manual/mental_health_services_monthly_statistics
+  manual_drop_path: manual/mental-health-services-monthly-statistics
   max_auto_retries: 3
   timeout_threshold_minutes: 5
 targets:
 - sub_dataset_id: out-of-area-placements
   object_name_suffix: MH_SERVICES_OOA
-  adls_path_prefix: mental_health_services_monthly_statistics/out-of-area-placements
+  adls_path_prefix: mental-health-services-monthly-statistics/out-of-area-placements
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default
     partitioning_strategy: subject_period
     scrape_steps:
-    - link_selector: a[href$='.zip']
-      text_filter: Out of Area Placements
+    - link_selector: a[href$='OAP*.zip']
+      text_filter: MHSDS.Monthly:.Performance*Out of Area Placements
       file_extensions:
       - zip
     sibling_discovery:
@@ -45,13 +45,22 @@ targets:
       fiscal_year_start_month: 4
     breakdown_granularity:
     - month
-
+  sub_tables:
+  - object_name_prefix: MH_SERVICES_OOA_ACUTE
+    adls_path_prefix: mental-health-services-monthly-statistics/out-of-area-placements-acute
+    filename_patterns: 
+    - OAPs_acute_
+  - object_name_prefix: MH_SERVICES_OOA_NON_ACUTE
+    adls_path_prefix: mental-health-services-monthly-statistics/out-of-area-placements-non-acute
+    filename_patterns: 
+    - OAPs_non_acute_  
   page_date_selectors: &id001
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})
   - (?:published|publication\s*date|last\s*updated)\s*:?\s*(\d{4}-\d{2}-\d{2})
+
 - sub_dataset_id: performance-data-file
   object_name_suffix: MH_SERVICES_PERFORMANCE
-  adls_path_prefix: mental_health_services_monthly_statistics/performance-data-file
+  adls_path_prefix: mental-health-services-monthly-statistics/performance-data-file
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default
@@ -80,7 +89,7 @@ targets:
   page_date_selectors: *id001
 - sub_dataset_id: restrictive-interventions
   object_name_suffix: MH_SERVICES_RESTRICTIVE
-  adls_path_prefix: mental_health_services_monthly_statistics/restrictive-interventions
+  adls_path_prefix: mental-health-services-monthly-statistics/restrictive-interventions
   source_pages:
   - page_url: https://digital.nhs.uk/data-and-information/publications/statistical/mental-health-services-monthly-statistics/performance-march-2026
     page_role: default
