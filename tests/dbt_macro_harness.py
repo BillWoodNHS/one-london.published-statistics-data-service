@@ -131,3 +131,78 @@ def render_alias_select_sql(column_names: list[str], duckdb_file: Path) -> str:
         "Could not find emitted alias SQL in dbt output.\n"
         f"{result.stdout}\n{result.stderr}"
     )
+
+
+def render_presentation_view_columns(
+    raw_schema: str,
+    raw_table: str,
+    view_name: str,
+    column_names: list[str],
+    duckdb_file: Path,
+) -> list[str]:
+    require_dbt()
+
+    env = os.environ.copy()
+    env["DUCKDB_FILE"] = str(duckdb_file)
+    duckdb_file.parent.mkdir(parents=True, exist_ok=True)
+    _ensure_dbt_deps(env)
+
+    args = json.dumps(
+        {
+            "raw_schema": raw_schema,
+            "raw_table": raw_table,
+            "view_name": view_name,
+            "column_names": column_names,
+        }
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "dbt.cli.main",
+        "run-operation",
+        "test_create_presentation_view_with_aliasing",
+        "--args",
+        args,
+        "--project-dir",
+        str(DBT_PROJECT_DIR),
+        "--profiles-dir",
+        str(DBT_PROFILES_DIR),
+        "--log-format",
+        "json",
+    ]
+
+    result = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        raise AssertionError(
+            "dbt run-operation failed while rendering presentation view columns.\n"
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}"
+        )
+
+    prefix = "__PRESENTATION_VIEW_COLUMNS__"
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            if prefix in line:
+                return line.split(prefix, 1)[1].split(",")
+            continue
+
+        message = str(event.get("info", {}).get("msg", ""))
+        if prefix in message:
+            return message.split(prefix, 1)[1].split(",")
+
+    raise AssertionError(
+        "Could not find emitted presentation view columns in dbt output.\n"
+        f"{result.stdout}\n{result.stderr}"
+    )

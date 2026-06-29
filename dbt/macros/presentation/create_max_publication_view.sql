@@ -12,20 +12,21 @@
 
     {% set sql %}
         create or replace view {{ adapter.quote(presentation_schema) }}.{{ adapter.quote(view_name) }} as
-        with file_coverage as (
-            select
-                *,
-                max(_SUBJECT_PERIOD_TO) over (
-                    partition by _SOURCE_FILE_NAME, _SOURCE_FILE_PATH, _INGESTED_AT
-                ) as _FILE_MAX_SUBJECT_TO
+        with file_period_coverage as (
+            select distinct
+                _SOURCE_FILE_NAME, _SOURCE_FILE_PATH, _INGESTED_AT,
+                {{ period_partition }},
+                _PUBLICATION_DATE
             from {{ adapter.quote(presentation_schema) }}.{{ adapter.quote(presentation_base_view) }}
         )
-        select * exclude (_FILE_MAX_SUBJECT_TO)
-        from file_coverage
-        qualify row_number() over (
-            partition by {{ period_partition }}
-            order by _FILE_MAX_SUBJECT_TO desc, _PUBLICATION_DATE desc nulls last, _INGESTED_AT desc
-        ) = 1
+        select
+            _SOURCE_FILE_NAME, _SOURCE_FILE_PATH, _INGESTED_AT,
+            {{ period_partition }}, _PUBLICATION_DATE,
+            row_number() over (
+                partition by {{ period_partition }}
+                order by _PUBLICATION_DATE desc nulls last, _INGESTED_AT desc
+            ) as _PUBLICATION_RANK
+        from file_period_coverage
     {% endset %}
 
     {% do run_query(sql) %}

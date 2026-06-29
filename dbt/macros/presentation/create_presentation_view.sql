@@ -4,8 +4,8 @@
 
 {% macro default__create_presentation_view(database_name, presentation_schema, view_name, raw_schema, raw_table, period_columns) %}
     {# Generic implementation for DuckDB #}
-    {% set raw_relation = api.Relation.create(database=database_name, schema=raw_schema, identifier=raw_table) %}
-    {% set select_list = one_london_psds.get_screaming_snake_select_list(raw_relation) %}
+    {% set select_list = one_london_psds.get_screaming_snake_select_list(database_name, raw_schema, raw_table) %}
+
     {% set sql %}
         create or replace view {{ adapter.quote(presentation_schema) }}.{{ adapter.quote(view_name) }} as
         select
