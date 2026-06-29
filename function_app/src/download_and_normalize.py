@@ -20,20 +20,25 @@ from .models import (
     NormalizedFile,
     SubTableConfig,
     TargetConfig,
+    UnpivotConfig,
 )
 from .period_coverage import infer_period_coverage
 
 
-def _count_csv_rows(payload: bytes) -> int | None:
-    """Count data rows in a CSV payload (excluding the header row)."""
-    encodings = ("utf-8", "utf-8-sig", "latin-1")
-    for encoding in encodings:
+def _decode_csv_text(payload: bytes) -> Optional[str]:
+    """Decode CSV bytes, trying common encodings in turn."""
+    for encoding in ("utf-8", "utf-8-sig", "latin-1"):
         try:
-            text = payload.decode(encoding)
-            break
+            return payload.decode(encoding)
         except UnicodeDecodeError:
             continue
-    else:
+    return None
+
+
+def _count_csv_rows(payload: bytes) -> int | None:
+    """Count data rows in a CSV payload (excluding the header row)."""
+    text = _decode_csv_text(payload)
+    if text is None:
         return None
 
     reader = csv.reader(io.StringIO(text))
@@ -180,8 +185,29 @@ def _slugify_sheet_name(sheet_name: str) -> str:
     return slug or "sheet"
 
 
+def _unpivot(df: pd.DataFrame, config: UnpivotConfig) -> pd.DataFrame:
+    """Melt all non-id columns into long format per an UnpivotConfig.
+
+    Generic reshape — the melted column headers (dates, metric names,
+    anything else) are kept as-is in variable_column_name; no
+    interpretation happens here.
+    """
+    missing = [c for c in config.id_columns if c not in df.columns]
+    if missing:
+        raise ValueError(f"unpivot.id_columns not found in source columns: {missing}")
+    return df.melt(
+        id_vars=config.id_columns,
+        var_name=config.variable_column_name,
+        value_name=config.value_column_name,
+    )
+
+
 def _read_sheet_to_csv_row(
-    tmp_path: str, sheet_name: str, engine: str, start_cell: Optional[str]
+    tmp_path: str,
+    sheet_name: str,
+    engine: str,
+    start_cell: Optional[str],
+    unpivot: Optional[UnpivotConfig] = None,
 ) -> Tuple[bytes, int]:
     skiprows, start_col_idx = _parse_start_cell(start_cell)
     df = pd.read_excel(
@@ -192,6 +218,8 @@ def _read_sheet_to_csv_row(
     )
     if start_col_idx:
         df = df.iloc[:, start_col_idx:]
+    if unpivot:
+        df = _unpivot(df, unpivot)
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(df.columns.tolist())
@@ -207,6 +235,7 @@ def _spreadsheet_to_csvs(
     source_file_type: str,
     sub_tables: List[SubTableConfig],
     excel_sheet: Optional[str],
+    target_unpivot: Optional[UnpivotConfig] = None,
 ) -> List[Tuple[str, bytes, Dict[str, Any]]]:
     """Split a spreadsheet workbook into one or more CSV outputs.
 
@@ -217,7 +246,7 @@ def _spreadsheet_to_csvs(
 
     if not sheet_routed:
         csv_payload, row_count = _read_sheet_to_csv_row(
-            tmp_path, excel_sheet or 0, engine, None
+            tmp_path, excel_sheet or 0, engine, None, target_unpivot
         )
         metrics: Dict[str, Any] = {
             "source_file_type": source_file_type,
@@ -244,7 +273,7 @@ def _spreadsheet_to_csvs(
                 continue
             matched_sheets.add(sheet_name)
             csv_payload, row_count = _read_sheet_to_csv_row(
-                tmp_path, sheet_name, engine, st.start_cell
+                tmp_path, sheet_name, engine, st.start_cell, st.unpivot
             )
             results.append(
                 (
@@ -302,6 +331,7 @@ def _excel_to_csv(
             source_file_type="excel",
             sub_tables=target.sub_tables if target else [],
             excel_sheet=target.excel_sheet if target else None,
+            target_unpivot=target.unpivot if target else None,
         )
     finally:
         os.unlink(tmp_path)
@@ -331,6 +361,7 @@ def _ods_to_csv(
             source_file_type="ods",
             sub_tables=target.sub_tables if target else [],
             excel_sheet=target.excel_sheet if target else None,
+            target_unpivot=target.unpivot if target else None,
         )
     finally:
         os.unlink(tmp_path)
@@ -418,7 +449,33 @@ def normalize_payload_to_csv(
     lowered = source_name.lower()
 
     if lowered.endswith(".csv"):
-        metrics: Dict[str, Any] = {
+        if target and target.unpivot:
+            text = _decode_csv_text(payload)
+            if text is None:
+                raise ValueError(f"Could not decode CSV for unpivot: {source_name}")
+            df = pd.read_csv(io.StringIO(text))
+            raw_row_count = int(len(df.index))
+            df = _unpivot(df, target.unpivot)
+            buffer = io.StringIO()
+            writer = csv.writer(buffer)
+            writer.writerow(df.columns.tolist())
+            writer.writerows(df.values.tolist())
+            csv_payload = buffer.getvalue().encode("utf-8")
+            metrics = {
+                "source_file_type": "csv",
+                "extracted_from_archive": False,
+                "converted_to_csv": True,
+                "archive_member_name": None,
+                "raw_row_count": raw_row_count,
+                "normalized_row_count": int(len(df.index)),
+                "source_bytes": len(payload),
+                "normalized_bytes": len(csv_payload),
+            }
+            return [
+                (Path(source_name).name, csv_payload, _sha256(csv_payload), metrics)
+            ]
+
+        metrics = {
             "source_file_type": "csv",
             "extracted_from_archive": False,
             "converted_to_csv": False,

@@ -463,3 +463,80 @@ class TestSubTableSheetRouting:
         self._manifest_with_sub_tables(tmp_path, [st1, st2])
         cfg = load_manifests(tmp_path)
         assert len(cfg[0].targets[0].sub_tables) == 2
+
+
+# ---------------------------------------------------------------------------
+# unpivot validation
+# ---------------------------------------------------------------------------
+
+_VALID_UNPIVOT = {
+    "id_columns": ["Org Code", "Org name"],
+    "variable_column_name": "reporting_period",
+}
+
+
+class TestUnpivotConfig:
+    def test_valid_unpivot_on_target_parses(self, tmp_path):
+        _manifest_with_target_patch(tmp_path, {"unpivot": dict(_VALID_UNPIVOT)})
+        cfg = load_manifests(tmp_path)
+        unpivot = cfg[0].targets[0].unpivot
+        assert unpivot.id_columns == ["Org Code", "Org name"]
+        assert unpivot.variable_column_name == "reporting_period"
+        assert unpivot.value_column_name == "value"
+
+    def test_value_column_name_override_parses(self, tmp_path):
+        config = dict(_VALID_UNPIVOT)
+        config["value_column_name"] = "count"
+        _manifest_with_target_patch(tmp_path, {"unpivot": config})
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].unpivot.value_column_name == "count"
+
+    def test_no_unpivot_key_gives_none(self, tmp_path):
+        _write_yaml(tmp_path, _minimal_manifest())
+        cfg = load_manifests(tmp_path)
+        assert cfg[0].targets[0].unpivot is None
+
+    def test_missing_id_columns_raises(self, tmp_path):
+        config = {"variable_column_name": "reporting_period"}
+        _manifest_with_target_patch(tmp_path, {"unpivot": config})
+        with pytest.raises(ManifestError, match="id_columns"):
+            load_manifests(tmp_path)
+
+    def test_empty_id_columns_raises(self, tmp_path):
+        config = dict(_VALID_UNPIVOT)
+        config["id_columns"] = []
+        _manifest_with_target_patch(tmp_path, {"unpivot": config})
+        with pytest.raises(ManifestError, match="id_columns"):
+            load_manifests(tmp_path)
+
+    def test_missing_variable_column_name_raises(self, tmp_path):
+        config = {"id_columns": ["Org Code"]}
+        _manifest_with_target_patch(tmp_path, {"unpivot": config})
+        with pytest.raises(ManifestError, match="variable_column_name"):
+            load_manifests(tmp_path)
+
+    def test_unpivot_on_sub_table_parses(self, tmp_path):
+        st = dict(_VALID_SHEET_SUB_TABLE)
+        st["unpivot"] = dict(_VALID_UNPIVOT)
+        data = _minimal_manifest()
+        data["targets"][0]["sub_tables"] = [st]
+        _write_yaml(tmp_path, data)
+        cfg = load_manifests(tmp_path)
+        unpivot = cfg[0].targets[0].sub_tables[0].unpivot
+        assert unpivot.id_columns == ["Org Code", "Org name"]
+
+    def test_reporting_period_columns_independent_of_unpivot(self, tmp_path):
+        # reporting_period_columns drives dbt presentation provisioning's
+        # revision-selection logic; it must keep working unchanged whether
+        # or not unpivot is also configured.
+        _manifest_with_target_patch(
+            tmp_path,
+            {
+                "reporting_period_columns": ["Period"],
+                "unpivot": dict(_VALID_UNPIVOT),
+            },
+        )
+        cfg = load_manifests(tmp_path)
+        target = cfg[0].targets[0]
+        assert target.reporting_period_columns == ["Period"]
+        assert target.unpivot.id_columns == ["Org Code", "Org name"]

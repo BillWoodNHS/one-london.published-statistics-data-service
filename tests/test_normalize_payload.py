@@ -16,10 +16,11 @@ from function_app.src.download_and_normalize import (
     _count_csv_rows,
     _excel_to_csv,
     _ods_to_csv,
+    _unpivot,
     normalize_payload_to_csv,
     resolve_sub_table_adls_prefix,
 )
-from function_app.src.models import SubTableConfig, TargetConfig
+from function_app.src.models import SubTableConfig, TargetConfig, UnpivotConfig
 
 # ---------------------------------------------------------------------------
 # Helpers to build test payloads in memory
@@ -139,6 +140,68 @@ class TestAllCsvsFromZip:
         assert metrics["source_file_type"] == "zip"
         assert metrics["extracted_from_archive"] is True
         assert metrics["raw_row_count"] == 2
+
+
+# ---------------------------------------------------------------------------
+# _unpivot
+# ---------------------------------------------------------------------------
+
+
+class TestUnpivot:
+    def test_melts_non_id_columns_into_long_format(self):
+        df = pd.DataFrame(
+            {
+                "Org Code": ["A1", "B1"],
+                "Apr 2025": [10, 20],
+                "May 2025": [11, 21],
+            }
+        )
+        config = UnpivotConfig(
+            id_columns=["Org Code"],
+            variable_column_name="reporting_period",
+            value_column_name="value",
+        )
+        result = _unpivot(df, config)
+        assert list(result.columns) == ["Org Code", "reporting_period", "value"]
+        assert len(result.index) == 4
+        rows = {
+            (r["Org Code"], r["reporting_period"], r["value"])
+            for _, r in result.iterrows()
+        }
+        assert rows == {
+            ("A1", "Apr 2025", 10),
+            ("A1", "May 2025", 11),
+            ("B1", "Apr 2025", 20),
+            ("B1", "May 2025", 21),
+        }
+
+    def test_is_generic_for_metric_per_column_not_just_dates(self):
+        # The reshape is purely structural — it should behave identically
+        # whether the melted headers are reporting periods or metric names.
+        df = pd.DataFrame(
+            {
+                "Org Code": ["A1"],
+                "Attendances": [100],
+                "Admissions": [40],
+            }
+        )
+        config = UnpivotConfig(
+            id_columns=["Org Code"],
+            variable_column_name="metric",
+            value_column_name="value",
+        )
+        result = _unpivot(df, config)
+        assert list(result.columns) == ["Org Code", "metric", "value"]
+        assert set(result["metric"]) == {"Attendances", "Admissions"}
+
+    def test_missing_id_column_raises_clear_error(self):
+        df = pd.DataFrame({"Org Code": ["A1"], "Apr 2025": [10]})
+        config = UnpivotConfig(
+            id_columns=["Org Code", "Org name"],
+            variable_column_name="reporting_period",
+        )
+        with pytest.raises(ValueError, match="Org name"):
+            _unpivot(df, config)
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +344,43 @@ class TestExcelToCsv:
         assert "1,2" in decoded
         assert metrics["raw_row_count"] == 1
 
+    def test_sheet_splitting_with_unpivot_reshapes_wide_period_columns(self):
+        # Mirrors a CDI-style "Table_1_national_data" sheet: id columns
+        # followed by one column per reporting month.
+        wb = openpyxl.Workbook()
+        wb.active.title = "Summary"
+        wb.active.append(["junk"])
+        national = wb.create_sheet("Table_1_national_data")
+        national.append(["Org Code", "Org name", "Apr 2025", "May 2025"])
+        national.append(["A1", "Alpha", 10, 11])
+        national.append(["B1", "Beta", 20, 21])
+        buf = io.BytesIO()
+        wb.save(buf)
+
+        sub_table = SubTableConfig(
+            object_name_suffix="NATIONAL",
+            adls_path_prefix="dataset/national",
+            sheet_name_patterns=["Table_1_national_data"],
+            unpivot=UnpivotConfig(
+                id_columns=["Org Code", "Org name"],
+                variable_column_name="reporting_period",
+                value_column_name="value",
+            ),
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            sub_tables=[sub_table],
+        )
+        ((name, content, metrics),) = _excel_to_csv(
+            "report", buf.getvalue(), ".xlsx", target
+        )
+        decoded = content.decode("utf-8")
+        assert "Org Code,Org name,reporting_period,value" in decoded
+        assert metrics["raw_row_count"] == 4
+        assert "Apr 2025" in decoded and "May 2025" in decoded
+
     def test_sheet_splitting_raises_when_no_sheet_matches(self):
         wb = openpyxl.Workbook()
         wb.active.title = "Summary"
@@ -412,6 +512,60 @@ class TestNormalizePayloadToCsv:
     def test_unsupported_extension_raises(self):
         with pytest.raises(ValueError, match="Unsupported file type"):
             normalize_payload_to_csv("report.pdf", b"%PDF-1.4")
+
+    def test_csv_with_unpivot_config_reshapes_wide_columns(self):
+        csv_payload = (
+            b"Org Code,Org name,Apr 2025,May 2025\nA1,Alpha,10,11\nB1,Beta,20,21\n"
+        )
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            unpivot=UnpivotConfig(
+                id_columns=["Org Code", "Org name"],
+                variable_column_name="reporting_period",
+                value_column_name="value",
+            ),
+        )
+        ((name, content, h, metrics),) = normalize_payload_to_csv(
+            "data.csv", csv_payload, target
+        )
+        assert name == "data.csv"
+        decoded = content.decode("utf-8")
+        assert "Org Code,Org name,reporting_period,value" in decoded
+        assert metrics["converted_to_csv"] is True
+        assert metrics["raw_row_count"] == 2
+        assert metrics["normalized_row_count"] == 4
+        assert len(h) == 64
+
+    def test_csv_without_unpivot_config_still_passes_through(self):
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+        )
+        ((name, content, h, metrics),) = normalize_payload_to_csv(
+            "data.csv", CSV_SIMPLE, target
+        )
+        assert content == CSV_SIMPLE
+        assert metrics["converted_to_csv"] is False
+
+    def test_reporting_period_columns_unaffected_by_unpivot_feature(self):
+        # reporting_period_columns drives dbt presentation provisioning's
+        # revision-selection logic and must stay independent of the new
+        # unpivot reshape feature.
+        target = TargetConfig(
+            sub_dataset_id="t",
+            object_name_suffix="T",
+            adls_path_prefix="t",
+            reporting_period_columns=["Period"],
+        )
+        ((name, content, h, metrics),) = normalize_payload_to_csv(
+            "data.csv", CSV_SIMPLE, target
+        )
+        assert content == CSV_SIMPLE
+        assert target.reporting_period_columns == ["Period"]
+        assert target.unpivot is None
 
     def test_zip_member_content_hash_is_of_extracted_content(self):
         import hashlib
